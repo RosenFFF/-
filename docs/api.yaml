@@ -1,0 +1,1042 @@
+openapi: 3.1.0
+info:
+  title: 丝路智审 API
+  version: 0.1.0
+  description: |
+    跨境贸易单证 AI 合规审查平台后端接口契约（M0 草案）。
+
+    约定：
+    - 基础路径 `/api/v1`；请求与响应均为 JSON（UTF-8），文件上传为 multipart。
+    - 鉴权：`Authorization: Bearer <access_token>`（15 分钟）；刷新令牌放在 HttpOnly Cookie `refresh_token`，仅 `/auth/refresh` 与 `/auth/logout` 使用。
+    - 每个响应带 `X-Request-ID` 头，同时写进审计日志，前端报错时展示它便于排查。
+    - 错误统一为 RFC 9457 `application/problem+json`，见 `Problem`。
+    - 分页：`page`（从 1 开始）+ `page_size`（默认 20，最大 100）。
+    - 时间为 ISO 8601 UTC；ID 为 UUID。
+    - AI 生成内容都带 `aigc` 字段（GB 45438-2025 显式与隐式标识）。
+servers:
+  - url: /api/v1
+tags:
+  - name: system
+  - name: auth
+  - name: users
+  - name: documents
+  - name: reviews
+  - name: chat
+  - name: rules
+  - name: audit
+security:
+  - bearerAuth: []
+
+paths:
+  /healthz:
+    get:
+      tags: [system]
+      summary: 存活检查
+      security: []
+      responses:
+        '200':
+          description: 进程存活
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, const: ok }
+  /readyz:
+    get:
+      tags: [system]
+      summary: 就绪检查（依赖与模型状态）
+      security: []
+      responses:
+        '200':
+          description: 可以接流量
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Readiness' }
+        '503':
+          description: 依赖未就绪
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Readiness' }
+  /system/models:
+    get:
+      tags: [system]
+      summary: 模型调用链路与健康状态（供现场核验）
+      description: 列出系统集成的全部模型、在链路中的位置、当前是否可用与当前降级级别。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ModelChain' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: 登录
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string, minLength: 3, maxLength: 64 }
+                password: { type: string, minLength: 8, maxLength: 128, format: password }
+      responses:
+        '200':
+          description: 登录成功；同时通过 Set-Cookie 下发 refresh_token（HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth）
+          headers:
+            Set-Cookie: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '423':
+          description: 连续失败过多，账号临时锁定
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: 用刷新令牌换新的访问令牌（刷新令牌同时轮换）
+      security:
+        - refreshCookie: []
+      responses:
+        '200':
+          description: OK
+          headers:
+            Set-Cookie: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: 登出（作废刷新令牌）
+      security:
+        - refreshCookie: []
+      responses:
+        '204': { description: 已登出 }
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: 当前用户与权限
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CurrentUser' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /users:
+    get:
+      tags: [users]
+      summary: 用户列表（admin）
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [users]
+      summary: 创建用户（admin）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password, role]
+              properties:
+                username: { type: string, minLength: 3, maxLength: 64, pattern: '^[a-zA-Z0-9_.-]+$' }
+                password: { type: string, minLength: 12, maxLength: 128, format: password }
+                role: { $ref: '#/components/schemas/Role' }
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /users/{user_id}:
+    parameters:
+      - { name: user_id, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      tags: [users]
+      summary: 修改角色或停用（admin）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                role: { $ref: '#/components/schemas/Role' }
+                disabled: { type: boolean }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /documents:
+    post:
+      tags: [documents]
+      summary: 上传单证（admin, reviewer）
+      description: |
+        服务端按文件魔数校验真实类型（PDF/PNG/JPEG），≤10 MB、≤10 页。原件加密落盘后异步执行 OCR 与字段抽取，
+        通过 `GET /documents/{id}` 轮询 `status`（建议 1 秒间隔）。
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                doc_type: { $ref: '#/components/schemas/DocType' }
+            encoding:
+              file:
+                contentType: application/pdf, image/png, image/jpeg
+      responses:
+        '202':
+          description: 已接收，处理中
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Document' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMedia' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    get:
+      tags: [documents]
+      summary: 单证列表（本租户内有权限的）
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/DocumentStatus' } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Document' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /documents/{document_id}:
+    parameters:
+      - $ref: '#/components/parameters/DocumentId'
+    get:
+      tags: [documents]
+      summary: 单证详情与处理状态
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Document' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [documents]
+      summary: 删除单证（同时删除密文、识别结果和派生数据）
+      responses:
+        '204': { description: 已删除 }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /documents/{document_id}/pages/{page}/image:
+    parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - { name: page, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    get:
+      tags: [documents]
+      summary: 获取某页渲染图（服务端解密后返回，用于识别结果对照）
+      responses:
+        '200':
+          description: PNG 图片；带 Cache-Control no-store
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /documents/{document_id}/recognition:
+    parameters:
+      - $ref: '#/components/parameters/DocumentId'
+    get:
+      tags: [documents]
+      summary: 识别结果（OCR 文本块 + 抽取字段）
+      description: 文档状态为 `ready` 后可用；之前返回 409。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Recognition' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /documents/{document_id}/fields:
+    parameters:
+      - $ref: '#/components/parameters/DocumentId'
+    patch:
+      tags: [documents]
+      summary: 人工修正抽取字段（admin, reviewer）
+      description: 用 `version` 做乐观锁；修改留审计，`source` 变为 `manual`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version, fields]
+              properties:
+                version: { type: integer, minimum: 1 }
+                fields:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [key, value]
+                    properties:
+                      key: { type: string, maxLength: 64 }
+                      value: { type: [string, 'null'], maxLength: 2000 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Recognition' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /reviews:
+    post:
+      tags: [reviews]
+      summary: 发起合规审查（admin, reviewer）
+      description: 可把同一票货的多份单证一起审（用于交叉核对发票、装箱单、原产地证）。异步执行，轮询 `GET /reviews/{id}`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document_ids, destination_country]
+              properties:
+                document_ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 10
+                  uniqueItems: true
+                  items: { type: string, format: uuid }
+                origin_country: { $ref: '#/components/schemas/CountryCode' }
+                destination_country: { $ref: '#/components/schemas/CountryCode' }
+                language: { $ref: '#/components/schemas/Language' }
+      responses:
+        '202':
+          description: 已入队
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Review' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    get:
+      tags: [reviews]
+      summary: 审查列表
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: risk_level, in: query, schema: { $ref: '#/components/schemas/RiskLevel' } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/ReviewSummary' }
+  /reviews/{review_id}:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    get:
+      tags: [reviews]
+      summary: 审查报告（状态、风险分级、风险项与条款引用）
+      parameters:
+        - name: language
+          in: query
+          description: 换一种语言查看解释文字；没有缓存时会触发一次翻译生成
+          schema: { $ref: '#/components/schemas/Language' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Review' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /reviews/{review_id}/messages:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    get:
+      tags: [chat]
+      summary: 追问历史
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ChatMessage' }
+    post:
+      tags: [chat]
+      summary: 针对报告追问（admin, reviewer）
+      description: |
+        `Accept: text/event-stream` 时流式返回，事件依次为：
+        - `delta`：`{"text": "..."}` 增量文字
+        - `citation`：`RuleCitation` 对象
+        - `done`：完整的 `ChatMessage`
+        - `error`：`Problem` 对象
+        输入命中提示注入/越权检测时，返回 `blocked=true` 的消息（HTTP 200，不报错），并写审计。
+        `Accept: application/json` 时一次性返回 `ChatMessage`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string, minLength: 1, maxLength: 2000 }
+                language: { $ref: '#/components/schemas/Language' }
+      responses:
+        '200':
+          description: OK
+          content:
+            text/event-stream:
+              schema: { type: string }
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatMessage' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /rules/{rule_id}:
+    parameters:
+      - { name: rule_id, in: path, required: true, schema: { type: string, maxLength: 64 } }
+    get:
+      tags: [rules]
+      summary: 规则条款原文（点击引用时展示）
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Rule' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /audit/logs:
+    get:
+      tags: [audit]
+      summary: 审计日志（admin, auditor）
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: action, in: query, schema: { $ref: '#/components/schemas/AuditAction' } }
+        - { name: result, in: query, schema: { type: string, enum: [success, denied, blocked, failed] } }
+        - { name: actor_id, in: query, schema: { type: string, format: uuid } }
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - { name: until, in: query, schema: { type: string, format: date-time } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/AuditLog' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /audit/stats:
+    get:
+      tags: [audit]
+      summary: 安全看板统计（admin, auditor）
+      parameters:
+        - { name: window, in: query, schema: { type: string, enum: [1h, 24h, 7d], default: 24h } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SecurityStats' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /audit/verify:
+    get:
+      tags: [audit]
+      summary: 校验审计日志哈希链完整性（admin, auditor）
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [valid, checked, head_hash]
+                properties:
+                  valid: { type: boolean }
+                  checked: { type: integer, description: 校验的记录数 }
+                  head_hash: { type: string }
+                  first_broken_id: { type: [string, 'null'], format: uuid }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: refresh_token
+
+  parameters:
+    Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    PageSize: { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    DocumentId: { name: document_id, in: path, required: true, schema: { type: string, format: uuid } }
+    ReviewId: { name: review_id, in: path, required: true, schema: { type: string, format: uuid } }
+
+  responses:
+    Unauthorized:
+      description: 未登录或令牌无效/过期
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    Forbidden:
+      description: 角色无权限（会写审计）
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    NotFound:
+      description: 不存在或不在本租户（不区分，避免枚举）
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    Conflict:
+      description: 状态冲突（如未就绪、版本不一致、重名）
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    ValidationError:
+      description: 参数校验失败
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    PayloadTooLarge:
+      description: 文件超过 10 MB 或 10 页
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    UnsupportedMedia:
+      description: 文件真实类型不是 PDF/PNG/JPEG
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    TooManyRequests:
+      description: 触发限流或配额
+      headers:
+        Retry-After: { schema: { type: integer } }
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code, request_id]
+      properties:
+        type: { type: string, format: uri-reference, default: about:blank }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        code:
+          type: string
+          description: 稳定的机器可读错误码，前端据此展示文案
+          enum:
+            - AUTH_INVALID_CREDENTIALS
+            - AUTH_TOKEN_EXPIRED
+            - AUTH_LOCKED
+            - PERMISSION_DENIED
+            - NOT_FOUND
+            - VALIDATION_FAILED
+            - FILE_TOO_LARGE
+            - FILE_TYPE_UNSUPPORTED
+            - DOCUMENT_NOT_READY
+            - VERSION_CONFLICT
+            - ALREADY_EXISTS
+            - RATE_LIMITED
+            - QUOTA_EXCEEDED
+            - MODEL_UNAVAILABLE
+            - INTERNAL_ERROR
+        request_id: { type: string }
+        errors:
+          type: array
+          description: 字段级校验错误
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field: { type: string }
+              message: { type: string }
+
+    PageMeta:
+      type: object
+      required: [page, page_size, total]
+      properties:
+        page: { type: integer }
+        page_size: { type: integer }
+        total: { type: integer }
+
+    Role:
+      type: string
+      enum: [admin, reviewer, auditor]
+    Language:
+      type: string
+      description: 解释语言
+      enum: [zh-CN, en, ru, pt, ar]
+      default: zh-CN
+    CountryCode:
+      type: string
+      description: ISO 3166-1 alpha-2
+      pattern: '^[A-Z]{2}$'
+    DocType:
+      type: string
+      enum: [commercial_invoice, packing_list, certificate_of_origin, customs_declaration, bill_of_lading, unknown]
+    DocumentStatus:
+      type: string
+      enum: [uploaded, ocr_running, extracting, ready, failed]
+    RiskLevel:
+      type: string
+      enum: [pass, low, medium, high]
+    DegradeLevel:
+      type: string
+      description: L0 正常；L1 已切换备用云端模型；L2 本地 LLM 离线模式；L3 仅规则引擎
+      enum: [L0, L1, L2, L3]
+
+    TokenResponse:
+      type: object
+      required: [access_token, token_type, expires_in, user]
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, const: Bearer }
+        expires_in: { type: integer, description: 秒 }
+        user: { $ref: '#/components/schemas/CurrentUser' }
+    User:
+      type: object
+      required: [id, username, role, disabled, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        username: { type: string }
+        role: { $ref: '#/components/schemas/Role' }
+        disabled: { type: boolean }
+        last_login_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+    CurrentUser:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          required: [tenant_id, permissions]
+          properties:
+            tenant_id: { type: string, format: uuid }
+            permissions:
+              type: array
+              description: 前端据此显示/隐藏入口；服务端仍会逐次校验
+              items:
+                type: string
+                enum: [user:manage, document:upload, document:read, document:edit, document:delete, review:create, review:read, chat:write, audit:read]
+
+    Document:
+      type: object
+      required: [id, doc_type, filename, mime, size_bytes, status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        doc_type: { $ref: '#/components/schemas/DocType' }
+        filename: { type: string, description: 展示用文件名（已清洗） }
+        mime: { type: string, enum: [application/pdf, image/png, image/jpeg] }
+        size_bytes: { type: integer }
+        pages: { type: [integer, 'null'] }
+        sha256: { type: string }
+        status: { $ref: '#/components/schemas/DocumentStatus' }
+        progress: { type: integer, minimum: 0, maximum: 100 }
+        error: { oneOf: [ { $ref: '#/components/schemas/Problem' }, { type: 'null' } ] }
+        owner_id: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        expire_at: { type: string, format: date-time, description: 到期自动删除 }
+
+    BBox:
+      type: array
+      description: 归一化坐标 [x0, y0, x1, y1]，取值 0–1，左上角为原点
+      minItems: 4
+      maxItems: 4
+      items: { type: number, minimum: 0, maximum: 1 }
+    OcrBlock:
+      type: object
+      required: [id, page, text, bbox, confidence]
+      properties:
+        id: { type: string }
+        page: { type: integer, minimum: 1 }
+        text: { type: string }
+        bbox: { $ref: '#/components/schemas/BBox' }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+    ExtractedField:
+      type: object
+      required: [key, label, value, source]
+      properties:
+        key: { type: string, description: 如 invoice_no, hs_code, total_amount, currency, origin_country, consignee }
+        label: { type: string, description: 本地化展示名 }
+        value: { type: [string, 'null'] }
+        confidence: { type: [number, 'null'], minimum: 0, maximum: 1 }
+        source_block_ids:
+          type: array
+          description: 该字段来自哪些 OCR 块，前端据此高亮原图
+          items: { type: string }
+        masked: { type: boolean, description: 是否为敏感字段（展示时已部分打码） }
+        source: { type: string, enum: [llm, rule, manual] }
+    Recognition:
+      type: object
+      required: [document_id, version, ocr, fields, models]
+      properties:
+        document_id: { type: string, format: uuid }
+        version: { type: integer }
+        doc_type: { $ref: '#/components/schemas/DocType' }
+        language_detected: { type: string }
+        ocr:
+          type: object
+          required: [engine, blocks]
+          properties:
+            engine: { type: string, examples: [rapidocr-ppocrv4] }
+            duration_ms: { type: integer }
+            blocks:
+              type: array
+              items: { $ref: '#/components/schemas/OcrBlock' }
+        fields:
+          type: array
+          items: { $ref: '#/components/schemas/ExtractedField' }
+        security:
+          $ref: '#/components/schemas/SecurityFlags'
+        models:
+          type: array
+          items: { $ref: '#/components/schemas/ModelTrace' }
+        aigc: { $ref: '#/components/schemas/AigcLabel' }
+
+    RuleCitation:
+      type: object
+      required: [rule_id, source, article, excerpt]
+      properties:
+        rule_id: { type: string }
+        source: { type: string, description: 规则出处，如某协定原产地规则 }
+        jurisdiction: { type: string }
+        article: { type: string, description: 条款号 }
+        excerpt: { type: string, description: 原文摘录 }
+        url: { type: [string, 'null'], format: uri }
+        score: { type: number, description: 重排相关度 }
+    Finding:
+      type: object
+      required: [id, severity, category, title, message, determined_by, citations]
+      properties:
+        id: { type: string }
+        severity: { type: string, enum: [info, low, medium, high] }
+        category: { type: string, enum: [missing_field, inconsistency, classification, origin, restricted_goods, sanctions, valuation, format, other] }
+        title: { type: string }
+        message: { type: string, description: 按请求语言生成的解释 }
+        document_id: { type: [string, 'null'], format: uuid }
+        field_keys:
+          type: array
+          items: { type: string }
+        evidence_block_ids:
+          type: array
+          items: { type: string }
+        suggestion: { type: [string, 'null'] }
+        determined_by:
+          type: string
+          description: rule=确定性规则引擎；llm=模型推理；llm_unverified=引用校验未通过，需人工复核
+          enum: [rule, llm, llm_unverified]
+        citations:
+          type: array
+          items: { $ref: '#/components/schemas/RuleCitation' }
+    ReviewSummary:
+      type: object
+      required: [id, status, destination_country, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [queued, running, completed, failed] }
+        risk_level: { oneOf: [ { $ref: '#/components/schemas/RiskLevel' }, { type: 'null' } ] }
+        destination_country: { $ref: '#/components/schemas/CountryCode' }
+        document_ids:
+          type: array
+          items: { type: string, format: uuid }
+        finding_counts:
+          type: object
+          properties:
+            high: { type: integer }
+            medium: { type: integer }
+            low: { type: integer }
+            info: { type: integer }
+        created_at: { type: string, format: date-time }
+    Review:
+      allOf:
+        - $ref: '#/components/schemas/ReviewSummary'
+        - type: object
+          required: [language, findings, degrade_level]
+          properties:
+            origin_country: { oneOf: [ { $ref: '#/components/schemas/CountryCode' }, { type: 'null' } ] }
+            language: { $ref: '#/components/schemas/Language' }
+            progress:
+              type: object
+              description: 进行中时的步骤进度
+              properties:
+                step: { type: string, enum: [rules_engine, retrieval, reasoning, explaining] }
+                percent: { type: integer, minimum: 0, maximum: 100 }
+            summary: { type: [string, 'null'] }
+            findings:
+              type: array
+              items: { $ref: '#/components/schemas/Finding' }
+            degrade_level: { $ref: '#/components/schemas/DegradeLevel' }
+            security: { $ref: '#/components/schemas/SecurityFlags' }
+            models:
+              type: array
+              items: { $ref: '#/components/schemas/ModelTrace' }
+            aigc: { $ref: '#/components/schemas/AigcLabel' }
+            error: { oneOf: [ { $ref: '#/components/schemas/Problem' }, { type: 'null' } ] }
+            completed_at: { type: [string, 'null'], format: date-time }
+
+    ChatMessage:
+      type: object
+      required: [id, role, content, created_at, blocked]
+      properties:
+        id: { type: string, format: uuid }
+        role: { type: string, enum: [user, assistant] }
+        content: { type: string }
+        language: { $ref: '#/components/schemas/Language' }
+        citations:
+          type: array
+          items: { $ref: '#/components/schemas/RuleCitation' }
+        blocked: { type: boolean, description: 输入被安全检测拦截 }
+        block_reason: { type: [string, 'null'], enum: [prompt_injection, jailbreak, out_of_scope, sensitive_data, null] }
+        models:
+          type: array
+          items: { $ref: '#/components/schemas/ModelTrace' }
+        aigc: { oneOf: [ { $ref: '#/components/schemas/AigcLabel' }, { type: 'null' } ] }
+        created_at: { type: string, format: date-time }
+
+    Rule:
+      type: object
+      required: [id, source, jurisdiction, article, title, text]
+      properties:
+        id: { type: string }
+        source: { type: string }
+        jurisdiction: { type: string }
+        article: { type: string }
+        title: { type: string }
+        text: { type: string }
+        url: { type: [string, 'null'], format: uri }
+        effective_date: { type: [string, 'null'], format: date }
+
+    ModelTrace:
+      type: object
+      description: 一次模型调用的可公开轨迹（不含提示词原文）
+      required: [category, provider, model, task, latency_ms, status]
+      properties:
+        category: { type: string, enum: [ocr, llm, embedding, reranker] }
+        provider: { type: string, examples: [local, deepseek, dashscope, ollama] }
+        model: { type: string }
+        task: { type: string, enum: [ocr, field_extraction, rule_retrieval, rerank, compliance_reasoning, explanation, chat] }
+        prompt_version: { type: [string, 'null'] }
+        tokens_in: { type: [integer, 'null'] }
+        tokens_out: { type: [integer, 'null'] }
+        latency_ms: { type: integer }
+        status: { type: string, enum: [ok, fallback, failed] }
+    AigcLabel:
+      type: object
+      description: GB 45438-2025 人工智能生成合成内容标识
+      required: [explicit_text, content_id, generator, generated_at]
+      properties:
+        explicit_text: { type: string, examples: ['本内容由人工智能生成，仅供参考，请以人工复核为准'] }
+        content_id: { type: string }
+        generator: { type: string }
+        models:
+          type: array
+          items: { type: string }
+        generated_at: { type: string, format: date-time }
+    SecurityFlags:
+      type: object
+      description: 本次处理中的安全事件，供报告页和看板展示
+      properties:
+        pii_masked_count: { type: integer, description: 出域前脱敏的敏感项数量 }
+        pii_types:
+          type: array
+          items: { type: string, enum: [person_name, phone, email, bank_account, address, id_number] }
+        injection_detected: { type: boolean }
+        injection_snippets:
+          type: array
+          description: 命中的可疑片段（截断展示）
+          items: { type: string, maxLength: 200 }
+        output_checks_passed: { type: boolean }
+        invalid_citations_dropped: { type: integer }
+
+    ModelChain:
+      type: object
+      required: [degrade_level, models]
+      properties:
+        degrade_level: { $ref: '#/components/schemas/DegradeLevel' }
+        llm_provider_chain:
+          type: array
+          description: 当前生效的 LLM 降级顺序
+          items: { type: string }
+        models:
+          type: array
+          items:
+            type: object
+            required: [category, provider, model, deployment, stage, healthy]
+            properties:
+              category: { type: string, enum: [ocr, llm, embedding, reranker] }
+              provider: { type: string }
+              model: { type: string }
+              deployment: { type: string, enum: [local, cloud] }
+              stage: { type: string, description: 在链路中的环节 }
+              healthy: { type: boolean }
+              circuit_open: { type: boolean }
+              p95_latency_ms: { type: [integer, 'null'] }
+              calls_24h: { type: integer }
+    Readiness:
+      type: object
+      required: [status, checks]
+      properties:
+        status: { type: string, enum: [ready, degraded, not_ready] }
+        degrade_level: { $ref: '#/components/schemas/DegradeLevel' }
+        checks:
+          type: object
+          additionalProperties:
+            type: object
+            required: [ok]
+            properties:
+              ok: { type: boolean }
+              latency_ms: { type: [integer, 'null'] }
+              detail: { type: [string, 'null'] }
+
+    AuditAction:
+      type: string
+      enum:
+        - auth.login
+        - auth.login_failed
+        - auth.logout
+        - auth.refresh_reuse_detected
+        - access.denied
+        - rate_limit.hit
+        - user.create
+        - user.update
+        - document.upload
+        - document.read
+        - document.delete
+        - document.fields_edit
+        - review.create
+        - review.read
+        - chat.message
+        - chat.blocked
+        - model.call
+        - model.fallback
+        - security.pii_masked
+        - security.injection_detected
+        - security.output_blocked
+        - config.change
+    AuditLog:
+      type: object
+      required: [id, ts, action, result, request_id, hash]
+      properties:
+        id: { type: string, format: uuid }
+        ts: { type: string, format: date-time }
+        actor_id: { type: [string, 'null'], format: uuid }
+        actor_username: { type: [string, 'null'] }
+        actor_role: { oneOf: [ { $ref: '#/components/schemas/Role' }, { type: 'null' } ] }
+        action: { $ref: '#/components/schemas/AuditAction' }
+        resource_type: { type: [string, 'null'] }
+        resource_id: { type: [string, 'null'] }
+        result: { type: string, enum: [success, denied, blocked, failed] }
+        ip: { type: [string, 'null'], description: 末段打码 }
+        request_id: { type: string }
+        detail: { type: object, additionalProperties: true, description: 不含敏感原文 }
+        prev_hash: { type: [string, 'null'] }
+        hash: { type: string }
+    SecurityStats:
+      type: object
+      required: [window, totals]
+      properties:
+        window: { type: string }
+        totals:
+          type: object
+          properties:
+            requests: { type: integer }
+            logins_failed: { type: integer }
+            access_denied: { type: integer }
+            rate_limited: { type: integer }
+            injections_blocked: { type: integer }
+            pii_masked: { type: integer }
+            model_calls: { type: integer }
+            model_fallbacks: { type: integer }
+            tokens_used: { type: integer }
+        timeline:
+          type: array
+          description: 按时间桶聚合，用于看板折线图
+          items:
+            type: object
+            required: [bucket_start]
+            properties:
+              bucket_start: { type: string, format: date-time }
+              access_denied: { type: integer }
+              injections_blocked: { type: integer }
+              rate_limited: { type: integer }
+              model_calls: { type: integer }
+        top_denied_actors:
+          type: array
+          items:
+            type: object
+            properties:
+              actor_username: { type: string }
+              count: { type: integer }
+        audit_chain_valid: { type: boolean }
