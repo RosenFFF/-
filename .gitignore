@@ -5,3 +5,7 @@ __pycache__/
 .venv/
 dist/
 .next/
+
+# frontend
+web/node_modules/
+web/dist/
