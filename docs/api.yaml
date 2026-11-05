@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 丝路智审 API
-  version: 0.1.0
+  version: 0.2.0
   description: |
     跨境贸易单证 AI 合规审查平台后端接口契约（M0 草案）。
 
@@ -482,10 +482,37 @@ paths:
               schema: { $ref: '#/components/schemas/Rule' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /reviews/{review_id}/audit:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    get:
+      tags: [audit]
+      summary: 单个案件的操作轨迹（reviewer 只能看自己有权限的案件；admin、auditor 可看任意案件）
+      description: 返回与该审查及其单证相关的审计记录（上传、识别、字段修正、审查、追问、拦截、模型调用）。
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/AuditLog' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /audit/logs:
     get:
       tags: [audit]
-      summary: 审计日志（admin, auditor）
+      summary: 全局审计日志（仅安全管理员：admin, auditor；reviewer 调用返回 403 并记一条 access.denied）
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
@@ -512,7 +539,7 @@ paths:
   /audit/stats:
     get:
       tags: [audit]
-      summary: 安全看板统计（admin, auditor）
+      summary: 全局安全看板统计（仅 admin, auditor）
       parameters:
         - { name: window, in: query, schema: { type: string, enum: [1h, 24h, 7d], default: 24h } }
       responses:
@@ -638,8 +665,8 @@ components:
       enum: [admin, reviewer, auditor]
     Language:
       type: string
-      description: 解释语言
-      enum: [zh-CN, en, ru, pt, ar]
+      description: 报告与追问的回答语言（由 LLM 实时生成）；界面语言的中英切换由前端 i18n 负责，不走这里
+      enum: [zh-CN, en, ru, vi, pt, ar]
       default: zh-CN
     CountryCode:
       type: string
@@ -689,7 +716,7 @@ components:
               description: 前端据此显示/隐藏入口；服务端仍会逐次校验
               items:
                 type: string
-                enum: [user:manage, document:upload, document:read, document:edit, document:delete, review:create, review:read, chat:write, audit:read]
+                enum: [user:manage, document:upload, document:read, document:edit, document:delete, review:create, review:read, chat:write, audit:read_own_case, audit:read_all]
 
     Document:
       type: object
@@ -734,8 +761,17 @@ components:
         confidence: { type: [number, 'null'], minimum: 0, maximum: 1 }
         source_block_ids:
           type: array
-          description: 该字段来自哪些 OCR 块，前端据此高亮原图
+          description: 该字段来自哪些 OCR 块
           items: { type: string }
+        locations:
+          type: array
+          description: 字段在原件上的位置（可跨页），前端翻到对应页并高亮该区域
+          items:
+            type: object
+            required: [page, bbox]
+            properties:
+              page: { type: integer, minimum: 1 }
+              bbox: { $ref: '#/components/schemas/BBox' }
         masked: { type: boolean, description: 是否为敏感字段（展示时已部分打码） }
         source: { type: string, enum: [llm, rule, manual] }
     Recognition:
