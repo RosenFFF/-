@@ -229,7 +229,7 @@ export const mockApi: Api = {
   async messages() {
     return { items: [...messages] };
   },
-  async *ask(_id, content, _language, signal) {
+  async *ask(_id, content, _language, signal, _lastEventId) {
     messages.push({
       id: crypto.randomUUID(),
       role: "user",
@@ -246,6 +246,7 @@ export const mockApi: Api = {
         : "MOCK · 请核对发票与装箱单金额。",
       created_at: stamp(),
       blocked,
+      block_reason: blocked ? "jailbreak" : null,
       citations: blocked ? [] : review.findings[0].citations,
     };
     for (const text of reply.content) {

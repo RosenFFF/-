@@ -39,7 +39,7 @@
   "ask.title": "追问",
   "ask.placeholder": "例如：如何修改才能合规？",
   "ask.send": "发送",
-  "ask.jailbreakBlocked": "该请求疑似越狱/注入，已拦截并记入审计。",
+  "ask.jailbreakBlocked": "请求已被安全规则拦截并记入审计，未调用模型。",
   "audit.title": "安全审计",
   "audit.own": "本案件操作轨迹",
   "audit.global": "全局看板",
@@ -74,7 +74,7 @@
   "errors.ALREADY_EXISTS": "记录已存在，请检查后重试。",
   "errors.RATE_LIMITED": "请求过于频繁，请稍后重试。",
   "errors.QUOTA_EXCEEDED": "处理额度已用完，请联系管理员。",
-  "errors.MODEL_UNAVAILABLE": "识别或模型服务不可用，请稍后重试。",
+  "errors.MODEL_UNAVAILABLE": "模型暂不可用，未完成真实 LLM 验证；请稍后重试。不会用规则引擎伪造回答。",
   "errors.INTERNAL_ERROR": "处理失败，请重试并提供请求编号。",
   "errors.NETWORK_ERROR": "连接失败，请检查网络与后端服务后重试。",
   "errors.PROCESSING_TIMEOUT": "等待超时，后台任务可能仍在运行。请从案件列表重新查看，不要重复上传。",
@@ -100,7 +100,7 @@
   "report.noFindings": "本报告未返回风险项。",
   "report.locate": "定位原件",
   "ask.needReview": "请先完成审查再追问。",
-  "ask.reconnecting": "连接中断，正在恢复已保存的回答；不会重复发送问题。",
+  "ask.reconnecting": "连接中断，正在按 Last-Event-ID 续传；不会重复发送问题，也不会重复显示已收到的片段。",
   "audit.reviewId": "审查 ID",
   "audit.broken": "审计链断点",
   "role.auditor": "审计员",
@@ -148,5 +148,10 @@
   "source.applicability": "适用性",
   "source.applicability.unverified": "未核验",
   "source.noPublicUrl": "无公开来源",
-  "source.versionAbsent": "版本未提供"
+  "source.versionAbsent": "版本未提供",
+  "ask.blockReason": "拦截原因",
+  "ask.blockReason.prompt_injection": "疑似提示注入",
+  "ask.blockReason.jailbreak": "疑似越狱",
+  "ask.blockReason.out_of_scope": "超出审查范围",
+  "ask.blockReason.sensitive_data": "敏感数据"
 }

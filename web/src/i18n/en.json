@@ -39,7 +39,7 @@
   "ask.title": "Follow-up",
   "ask.placeholder": "e.g. How should we fix this?",
   "ask.send": "Send",
-  "ask.jailbreakBlocked": "Possible jailbreak/injection blocked and audited.",
+  "ask.jailbreakBlocked": "Request blocked by safety rules and audited; the model was not called.",
   "audit.title": "Security audit",
   "audit.own": "Case activity trail",
   "audit.global": "Global dashboard",
@@ -74,7 +74,7 @@
   "errors.ALREADY_EXISTS": "Record already exists. Check and retry.",
   "errors.RATE_LIMITED": "Too many requests. Wait before retrying.",
   "errors.QUOTA_EXCEEDED": "Processing quota reached. Contact an administrator.",
-  "errors.MODEL_UNAVAILABLE": "OCR or model service unavailable. Try later.",
+  "errors.MODEL_UNAVAILABLE": "Model unavailable; real LLM verification was not completed. Try later. No rule-engine fake answer is shown.",
   "errors.INTERNAL_ERROR": "Processing failed. Retry and provide the request ID.",
   "errors.NETWORK_ERROR": "Connection failed. Check the network and backend, then retry.",
   "errors.PROCESSING_TIMEOUT": "Waiting timed out; the job may still be running. Reopen from the list instead of uploading again.",
@@ -100,7 +100,7 @@
   "report.noFindings": "No findings returned.",
   "report.locate": "Locate evidence",
   "ask.needReview": "Complete a review before asking questions.",
-  "ask.reconnecting": "Reconnecting to saved history; your question will not be resent.",
+  "ask.reconnecting": "Connection dropped; resuming with Last-Event-ID. Your question is not resent and received fragments are not duplicated.",
   "audit.reviewId": "Review ID",
   "audit.broken": "Broken audit link",
   "role.auditor": "Auditor",
@@ -148,5 +148,10 @@
   "source.applicability": "Applicability",
   "source.applicability.unverified": "Unverified",
   "source.noPublicUrl": "No public source",
-  "source.versionAbsent": "Version not provided"
+  "source.versionAbsent": "Version not provided",
+  "ask.blockReason": "Block reason",
+  "ask.blockReason.prompt_injection": "Suspected prompt injection",
+  "ask.blockReason.jailbreak": "Suspected jailbreak",
+  "ask.blockReason.out_of_scope": "Out of review scope",
+  "ask.blockReason.sensitive_data": "Sensitive data"
 }

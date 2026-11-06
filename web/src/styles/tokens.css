@@ -540,3 +540,22 @@ a[href] {
 .chat-citation {
   margin-top: 16px;
 }
+
+.ask-page {
+  max-width: 900px;
+}
+.ask-reconnect:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.chat-message.blocked {
+  border-left: 3px solid var(--risk-med);
+  padding-left: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ask-reconnect,
+  .chat-message {
+    transition: none !important;
+    animation: none !important;
+  }
+}

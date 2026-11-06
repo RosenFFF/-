@@ -149,20 +149,27 @@ export type ReviewInput = {
   destination_country: string;
   language: Language;
 };
+export type BlockReason =
+  | "prompt_injection"
+  | "jailbreak"
+  | "out_of_scope"
+  | "sensitive_data";
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
   created_at: string;
   blocked: boolean;
+  block_reason?: BlockReason | null;
   citations?: Citation[];
   aigc?: Aigc | null;
 };
+/** Wire SSE chat event; id is "<stream UUID>:<n>" when the server assigns one. */
 export type ChatEvent =
-  | { event: "delta"; data: { text: string } }
-  | { event: "citation"; data: Citation }
-  | { event: "done"; data: ChatMessage }
-  | { event: "error"; data: Problem };
+  | { event: "delta"; data: { text: string }; id?: string }
+  | { event: "citation"; data: Citation; id?: string }
+  | { event: "done"; data: ChatMessage; id?: string }
+  | { event: "error"; data: Problem; id?: string };
 export type Rule = SourceMetadata & {
   id: string;
   source: string;
@@ -220,6 +227,7 @@ export interface Api {
     content: string,
     language: Language,
     signal?: AbortSignal,
+    lastEventId?: string,
   ): AsyncIterable<ChatEvent>;
   audit(reviewId?: string): Promise<Page<AuditLog>>;
   verifyAudit(): Promise<Verify>;

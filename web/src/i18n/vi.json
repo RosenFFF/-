@@ -39,7 +39,7 @@
   "ask.title": "Hỏi thêm",
   "ask.placeholder": "Ví dụ: cần sửa thế nào để tuân thủ?",
   "ask.send": "Gửi",
-  "ask.jailbreakBlocked": "Yêu cầu nghi jailbreak/injection đã bị chặn và ghi nhật ký.",
+  "ask.jailbreakBlocked": "Yêu cầu bị quy tắc an toàn chặn và ghi nhật ký; không gọi mô hình.",
   "audit.title": "Kiểm toán bảo mật",
   "audit.own": "Nhật ký thao tác hồ sơ",
   "audit.global": "Bảng điều khiển toàn cục",
@@ -74,7 +74,7 @@
   "errors.ALREADY_EXISTS": "Bản ghi đã tồn tại. Kiểm tra và thử lại.",
   "errors.RATE_LIMITED": "Quá nhiều yêu cầu. Vui lòng đợi rồi thử lại.",
   "errors.QUOTA_EXCEEDED": "Đã hết hạn mức xử lý. Liên hệ quản trị viên.",
-  "errors.MODEL_UNAVAILABLE": "Dịch vụ OCR hoặc mô hình chưa khả dụng. Hãy thử lại sau.",
+  "errors.MODEL_UNAVAILABLE": "Mô hình chưa khả dụng; chưa hoàn tất xác minh LLM thực. Thử lại sau. Không dùng bộ quy tắc để bịa câu trả lời.",
   "errors.INTERNAL_ERROR": "Xử lý thất bại. Thử lại và cung cấp mã yêu cầu.",
   "errors.NETWORK_ERROR": "Kết nối thất bại. Kiểm tra mạng và máy chủ rồi thử lại.",
   "errors.PROCESSING_TIMEOUT": "Chờ quá hạn; tác vụ có thể vẫn đang chạy. Mở lại từ danh sách, không tải lại tệp.",
@@ -100,7 +100,7 @@
   "report.noFindings": "Báo cáo không trả về phát hiện.",
   "report.locate": "Định vị bản gốc",
   "ask.needReview": "Hoàn thành đánh giá trước khi đặt câu hỏi.",
-  "ask.reconnecting": "Đang kết nối lại lịch sử đã lưu; không gửi lại câu hỏi.",
+  "ask.reconnecting": "Mất kết nối; đang nối lại bằng Last-Event-ID. Câu hỏi không bị gửi lại và các đoạn đã nhận không bị trùng.",
   "audit.reviewId": "Mã đánh giá",
   "audit.broken": "Điểm đứt chuỗi kiểm toán",
   "role.auditor": "Kiểm toán viên",
@@ -148,5 +148,10 @@
   "source.applicability": "Khả năng áp dụng",
   "source.applicability.unverified": "Chưa xác minh",
   "source.noPublicUrl": "Không có nguồn công khai",
-  "source.versionAbsent": "Chưa cung cấp phiên bản"
+  "source.versionAbsent": "Chưa cung cấp phiên bản",
+  "ask.blockReason": "Lý do chặn",
+  "ask.blockReason.prompt_injection": "Nghi ngờ tiêm prompt",
+  "ask.blockReason.jailbreak": "Nghi ngờ jailbreak",
+  "ask.blockReason.out_of_scope": "Ngoài phạm vi đánh giá",
+  "ask.blockReason.sensitive_data": "Dữ liệu nhạy cảm"
 }
