@@ -209,6 +209,8 @@ export const realApi: Api = {
     askStream(reviewId, content, language, { signal, lastEventId }),
   audit: (reviewId) =>
     json(reviewId ? `/reviews/${id(reviewId)}/audit` : "/audit/logs"),
+  auditStats: (window = "24h", signal) =>
+    json(`/audit/stats?window=${id(window)}`, { signal }),
   verifyAudit: () => json("/audit/verify"),
   models: (signal) => json("/system/models", { signal }),
 };

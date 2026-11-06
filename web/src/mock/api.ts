@@ -266,6 +266,27 @@ export const mockApi: Api = {
       throw new ApiError({ code: "PERMISSION_DENIED", status: 403 });
     return { valid: true, checked: 0, head_hash: "MOCK" };
   },
+  async auditStats(window = "24h") {
+    if (current?.role === "reviewer")
+      throw new ApiError({ code: "PERMISSION_DENIED", status: 403 });
+    return {
+      window,
+      totals: {
+        requests: 0,
+        logins_failed: 0,
+        access_denied: 0,
+        rate_limited: 0,
+        injections_blocked: 0,
+        pii_masked: 0,
+        model_calls: 0,
+        model_fallbacks: 0,
+        tokens_used: 0,
+      },
+      timeline: [],
+      top_denied_actors: [],
+      audit_chain_valid: true,
+    };
+  },
   async models() {
     return {
       degrade_level: "L3",

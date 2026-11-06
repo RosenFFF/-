@@ -180,12 +180,18 @@ export type Rule = SourceMetadata & {
 export type AuditLog = {
   id: string;
   ts: string;
+  actor_id?: string | null;
   actor_username?: string | null;
+  actor_role?: Role | null;
   action: string;
+  resource_type?: string | null;
+  resource_id?: string | null;
   result: string;
+  ip?: string | null;
   request_id: string;
-  hash: string;
   detail?: Record<string, unknown>;
+  prev_hash?: string | null;
+  hash: string;
 };
 export type ModelChain = {
   degrade_level: string;
@@ -203,6 +209,32 @@ export type Verify = {
   checked: number;
   head_hash: string;
   first_broken_id?: string | null;
+};
+export type AuditWindow = "1h" | "24h" | "7d";
+export type SecurityTotals = {
+  requests?: number;
+  logins_failed?: number;
+  access_denied?: number;
+  rate_limited?: number;
+  injections_blocked?: number;
+  pii_masked?: number;
+  model_calls?: number;
+  model_fallbacks?: number;
+  tokens_used?: number;
+};
+export type SecurityTimelineBucket = {
+  bucket_start: string;
+  access_denied?: number;
+  injections_blocked?: number;
+  rate_limited?: number;
+  model_calls?: number;
+};
+export type SecurityStats = {
+  window: string;
+  totals: SecurityTotals;
+  timeline?: SecurityTimelineBucket[];
+  top_denied_actors?: { actor_username?: string; count?: number }[];
+  audit_chain_valid?: boolean;
 };
 export interface Api {
   login(username: string, password: string): Promise<SessionResponse>;
@@ -230,6 +262,7 @@ export interface Api {
     lastEventId?: string,
   ): AsyncIterable<ChatEvent>;
   audit(reviewId?: string): Promise<Page<AuditLog>>;
+  auditStats(window?: AuditWindow, signal?: AbortSignal): Promise<SecurityStats>;
   verifyAudit(): Promise<Verify>;
   models(signal?: AbortSignal): Promise<ModelChain>;
 }

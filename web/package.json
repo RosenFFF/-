@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && bash ../scripts/check-prod-no-mock.sh",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:e2e": "tsc -p tsconfig.e2e.json && playwright test"
+    "test:e2e": "tsc -p tsconfig.e2e.json && playwright test",
+    "check:prod-no-mock": "bash ../scripts/check-prod-no-mock.sh",
+    "verify": "npm run lint && npm test && npm run test:prod-no-mock && npm run build",
+    "test:prod-no-mock": "node ../scripts/check-prod-no-mock-matrix.mjs"
   },
   "dependencies": {
     "i18next": "^26.7.2",

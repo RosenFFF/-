@@ -7,7 +7,7 @@ import type { Api } from "../src/api/types.js";
 
 const output =
   process.env.M1_SCREENSHOT_DIR ??
-  fileURLToPath(new URL("../../../screenshots/m1/", import.meta.url));
+  fileURLToPath(new URL("../../../screenshots/m2/", import.meta.url));
 const docId = "00000000-0000-4000-8000-000000000001";
 const tabbables = "a[href],button,input,select,textarea,[tabindex]";
 
