@@ -1,0 +1,26 @@
+{
+  "attempted_at": "2026-11-05T18:31:00-08:00",
+  "backend_head": "8d94e02",
+  "target_model": "qwen2.5:0.5b",
+  "provider": "ollama",
+  "ollama_version": "0.40.14",
+  "ollama_host": "127.0.0.1:11434",
+  "success": false,
+  "models_list": [],
+  "failure": {
+    "stage": "ollama_pull",
+    "error_class": "redirect_target_not_allowed",
+    "detail": "official R2 blob host resolves to non-public 198.18.0.1; ollama refuses redirect",
+    "bypassed_network": false,
+    "used_mirror": false
+  },
+  "cloud_keys_present": {
+    "DEEPSEEK_API_KEY": false,
+    "QWEN_API_KEY": false,
+    "DASHSCOPE_API_KEY": false,
+    "OPENAI_API_KEY": false
+  },
+  "sse_status": "still_501",
+  "acceptance_ready": false,
+  "note": "Cannot produce model-identity + successful-call + report evidence without weights or cloud keys. Will not treat L3 rule fallback as acceptance."
+}

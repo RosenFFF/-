@@ -4,6 +4,7 @@ import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import JSON, BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -106,3 +107,72 @@ class DemoTamperBackup(Base):
     log_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     original_detail: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+JSON_DATA = JSON().with_variant(JSONB(), "postgresql")
+
+
+class DocumentFields(Base):
+    __tablename__ = "document_fields"
+    document_id: Mapped[str] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    source: Mapped[str] = mapped_column(String(16))
+    # Encrypted JSON envelope, never the transient PII placeholder mapping.
+    fields: Mapped[dict] = mapped_column(JSON_DATA)
+    models: Mapped[list] = mapped_column(JSON_DATA, default=list)
+    security: Mapped[dict] = mapped_column(JSON_DATA, default=dict)
+    degrade_level: Mapped[str] = mapped_column(String(2), default="L3")
+    aigc_meta: Mapped[dict] = mapped_column(JSON_DATA, default=dict)
+    updated_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class Review(Base):
+    __tablename__ = "reviews"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    document_ids: Mapped[list] = mapped_column(JSON_DATA)
+    destination_country: Mapped[str] = mapped_column(String(2))
+    origin_country: Mapped[str | None] = mapped_column(String(2))
+    language: Mapped[str] = mapped_column(String(8), default="zh-CN")
+    status: Mapped[str] = mapped_column(String(16), default="queued", index=True)
+    risk_level: Mapped[str | None] = mapped_column(String(8))
+    summary: Mapped[str | None] = mapped_column(Text)
+    findings: Mapped[list] = mapped_column(JSON_DATA, default=list)
+    models: Mapped[list] = mapped_column(JSON_DATA, default=list)
+    security: Mapped[dict] = mapped_column(JSON_DATA, default=dict)
+    degrade_level: Mapped[str] = mapped_column(String(2), default="L3")
+    aigc_meta: Mapped[dict] = mapped_column(JSON_DATA, default=dict)
+    progress: Mapped[dict] = mapped_column(JSON_DATA, default=dict)
+    error_code: Mapped[str | None] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ReviewDocument(Base):
+    __tablename__ = "review_documents"
+    review_id: Mapped[str] = mapped_column(ForeignKey("reviews.id", ondelete="CASCADE"), primary_key=True)
+    document_id: Mapped[str] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer)
+    fields_snapshot: Mapped[dict] = mapped_column(JSON_DATA)  # encrypted, immutable input snapshot
+    doc_type: Mapped[str] = mapped_column(String(32))
+
+
+class ChatMessage(Base):
+    """Only masked chat prose is persisted; no PII placeholder mappings or raw prompts."""
+
+    __tablename__ = "chat_messages"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    review_id: Mapped[str] = mapped_column(ForeignKey("reviews.id", ondelete="CASCADE"), index=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    role: Mapped[str] = mapped_column(String(16))
+    content: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    blocked: Mapped[bool] = mapped_column(Boolean, default=False)
+    block_reason: Mapped[str | None] = mapped_column(String(32))
+    language: Mapped[str] = mapped_column(String(8))
+    citations: Mapped[list] = mapped_column(JSON_DATA, default=list)
+    models: Mapped[list] = mapped_column(JSON_DATA, default=list)
+    aigc_meta: Mapped[dict] = mapped_column(JSON_DATA, default=dict)
+    stream_id: Mapped[str | None] = mapped_column(String(36), index=True)

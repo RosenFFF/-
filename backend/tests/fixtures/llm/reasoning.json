@@ -1,0 +1,1 @@
+{"summary":"合成单证已完成自动检查，需人工核对金额依据。","findings":[{"severity":"low","category":"valuation","title":"金额需复核","message":"请核对总金额与数量单价依据。","rule_ids":["SYN-AMOUNT"],"field_keys":["total_amount"],"suggestion":"核对合成原件"}]}

@@ -65,6 +65,7 @@ async def test_login_rate_limited(make_api):
 async def test_refresh_rotates_and_reuse_revokes_family(api):
     c = await api.login("reviewer")
     old = c.cookies["refresh_token"]
+    old_csrf = c.cookies["csrf_token"]
     r = await c.post("/api/v1/auth/refresh")
     assert r.status_code == 200
     new = c.cookies["refresh_token"]
@@ -74,7 +75,8 @@ async def test_refresh_rotates_and_reuse_revokes_family(api):
     # 攻击者重放旧刷新令牌
     async with api.client() as attacker:
         r = await attacker.post(
-            "/api/v1/auth/refresh", headers={"X-CSRF-Token": "z", "Cookie": f"csrf_token=z; refresh_token={old}"}
+            "/api/v1/auth/refresh",
+            headers={"X-CSRF-Token": old_csrf, "Cookie": f"csrf_token={old_csrf}; refresh_token={old}"},
         )
     assert r.status_code == 401
     assert len(await _actions(api, "auth.refresh_reuse_detected")) == 1
@@ -98,10 +100,12 @@ async def test_csrf_required_for_cookie_authenticated_writes(api):
 async def test_logout_revokes_refresh(api):
     c = await api.login("reviewer")
     refresh = c.cookies["refresh_token"]
+    old_csrf = c.cookies["csrf_token"]
     assert (await c.post("/api/v1/auth/logout")).status_code == 204
     async with api.client() as again:
         r = await again.post(
-            "/api/v1/auth/refresh", headers={"X-CSRF-Token": "z", "Cookie": f"csrf_token=z; refresh_token={refresh}"}
+            "/api/v1/auth/refresh",
+            headers={"X-CSRF-Token": old_csrf, "Cookie": f"csrf_token={old_csrf}; refresh_token={refresh}"},
         )
     assert r.status_code == 401
 

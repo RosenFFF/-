@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 import uuid
 from contextlib import asynccontextmanager
@@ -11,7 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
 from sqlalchemy import func, select
 
-from app.api.v1 import audit, auth, demo, documents, system, users
+from app.ai.runtime import AIRuntime
+from app.api.v1 import audit, auth, demo, documents, reviews, rules, system, users
 from app.audit.service import AuditService
 from app.core.config import Settings, get_settings
 from app.core.errors import install_handlers, problem
@@ -21,6 +23,7 @@ from app.db.models import Tenant, User
 from app.security.cookies import CSRF_HEADER, csrf_ok
 from app.security.passwords import hash_password
 from app.security.ratelimit import RateLimiter
+from app.services.chat import ChatStreams
 from app.services.storage import EncryptedStore
 
 log = structlog.get_logger()
@@ -57,7 +60,9 @@ async def bootstrap(db: Database, settings: Settings) -> None:
         log.info("bootstrap_admin_created")
 
 
-def create_app(settings: Settings | None = None, *, redis: Any = None, arq_pool: Any = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None, *, redis: Any = None, arq_pool: Any = None, llm: Any = None
+) -> FastAPI:
     settings = settings or get_settings()
     setup_logging()
 
@@ -71,18 +76,23 @@ def create_app(settings: Settings | None = None, *, redis: Any = None, arq_pool:
         app.state.audit = AuditService(db)
         app.state.limiter = RateLimiter(r)
         app.state.store = EncryptedStore(settings)
+        app.state.ai = await asyncio.to_thread(AIRuntime, settings, llm=llm)
         if settings.task_mode == "arq":
             from arq import create_pool
             from arq.connections import RedisSettings
 
             app.state.arq = arq_pool or await create_pool(RedisSettings.from_dsn(settings.redis_url))
-        yield
-        await db.dispose()
+        app.state.chat = ChatStreams(db, r, app.state.audit, app.state.ai, settings)
+        try:
+            yield
+        finally:
+            await app.state.chat.close()
+            await db.dispose()
 
     docs = settings.env != "prod"
     app = FastAPI(
         title="丝路智审 API",
-        version="0.1.0",
+        version="0.3.3",
         lifespan=lifespan,
         docs_url="/api/docs" if docs else None,
         redoc_url=None,
@@ -94,8 +104,8 @@ def create_app(settings: Settings | None = None, *, redis: Any = None, arq_pool:
         allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
-        allow_headers=["Authorization", "Content-Type", "X-Request-ID", CSRF_HEADER],
-        expose_headers=["X-Request-ID", "Retry-After"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID", CSRF_HEADER, "Accept", "Last-Event-ID"],
+        expose_headers=["X-Request-ID", "Retry-After", "X-Chat-Stream-ID"],
     )
 
     @app.middleware("http")
@@ -125,7 +135,7 @@ def create_app(settings: Settings | None = None, *, redis: Any = None, arq_pool:
         return resp
 
     prefix = "/api/v1"
-    for r in (system.router, auth.router, users.router, documents.router, audit.router):
+    for r in (system.router, auth.router, users.router, documents.router, reviews.router, rules.router, audit.router):
         app.include_router(r, prefix=prefix)
     if settings.demo_mode:
         app.include_router(demo.router, prefix=prefix)
