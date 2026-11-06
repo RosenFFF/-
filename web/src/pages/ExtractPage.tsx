@@ -13,6 +13,7 @@ import type {
 import { DocPreview } from "../components/DocPreview";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { ReportVerification } from "../components/Provenance";
+import { FlowTrail } from "../components/FlowTrail";
 export function ExtractPage() {
   const { id } = useParams();
   const [query] = useSearchParams();
@@ -96,6 +97,7 @@ function ExtractContent() {
   }
   return (
     <div className="stack">
+      <FlowTrail />
       <div className="page-head">
         <div>
           <h1 className="page-title">{t("extract.title")}</h1>

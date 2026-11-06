@@ -4,8 +4,9 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 
 const output =
+  process.env.M3_SCREENSHOT_DIR ??
   process.env.M2_SCREENSHOT_DIR ??
-  fileURLToPath(new URL("../../../screenshots/m2/", import.meta.url));
+  fileURLToPath(new URL("../../../screenshots/m3/", import.meta.url));
 
 /** Fixture accounts from backend tests.conftest — not user secrets. */
 const ACCOUNTS = {
@@ -16,12 +17,13 @@ const ACCOUNTS = {
 } as const;
 
 const INFRA = {
+  kind: "real_backend_fixture",
   database: "sqlite_stand_in",
   redis: "fakeredis_stand_in",
   postgres_live: false,
   redis_live: false,
   note: "Not claiming DB-level tenant isolation or live Postgres migration acceptance; backend skipped live Postgres tests.",
-  backend_commit: "3bbd9b8",
+  backend_commit: "87ff58c",
   real_model: "blocked",
   demo_routes: "fixture_only_DEMO_MODE_env_not_prod",
   frontend_prod_demo_entry: "stripped_checked_by_check-prod-no-demo.sh",

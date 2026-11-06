@@ -6,6 +6,7 @@ import { aborted, ApiError } from "../api/http";
 import type { DocType, Document } from "../api/types";
 import { poll } from "../api/poll";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { FlowTrail } from "../components/FlowTrail";
 export function UploadPage() {
   const { t } = useTranslation();
   const nav = useNavigate();
@@ -46,6 +47,7 @@ export function UploadPage() {
   }
   return (
     <div className="stack" style={{ maxWidth: 720 }}>
+      <FlowTrail />
       <h1 className="page-title">{t("upload.title")}</h1>
       <ErrorNotice error={error} />
       <div className="panel form-panel">
@@ -73,7 +75,7 @@ export function UploadPage() {
             ))}
           </select>
         </label>
-        <label className="file-picker">
+        <label className={file ? "file-picker has-file" : "file-picker"}>
           {t("upload.drop")}
           <input
             type="file"
@@ -84,6 +86,11 @@ export function UploadPage() {
               setError(null);
             }}
           />
+          {file ? (
+            <span className="muted" role="status">
+              {t("upload.fileChosen")}: {file.name}
+            </span>
+          ) : null}
         </label>
         <div className="muted">{t("upload.privacy")}</div>
         {progress ? (

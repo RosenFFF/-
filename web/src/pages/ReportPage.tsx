@@ -6,6 +6,7 @@ import { aborted } from "../api/http";
 import { poll } from "../api/poll";
 import type { Language, Finding, Review, Rule } from "../api/types";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { FlowTrail } from "../components/FlowTrail";
 import { languages } from "../api/languages";
 import {
   CitationSource,
@@ -47,6 +48,7 @@ export function ReportPage() {
   }
   return (
     <div className="stack">
+      <FlowTrail />
       <div className="page-head">
         <h1 className="page-title">{t("report.title")}</h1>
         <div className="action-row">
@@ -247,7 +249,7 @@ function ReportResult({
                   </button>
                   <CitationSource value={c} />
                   <blockquote className="serif citation">
-                    {c.excerpt}
+                    <span className="citation-body">{c.excerpt}</span>
                   </blockquote>
                 </div>
               ))}
