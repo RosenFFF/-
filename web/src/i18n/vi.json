@@ -146,5 +146,7 @@
   "source.excerptKind.summary": "Tóm tắt (không phải nguyên văn quy định)",
   "source.excerptKind.verbatim": "Trích nguyên văn",
   "source.applicability": "Khả năng áp dụng",
-  "source.applicability.unverified": "Chưa xác minh"
+  "source.applicability.unverified": "Chưa xác minh",
+  "source.noPublicUrl": "Không có nguồn công khai",
+  "source.versionAbsent": "Chưa cung cấp phiên bản"
 }

@@ -21,3 +21,8 @@
 1. 追问/SSE：`/reviews/{id}/messages` GET/POST 仍 501（模型下载受阻，未绕过）
 2. 合成引用 `url`/`version_date` 常为 null——前端如实显示缺失；公开语料需持续带齐可核验元数据
 3. 真实 LLM 可用后才有非 L3 `degrade_status` 联调证据
+
+## Follow-up (synthetic placeholders)
+
+- synthetic 缺 url → 「无公开来源」；缺 version_date → 「版本未提供」
+- public 缺字段仍「来源信息缺失」；不伪造 URL/日期

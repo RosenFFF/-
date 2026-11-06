@@ -241,7 +241,55 @@ describe("wire degrade_status and citation provenance", () => {
     "accepts absolute public web URL %s",
     (url) => expect(sourceUrl(url)).toBe(url),
   );
-  it("does not invent version_date from other date fields", () => {
+  it("synthetic missing url/date use explicit placeholders, never invented values", () => {
+    const html = renderToStaticMarkup(
+      h(CitationSource, {
+        value: {
+          source_kind: "synthetic",
+          source_kind_label: "合成规则 · 非真实合规结论",
+          excerpt_kind: "summary",
+          applicability: "unverified",
+        },
+      }),
+    );
+    expect(html).toContain("无公开来源");
+    expect(html).toContain("版本未提供");
+    expect(html).not.toContain("href=");
+    expect(html).not.toContain("2025-");
+  });
+  it("public missing url/date keep generic source-missing copy", () => {
+    const html = renderToStaticMarkup(
+      h(CitationSource, {
+        value: {
+          source_kind: "public",
+          source_kind_label: "公开出处已核验 · 仍须人工复核",
+          excerpt_kind: "summary",
+          applicability: "unverified",
+        },
+      }),
+    );
+    expect(html).toContain("来源信息缺失");
+    expect(html).not.toContain("无公开来源");
+    expect(html).not.toContain("版本未提供");
+  });
+  it.each([
+    ["zh", "无公开来源", "版本未提供"],
+    ["en", "No public source", "Version not provided"],
+    ["vi", "Không có nguồn công khai", "Chưa cung cấp phiên bản"],
+  ])("%s translates synthetic placeholders", async (lang, noUrl, noVersion) => {
+    await i18n.changeLanguage(lang);
+    const html = renderToStaticMarkup(
+      h(CitationSource, {
+        value: {
+          source_kind: "synthetic",
+          source_kind_label: "合成规则 · 非真实合规结论",
+        },
+      }),
+    );
+    expect(html).toContain(noUrl);
+    expect(html).toContain(noVersion);
+  });
+    it("does not invent version_date from other date fields", () => {
     const metadata = {
       ...citation,
       version_date: undefined,

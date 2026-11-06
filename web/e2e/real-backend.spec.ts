@@ -75,7 +75,10 @@ test("real backend screenshots without MOCK banner", async ({ page }, info) => {
     "合成规则 · 非真实合规结论",
   );
   await expect(page.locator(".citation-source").first()).toContainText(
-    "来源信息缺失",
+    "无公开来源",
+  );
+  await expect(page.locator(".citation-source").first()).toContainText(
+    "版本未提供",
   );
   const citationOpen = page.locator("button.btn.btn-secondary").filter({
     hasText: "·",

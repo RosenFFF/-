@@ -146,5 +146,7 @@
   "source.excerptKind.summary": "Summary (not the original regulation)",
   "source.excerptKind.verbatim": "Verbatim excerpt",
   "source.applicability": "Applicability",
-  "source.applicability.unverified": "Unverified"
+  "source.applicability.unverified": "Unverified",
+  "source.noPublicUrl": "No public source",
+  "source.versionAbsent": "Version not provided"
 }

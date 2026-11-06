@@ -146,5 +146,7 @@
   "source.excerptKind.summary": "摘要（非法规原文）",
   "source.excerptKind.verbatim": "原文摘录",
   "source.applicability": "适用性",
-  "source.applicability.unverified": "未核验"
+  "source.applicability.unverified": "未核验",
+  "source.noPublicUrl": "无公开来源",
+  "source.versionAbsent": "版本未提供"
 }

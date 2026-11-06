@@ -318,7 +318,10 @@ test("mock review journey: screenshots, axe, overflow and real keyboard operatio
     "合成规则 · 非真实合规结论",
   );
   await expect(page.locator(".citation-source").first()).toContainText(
-    "来源信息缺失",
+    "无公开来源",
+  );
+  await expect(page.locator(".citation-source").first()).toContainText(
+    "版本未提供",
   );
   await snapshot("report");
   // Explicit browser-only mock fixtures: verify PUBLIC + L3 is not relabelled synthetic.

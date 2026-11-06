@@ -79,6 +79,11 @@ export function CitationSource({ value }: { value: SourceMetadata }) {
   const excerpt = excerptKind(value.excerpt_kind);
   const apply = applicability(value.applicability);
   const missing = t("source.missing");
+  // Synthetic rules often have no public URL/date; never invent one. Public keeps generic missing.
+  const urlAbsent =
+    kind === "synthetic" ? t("source.noPublicUrl") : missing;
+  const versionAbsent =
+    kind === "synthetic" ? t("source.versionAbsent") : missing;
   // summary excerpt or public kind: never imply original regulation / compliance pass.
   const showSummaryDisclaimer = excerpt === "summary" || kind === "public";
   return (
@@ -99,7 +104,7 @@ export function CitationSource({ value }: { value: SourceMetadata }) {
                 {url}
               </a>
             ) : (
-              missing
+              urlAbsent
             )}
           </dd>
         </div>
@@ -109,7 +114,7 @@ export function CitationSource({ value }: { value: SourceMetadata }) {
         </div>
         <div>
           <dt>{t("source.versionDate")}</dt>
-          <dd>{version ?? missing}</dd>
+          <dd>{version ?? versionAbsent}</dd>
         </div>
         <div>
           <dt>{t("source.excerptKind")}</dt>
