@@ -41,6 +41,19 @@ class AIRuntime:
                     "stage": "规则检索" if category == "embedding" else "条款精排",
                     "healthy": self.rag.healthy,
                     "lightweight": isinstance(engine, (HashEmbedding, LexicalReranker)),
+                    "retrieval_mode": self.rag.retrieval_mode,
+                    "implementation_mode": (
+                        "lightweight_hash"
+                        if isinstance(engine, HashEmbedding)
+                        else "lightweight_lexical"
+                        if isinstance(engine, LexicalReranker)
+                        else "bge"
+                    ),
+                    "mode_label": (
+                        "轻量回退（非 BGE 神经模型）"
+                        if isinstance(engine, (HashEmbedding, LexicalReranker))
+                        else "BGE 本地神经模型"
+                    ),
                     "configured_model": self.settings.embedding_model
                     if category == "embedding"
                     else self.settings.reranker_model,

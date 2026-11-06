@@ -7,6 +7,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.services.provenance import provenance
+
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -99,4 +101,6 @@ def security_flags() -> dict:
         "injection_snippets": [],
         "output_checks_passed": True,
         "invalid_citations_dropped": 0,
+        # Conservative defaults also cover legacy rows without provenance metadata.
+        **provenance([], "lightweight_hash"),
     }

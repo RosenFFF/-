@@ -6,8 +6,9 @@ import json
 import time
 from pathlib import Path
 
-from app.ai.embedding import cosine
+from app.ai.embedding import BGEEmbedding, cosine
 from app.ai.types import trace
+from app.services.provenance import is_public, provenance
 
 
 class RuleIndex:
@@ -26,6 +27,14 @@ class RuleIndex:
         self.vectors = embedding.encode([c["text"] for c in self.chunks])
         self.healthy = bool(self.rules)
 
+    @property
+    def retrieval_mode(self) -> str:
+        return "bge" if isinstance(self.embedding, BGEEmbedding) else "lightweight_hash"
+
+    def security(self, citations: list[dict] | None = None) -> dict:
+        # Recognition shows the configured index; review shows the actual supplied citations.
+        return provenance(list(self.rules.values()) if citations is None else citations, self.retrieval_mode)
+
     def citation(self, rule_id: str, score: float = 1.0) -> dict:
         r = self.rules[rule_id]
         return {
@@ -36,6 +45,8 @@ class RuleIndex:
             "excerpt": r["text"],
             "url": r.get("url"),
             "score": round(score, 5),
+            "corpus": "public_verified" if is_public(r) else "synthetic",
+            "verified_at": r.get("verified_at"),
         }
 
     def search(self, query: str, top_k: int = 20, top_n: int = 5) -> tuple[list[dict], list[dict]]:

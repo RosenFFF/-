@@ -1,0 +1,63 @@
+[
+  {
+    "id": "PUB-CN-ORIGIN",
+    "source": "中华人民共和国进出口货物原产地条例（2019修订，摘要）",
+    "jurisdiction": "CN（非优惠原产地）",
+    "article": "第二条、第三条、第十一条、第十四条、第十八条、第二十六条",
+    "title": "原产地证明与如实申报 / origin_country certificate_no",
+    "text": "摘要：本条例适用非优惠原产地，优惠安排另按适用协定核验。原产地按完全获得或最后实质性改变确定；进口应如实申报，不同原产地应分别申报。海关可要求原产地证书并审验；出口申请签证应如实申报并提供所需资料。原产地证书载明所列货物的原产国家或地区，证书编号与商品信息须人工核对，不能只凭发货地推断。",
+    "url": "https://www.gov.cn/gongbao/content/2019/content_5468935.htm",
+    "corpus": "public_verified",
+    "verified_at": "2026-11-05",
+    "verification_note": "本次核对公开页面及对应条款；仅证明出处可追溯，不保证持续有效或适用于本票交易。"
+  },
+  {
+    "id": "PUB-WCO-HS",
+    "source": "世界海关组织 WCO：What is the Harmonized System（公开说明摘要）",
+    "jurisdiction": "INTERNATIONAL（HS体系说明，非目的国申报细则）",
+    "article": "What is the Harmonized System (HS)?",
+    "title": "HS 编码六位国际基础 / hs_code classification",
+    "text": "摘要：WCO 协调制度以六位编码识别商品组，是各经济体税则的共同基础。六位结构不等于任一目的国完整申报编码；申报所需扩展位数、税目版本及具体归类应按当地现行官方税则核验，不能从6/8/10位格式检查推断归类正确。",
+    "url": "https://www.wcoomd.org/en/topics/nomenclature/overview/what-is-the-harmonized-system",
+    "corpus": "public_verified",
+    "verified_at": "2026-11-05",
+    "verification_note": "本次核对公开页面及对应条款；仅证明出处可追溯，不保证持续有效或适用于本票交易。"
+  },
+  {
+    "id": "PUB-US-INVOICE",
+    "source": "美国 eCFR 19 CFR 141.86（动态权威电子文本，非正式法律印本；摘要）",
+    "jurisdiction": "US（美国进口）",
+    "article": "19 CFR §141.86(a), (d), (e)",
+    "title": "商业发票必要项 / invoice goods_description quantity unit_price currency origin_country",
+    "text": "摘要：针对美国进口，发票一般列入境口岸、交易或发运信息、详细品名和包装标识、数量、逐项价格或价值、币种、各项费用及原产国等。发票及附件应为英文或附足够的准确英译，并说明每件包装内的货物。本摘要不是全球统一发票标准，具体适用和例外须查原文。",
+    "url": "https://www.ecfr.gov/current/title-19/chapter-I/part-141/subpart-F/section-141.86",
+    "corpus": "public_verified",
+    "verified_at": "2026-11-05",
+    "verification_note": "本次核对公开页面及对应条款；仅证明出处可追溯，不保证持续有效或适用于本票交易。"
+  },
+  {
+    "id": "PUB-CN-DUALUSE",
+    "source": "中华人民共和国两用物项出口管制条例（国令第792号，摘要）",
+    "jurisdiction": "CN（两用物项出口）",
+    "article": "第十一条至第十四条、第二十一条、第二十四条",
+    "title": "两用物项禁限与许可提示 / restricted_goods end user",
+    "text": "摘要：两用物项出口受清单、临时管制及许可制度约束；符合管制情形应申请许可，向海关交验许可证件，申请时需提交最终用户和最终用途证明。判断须结合性能指标、用途、现行清单及主管部门信息，无法确定可向商务主管部门咨询。此处不含实时管制名单或具体物项认定，未命中关键词不代表允许出口。",
+    "url": "https://www.gov.cn/zhengce/zhengceku/202410/content_6981400.htm",
+    "effective_date": "2024-12-01",
+    "corpus": "public_verified",
+    "verified_at": "2026-11-05",
+    "verification_note": "本次核对公开页面及对应条款；仅证明出处可追溯，不保证持续有效或适用于本票交易。"
+  },
+  {
+    "id": "PUB-CN-DECLARATION",
+    "source": "中华人民共和国海关法（财政部关税司公开文本，摘要）",
+    "jurisdiction": "CN（进出口申报）",
+    "article": "第二十四条、第四十条至第四十二条",
+    "title": "申报真实性与单证一致性核对 / declaration invoice origin_country hs_code",
+    "text": "摘要：进口收货人与出口发货人应如实申报并交验许可证件及有关单证；限制进出口货物缺许可证件不予放行。原产地、商品归类按国家有关规则确定。本系统据此提示人工对照报关、发票及运输单据中的货物描述、数量、价值、原产国；自动字段一致不能证明申报真实或已获许可。",
+    "url": "https://gss.mof.gov.cn/gszhs/falvlagui/202603/t20260313_3985268.htm",
+    "corpus": "public_verified",
+    "verified_at": "2026-11-05",
+    "verification_note": "本次核对公开页面及对应条款；仅证明出处可追溯，不保证持续有效或适用于本票交易。"
+  }
+]

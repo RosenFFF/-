@@ -121,4 +121,4 @@ async def post_message(
     s: AsyncSession = Depends(session),
 ):
     await _get(s, user, review_id)
-    raise AppError(501, "MODEL_UNAVAILABLE", "M1 暂未实现追问/SSE")
+    raise AppError(501, "MODEL_UNAVAILABLE", "功能暂未实现：追问/SSE")

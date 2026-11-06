@@ -38,7 +38,7 @@ def make_settings(tmp_path, **kw) -> Settings:
         qwen_api_key=None,
     )
     base.update(kw)
-    return Settings(**base)
+    return Settings(_env_file=None, **base)
 
 
 class Api:

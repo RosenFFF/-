@@ -248,7 +248,8 @@ async def test_delete_document_removes_review_snapshots(fake_api, quick_ocr):
 async def test_stub_chat_and_translation_are_explicit_501(fake_api, quick_ocr):
     c = await fake_api.login("reviewer")
     _, review_id, _ = await _report(fake_api, c)
-    assert (await c.post(f"/api/v1/reviews/{review_id}/messages", json={"content": "why?"})).status_code == 501
+    response = await c.post(f"/api/v1/reviews/{review_id}/messages", json={"content": "why?"})
+    assert response.status_code == 501 and "功能暂未实现" in response.json()["title"]
     assert (await c.get(f"/api/v1/reviews/{review_id}?language=en")).status_code == 501
 
 

@@ -116,7 +116,7 @@ def heuristic(text: str) -> Extraction:
 
 async def extract(doc: Document, blocks: list[dict], ai, audit, request_id: str) -> tuple[list[dict], dict, list, str]:
     text = "\n".join(b["text"] for b in blocks)
-    flags = security_flags()
+    flags = {**security_flags(), **ai.rag.security()}
     guard = inspect(text)
     actor = Actor(id=doc.owner_id, tenant_id=doc.tenant_id)
     if guard.detected:
@@ -190,7 +190,7 @@ def recognition_out(doc: Document, pages: list, row: DocumentFields, store) -> d
         },
         "fields": display_fields(open_fields(store, doc, row.fields)),
         "models": row.models,
-        "security": row.security,
+        "security": {**security_flags(), **row.security},
         "aigc": row.aigc_meta,
         "degrade_level": row.degrade_level,
     }

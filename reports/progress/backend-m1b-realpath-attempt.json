@@ -1,0 +1,68 @@
+{
+  "model": "qwen2.5:1.5b",
+  "success": false,
+  "recognition_degrade_level": "L3",
+  "elapsed_ms": 951,
+  "degrade_level": "L3",
+  "field_count": 3,
+  "grounded_field_count": 3,
+  "rule_corpus": "mixed",
+  "retrieval_mode": "lightweight_hash",
+  "models": [
+    {
+      "category": "ocr",
+      "provider": "local",
+      "model": "rapidocr-ppocrv4",
+      "task": "ocr",
+      "latency_ms": 283,
+      "status": "ok",
+      "prompt_version": null,
+      "tokens_in": null,
+      "tokens_out": null
+    },
+    {
+      "category": "llm",
+      "provider": "ollama",
+      "model": "qwen2.5:1.5b",
+      "task": "field_extraction",
+      "latency_ms": 68,
+      "status": "failed",
+      "prompt_version": "m1-v1",
+      "tokens_in": null,
+      "tokens_out": null
+    },
+    {
+      "category": "embedding",
+      "provider": "local",
+      "model": "feature-hash-128 (lightweight, not BGE)",
+      "task": "rule_retrieval",
+      "latency_ms": 0,
+      "status": "ok",
+      "prompt_version": null,
+      "tokens_in": null,
+      "tokens_out": null
+    },
+    {
+      "category": "reranker",
+      "provider": "local",
+      "model": "token-overlap-v1 (lightweight, not BGE)",
+      "task": "rerank",
+      "latency_ms": 0,
+      "status": "ok",
+      "prompt_version": null,
+      "tokens_in": null,
+      "tokens_out": null
+    },
+    {
+      "category": "llm",
+      "provider": "ollama",
+      "model": "qwen2.5:1.5b",
+      "task": "compliance_reasoning",
+      "latency_ms": 6,
+      "status": "failed",
+      "prompt_version": "m1-v1",
+      "tokens_in": null,
+      "tokens_out": null
+    }
+  ]
+}

@@ -72,7 +72,17 @@ uv run pytest -q          # SQLite + fakeredis + 真实 RapidOCR，不需要 Doc
 
 ### 规则库与当前边界
 
-`backend/data/rules/*.json` 启动时建内存索引并分块；API/worker 各持只读副本。当前 6 条 **SYN 合成审核规范**覆盖必填项、HS 格式、金额一致、原产地、合成禁限标记、人工复核提示，每条有 source/article/jurisdiction/url（合成条款无真实 URL，使用 null）。它们不是任何国家的正式法规、不是有效制裁名单，不能用于真实法律结论。正式比赛前须由统筹确定适用范围并替换为经核验的公开法规。
+`backend/data/rules/*.json` 启动时建内存索引并分块；API/worker 各持只读副本。现同时加载两个分离文件：`synthetic-trade.json` 的 6 条 SYN 测试规则，以及 `public-trade.json` 的 5 条公开出处摘要（中国原产地条例、海关法、两用物项条例、WCO HS 体系说明、美国 19 CFR 141.86 发票要求）。每条公开记录带官方/权威 URL、对应条号、司法辖区及 `verified_at`；只用短摘要，不复制完整法律文本。2026-11-05（America/Tijuana）已核对页面内容可访问，启动时不联网，不保证链接/法规持续有效。
+
+**前端必须展示以下字段，不能仅在开发者日志里保留：**
+
+- Recognition 和 Review 的 `security.rule_corpus`：`synthetic`=仅合成/未核验/无引用，`mixed`=含合成和公开出处，`public_verified`=本次引用非空且全部是已核验公开出处。Recognition 表示配置索引范围，Review 表示实际召回上下文与确定性检查引用的并集；排队中和旧记录保守标 synthetic。
+- `security.rule_corpus_label` 为可直接展示的中文标签；`security.retrieval_mode` 为 `lightweight_hash` 或 `bge`，轻量意味着 **非 BGE 神经模型**。
+- `security.compliance_disclaimer` 固定为「自动审查仅供人工复核；合成或未核验语料不得作为清关或交易决定依据。」；报告摘要也以语料标签和免责声明开头。
+- 每条 citation 保留原始 source/jurisdiction、`corpus`、核验日期与 URL。SYN 规则始终保留「合成」与 SYNTHETIC，不改变 `determined_by=rule/llm` 的含义。
+- `/system/models` 的 embedding/reranker 提供 `lightweight`、`implementation_mode` 和中文 `mode_label`；`healthy=true` 只证明当前实现可运行，不表示在用 BGE。
+
+`public_verified` 仅表示**公开出处可追溯**，不是法律意见、现行性保证或适用性判断。WCO 是体系说明，不是目的国申报规则；美国发票规则不得套到其他目的国。确定性检查仍为合成测试规则，并总附 SYN-REVIEW，所以当前正常报告预期为 mixed 或 synthetic，绝不能宣称真实清关结论。
 
 仍未实现：追问历史/POST/SSE 和已有报告二次翻译，显式返回 501；新建审查可要求 LLM 生成指定语言，但规则引擎固定中文解释，L3 不伪装多语种生成。保留 M0 `create_all`，新增表可自动建，Alembic/RLS、跨进程全局熔断和每日 token 配额不在本次交付内。正则脱敏/注入检测只是防护一层，不保证任意姓名或混淆攻击全覆盖。
 
@@ -93,3 +103,39 @@ scripts/security-scan.sh
 
 
 扫描脚本同时检查未提交工作区和 Git 历史（gitleaks），Bandit 排除虚拟环境但不跳过应用源码；扫描器报错会使整次验收失败。Python 漏洞审计针对 uv 导出的完整精确版本集合，使用 `--no-deps --disable-pip`，不再让系统 Python 3.13 重新安装 3.12 的 RapidOCR 依赖。此模式没有省略 uv 已锁定的传递依赖。
+
+### 无云密钥：本机 Ollama 最小真实联调
+
+安装与运行参考 [官方 Linux 指南](https://docs.ollama.com/linux)。安装包也可解压至用户自有工具目录，不需要 Docker/systemd；只绑定回环地址，不暴露无鉴权模型服务：
+
+```bash
+# 终端一，已安装官方 ollama
+OLLAMA_HOST=127.0.0.1:11434 OLLAMA_NO_CLOUD=1 OLLAMA_NUM_PARALLEL=1 ollama serve
+# 终端二
+OLLAMA_HOST=127.0.0.1:11434 ollama pull qwen2.5:1.5b
+curl http://127.0.0.1:11434/api/tags
+```
+
+仅在未入库 `.env` 填写以下非秘密配置（Pydantic 列表使用 JSON，不是裸 `ollama` 字符串）：
+
+```dotenv
+LLM_PROVIDER_CHAIN=["ollama"]
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=qwen2.5:1.5b
+LLM_TIMEOUT_S=120
+LLM_MAX_RETRIES=0
+HEAVY_MODELS_ENABLED=false
+COOKIE_SECURE=true
+```
+
+宿主机 API 使用 127.0.0.1；Compose 内则用服务名 `http://ollama:11434`。其余 DB、Redis、KEK/JWT、管理员配置照 `.env.example`，从 backend 启动时显式加载根目录 `.env`（如 `uv run uvicorn app.main:app --env-file ../.env`）。浏览器仍经 HTTPS 同源代理并携带会话绑定 CSRF/Origin。
+
+可在没有 Postgres/Redis 的开发盒运行条件真实链路（SQLite + fakeredis 仅替代基础设施，**不替代 OCR/LLM**）：
+
+```bash
+cd backend
+RUN_OLLAMA_E2E=1 OLLAMA_BASE_URL=http://127.0.0.1:11434 OLLAMA_MODEL=qwen2.5:1.5b \
+  REALPATH_RESULT_FILE=/tmp/st143-realpath.json uv run pytest -q -s tests/test_m1b_realpath.py
+```
+
+该测试生成一张无个人信息的测试发票图片，实际通过 HTTPS ASGI 上传 API → 真实 RapidOCR → 真实 Ollama 字段抽取 → 本地召回/重排 → 真实 Ollama 推理 → reviews API。断言两次模型调用成功且 L2，失败不自动切 Fake；普通 pytest 默认跳过此需本机服务的慢测。输出文件只保留延迟、计数和模型轨迹，不含 Cookie/密钥/单证原文。它验证工程链路，不是法律准确率评测，也不等于 Docker/浏览器生产联调通过。
