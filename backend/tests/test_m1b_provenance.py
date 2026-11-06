@@ -40,8 +40,16 @@ async def test_ui_labels_on_recognition_review_create_get_and_list(fake_api, qui
         assert_labels(item)
     for finding in report["findings"]:
         for citation in finding["citations"]:
+            assert citation["source_kind"] in {"synthetic", "public"}
+            assert "source_kind_label" in citation
+            assert "article" in citation
+            assert "url" in citation
+            assert citation.get("excerpt_kind") == "summary"
+            assert citation.get("applicability") == "unverified"
+            assert "version_date" in citation
             if citation["rule_id"].startswith("SYN-"):
                 assert citation["corpus"] == "synthetic"
+                assert citation["source_kind"] == "synthetic"
                 assert citation["jurisdiction"] == "SYNTHETIC"
                 assert "合成" in citation["source"]
                 assert finding["determined_by"] in {"rule", "llm"}
@@ -53,6 +61,8 @@ async def test_fallback_and_legacy_rows_do_not_omit_labels(api, quick_ocr):
     client = await api.login("reviewer")
     doc_id, review_id, report = await _report(api, client)
     assert report["degrade_level"] == "L3"
+    assert report["degrade_status"] == "规则引擎回退，未完成真实 LLM 验证"
+    assert report["llm_verified"] is False
     assert_labels(report)
     async with api.app.state.db.sessionmaker() as session:
         for cls, rid in [(DocumentFields, doc_id), (Review, review_id)]:
@@ -120,6 +130,16 @@ def test_public_and_synthetic_files_remain_separate():
     path = Path(__file__).parents[1] / "data" / "rules"
     assert all(r["id"].startswith("SYN-") for r in json.loads((path / "synthetic-trade.json").read_text()))
     assert all(not r["id"].startswith("SYN-") for r in json.loads((path / "public-trade.json").read_text()))
+
+
+def test_degrade_status_is_explicit_not_just_l3():
+    from app.services.provenance import DEGRADE_STATUS, degrade_fields
+
+    fields = degrade_fields("L3")
+    assert fields["degrade_level"] == "L3"
+    assert fields["degrade_status"] == DEGRADE_STATUS["L3"] == "规则引擎回退，未完成真实 LLM 验证"
+    assert fields["llm_verified"] is False
+    assert degrade_fields("L0")["llm_verified"] is True
 
 
 def test_source_kind_is_stable_frontend_badge_field():

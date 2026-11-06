@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 丝路智审 API
-  version: 0.3.0
+  version: 0.3.1
   description: |
     跨境贸易单证 AI 合规审查平台后端接口契约（M0 草案）。
 
@@ -771,7 +771,7 @@ components:
       enum: [pass, low, medium, high]
     DegradeLevel:
       type: string
-      description: L0 正常；L1 已切换备用云端模型；L2 本地 LLM 离线模式；L3 仅规则引擎
+      description: L0 正常；L1 已切换备用云端模型；L2 本地 LLM 离线模式；L3=规则引擎回退，未完成真实 LLM 验证（勿把 L3 理解成“已用本地模型完成推理”）
       enum: [L0, L1, L2, L3]
 
     SessionResponse:
@@ -863,13 +863,17 @@ components:
         source: { type: string, enum: [llm, rule, manual] }
     Recognition:
       type: object
-      required: [document_id, version, ocr, fields, models, security]
+      required: [document_id, version, ocr, fields, models, security, degrade_level, degrade_status, llm_verified]
       properties:
         document_id: { type: string, format: uuid }
         version: { type: integer }
         doc_type: { $ref: '#/components/schemas/DocType' }
         language_detected: { type: string }
         degrade_level: { $ref: '#/components/schemas/DegradeLevel' }
+        degrade_status:
+          type: string
+          description: 固定可读降级说明；L3 文案为「规则引擎回退，未完成真实 LLM 验证」
+        llm_verified: { type: boolean, description: 'false 表示未完成真实 LLM 验证' }
         ocr:
           type: object
           required: [engine, blocks]
@@ -891,7 +895,7 @@ components:
 
     RuleCitation:
       type: object
-      required: [rule_id, source, article, excerpt, source_kind, source_kind_label]
+      required: [rule_id, source, article, excerpt, source_kind, source_kind_label, excerpt_kind, applicability]
       properties:
         rule_id: { type: string }
         source: { type: string, description: '规则出处，如某协定原产地规则' }
@@ -911,7 +915,17 @@ components:
         source_kind_label:
           type: string
           description: 可直接展示；synthetic 固定为「合成规则 · 非真实合规结论」
-        verified_at: { type: [string, 'null'], format: date }
+        verified_at: { type: [string, 'null'], format: date, description: '公开条目人工核验日期' }
+        effective_date: { type: [string, 'null'], format: date, description: '规则生效日（若有）' }
+        version_date: { type: [string, 'null'], format: date, description: '前端版本/核验日期展示；优先 verified_at，否则 effective_date' }
+        excerpt_kind:
+          type: string
+          enum: [summary, verbatim]
+          description: summary=自写/摘录摘要，不得当作法规原文全文
+        applicability:
+          type: string
+          enum: [unverified]
+          description: 固定 unverified：公开出处不等于本票适用或合规已通过
     Finding:
       type: object
       required: [id, severity, category, title, message, determined_by, citations]
@@ -959,7 +973,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/ReviewSummary'
         - type: object
-          required: [language, findings, degrade_level, security]
+          required: [language, findings, degrade_level, degrade_status, llm_verified, security]
           properties:
             origin_country: { oneOf: [ { $ref: '#/components/schemas/CountryCode' }, { type: 'null' } ] }
             language: { $ref: '#/components/schemas/Language' }
@@ -974,6 +988,10 @@ components:
               type: array
               items: { $ref: '#/components/schemas/Finding' }
             degrade_level: { $ref: '#/components/schemas/DegradeLevel' }
+            degrade_status:
+              type: string
+              description: 固定可读降级说明；L3 文案为「规则引擎回退，未完成真实 LLM 验证」
+            llm_verified: { type: boolean, description: 'false 表示未完成真实 LLM 验证' }
             security: { $ref: '#/components/schemas/SecurityFlags' }
             models:
               type: array

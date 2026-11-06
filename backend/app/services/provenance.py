@@ -54,3 +54,20 @@ def provenance(rules: list[dict], retrieval_mode: str) -> dict:
         "retrieval_mode": retrieval_mode,
         "compliance_disclaimer": COMPLIANCE_DISCLAIMER,
     }
+
+
+DEGRADE_STATUS = {
+    "L0": "正常：真实模型链路可用",
+    "L1": "已切换备用云端模型",
+    "L2": "本地 LLM 离线模式（云端不可用）",
+    "L3": "规则引擎回退，未完成真实 LLM 验证",
+}
+
+
+def degrade_fields(level: str) -> dict:
+    level = level if level in DEGRADE_STATUS else "L3"
+    return {
+        "degrade_level": level,
+        "degrade_status": DEGRADE_STATUS[level],
+        "llm_verified": level in {"L0", "L1", "L2"},
+    }

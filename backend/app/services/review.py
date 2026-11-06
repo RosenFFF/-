@@ -15,7 +15,7 @@ from app.security.injection import inspect
 from app.security.redact import mask
 from app.services.document_access import get_document
 from app.services.fields import aigc, open_fields
-from app.services.provenance import COMPLIANCE_DISCLAIMER, CORPUS_LABELS
+from app.services.provenance import COMPLIANCE_DISCLAIMER, CORPUS_LABELS, degrade_fields
 from app.services.rules_engine import check, risk_level
 
 
@@ -41,6 +41,7 @@ def review_out(row: Review) -> dict:
         )
     }
     result["security"] = {**security_flags(), **row.security}
+    result.update(degrade_fields(row.degrade_level or "L3"))
     result["finding_counts"] = {
         severity: sum(f["severity"] == severity for f in row.findings) for severity in ("high", "medium", "low", "info")
     }
@@ -201,7 +202,9 @@ async def process_review(db, store, audit, ai, review_id: str, request_id: str =
                 # Do not restore PII into generated prose: placeholders remain masked in the report.
                 row.summary = result.value.summary
             else:
-                row.summary = "L3 规则模式：LLM 不可用或输入已被拦截，仅提供确定性检查；建议人工复核。"
+                row.summary = (
+                    "规则引擎回退，未完成真实 LLM 验证。LLM 不可用或输入已被拦截，仅提供确定性检查；建议人工复核。"
+                )
             row.summary = CORPUS_LABELS[flags["rule_corpus"]] + "。" + COMPLIANCE_DISCLAIMER + "\n" + row.summary
             row.security = flags
             row.findings = findings

@@ -49,6 +49,11 @@ class RuleIndex:
             "source_kind": source_kind_of_rule(r),
             "source_kind_label": SOURCE_KIND_LABELS[source_kind_of_rule(r)],
             "verified_at": r.get("verified_at"),
+            "effective_date": r.get("effective_date"),
+            "version_date": r.get("verified_at") or r.get("effective_date"),
+            "excerpt_kind": "summary",  # 公开条目为摘要，非法规原文
+            "applicability": "unverified",  # 不构成完整适用性证据
+
         }
 
     def search(self, query: str, top_k: int = 20, top_n: int = 5) -> tuple[list[dict], list[dict]]:

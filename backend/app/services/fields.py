@@ -13,6 +13,7 @@ from app.core import crypto
 from app.db.models import Document, DocumentFields
 from app.security.injection import inspect
 from app.security.redact import mask, public_value
+from app.services.provenance import degrade_fields
 
 LABELS = {
     "invoice_no": "发票号",
@@ -192,5 +193,5 @@ def recognition_out(doc: Document, pages: list, row: DocumentFields, store) -> d
         "models": row.models,
         "security": {**security_flags(), **row.security},
         "aigc": row.aigc_meta,
-        "degrade_level": row.degrade_level,
+        **degrade_fields(row.degrade_level or "L3"),
     }
