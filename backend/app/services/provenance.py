@@ -3,6 +3,10 @@
 from urllib.parse import urlparse
 
 COMPLIANCE_DISCLAIMER = "自动审查仅供人工复核；合成或未核验语料不得作为清关或交易决定依据。"
+SOURCE_KIND_LABELS = {
+    "synthetic": "合成规则 · 非真实合规结论",
+    "public": "公开出处已核验 · 仍须人工复核",
+}
 CORPUS_LABELS = {
     "synthetic": "合成或未核验语料（非真实合规结论）",
     "mixed": "混合语料（含合成或未核验规则，非真实合规结论）",
@@ -30,11 +34,23 @@ def corpus_of(rules: list[dict]) -> str:
     return "mixed" if kinds == {True, False} else "synthetic"
 
 
+def source_kind_of_corpus(corpus: str) -> str:
+    """Frontend badge field: only synthetic|public. mixed/unknown → synthetic (conservative)."""
+    return "public" if corpus == "public_verified" else "synthetic"
+
+
+def source_kind_of_rule(rule: dict) -> str:
+    return "public" if is_public(rule) else "synthetic"
+
+
 def provenance(rules: list[dict], retrieval_mode: str) -> dict:
     corpus = corpus_of(rules)
+    kind = source_kind_of_corpus(corpus)
     return {
         "rule_corpus": corpus,
         "rule_corpus_label": CORPUS_LABELS[corpus],
+        "source_kind": kind,
+        "source_kind_label": SOURCE_KIND_LABELS[kind],
         "retrieval_mode": retrieval_mode,
         "compliance_disclaimer": COMPLIANCE_DISCLAIMER,
     }

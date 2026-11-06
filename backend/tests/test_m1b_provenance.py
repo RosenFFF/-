@@ -120,3 +120,14 @@ def test_public_and_synthetic_files_remain_separate():
     path = Path(__file__).parents[1] / "data" / "rules"
     assert all(r["id"].startswith("SYN-") for r in json.loads((path / "synthetic-trade.json").read_text()))
     assert all(not r["id"].startswith("SYN-") for r in json.loads((path / "public-trade.json").read_text()))
+
+
+def test_source_kind_is_stable_frontend_badge_field():
+    from app.services.provenance import SOURCE_KIND_LABELS, provenance, source_kind_of_corpus
+
+    assert source_kind_of_corpus("public_verified") == "public"
+    assert source_kind_of_corpus("mixed") == "synthetic"
+    assert source_kind_of_corpus("synthetic") == "synthetic"
+    flags = provenance([], "lightweight_hash")
+    assert flags["source_kind"] == "synthetic"
+    assert flags["source_kind_label"] == SOURCE_KIND_LABELS["synthetic"] == "合成规则 · 非真实合规结论"

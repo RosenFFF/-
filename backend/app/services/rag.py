@@ -8,7 +8,7 @@ from pathlib import Path
 
 from app.ai.embedding import BGEEmbedding, cosine
 from app.ai.types import trace
-from app.services.provenance import is_public, provenance
+from app.services.provenance import SOURCE_KIND_LABELS, is_public, provenance, source_kind_of_rule
 
 
 class RuleIndex:
@@ -46,6 +46,8 @@ class RuleIndex:
             "url": r.get("url"),
             "score": round(score, 5),
             "corpus": "public_verified" if is_public(r) else "synthetic",
+            "source_kind": source_kind_of_rule(r),
+            "source_kind_label": SOURCE_KIND_LABELS[source_kind_of_rule(r)],
             "verified_at": r.get("verified_at"),
         }
 

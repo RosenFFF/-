@@ -891,7 +891,7 @@ components:
 
     RuleCitation:
       type: object
-      required: [rule_id, source, article, excerpt]
+      required: [rule_id, source, article, excerpt, source_kind, source_kind_label]
       properties:
         rule_id: { type: string }
         source: { type: string, description: '规则出处，如某协定原产地规则' }
@@ -904,6 +904,13 @@ components:
           type: string
           enum: [synthetic, public_verified]
           description: public_verified 仅表示公开出处核验，不表示适用或获准清关；缺失元数据按 synthetic
+        source_kind:
+          type: string
+          enum: [synthetic, public]
+          description: 前端徽章用固定字段；public=公开核验出处，synthetic=合成/未核验。展示文案见 source_kind_label
+        source_kind_label:
+          type: string
+          description: 可直接展示；synthetic 固定为「合成规则 · 非真实合规结论」
         verified_at: { type: [string, 'null'], format: date }
     Finding:
       type: object
@@ -1039,13 +1046,21 @@ components:
     SecurityFlags:
       type: object
       description: 本次处理中的安全事件与来源标签；前端必须展示语料/检索标签及免责声明，不得把合成检查包装为真实合规结论
-      required: [rule_corpus, rule_corpus_label, retrieval_mode, compliance_disclaimer]
+      required: [rule_corpus, rule_corpus_label, source_kind, source_kind_label, retrieval_mode, compliance_disclaimer]
       properties:
         rule_corpus:
           type: string
           enum: [synthetic, public_verified, mixed]
           description: Recognition=配置索引范围；Review=本次召回上下文与确定性发现的引用并集。public_verified 仅在非空且全部为核验公开出处时使用；混入合成或未核验即 mixed，仅合成或空集为 synthetic。queued/旧数据保守标 synthetic。
         rule_corpus_label: { type: string, minLength: 1, description: '界面可直接展示的中文语料标签' }
+        source_kind:
+          type: string
+          enum: [synthetic, public]
+          description: 报告级固定徽章字段。mixed/synthetic→synthetic；仅全部公开核验→public。前端按此显示「合成规则 · 非真实合规结论」
+        source_kind_label:
+          type: string
+          minLength: 1
+          description: 与 source_kind 对应的固定中文；synthetic 恒为「合成规则 · 非真实合规结论」
         retrieval_mode:
           type: string
           enum: [lightweight_hash, bge]
