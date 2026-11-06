@@ -150,3 +150,82 @@ async def postgres_test_url(monkeypatch):
                     await conn.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
         finally:
             await admin.dispose()
+
+
+@pytest.fixture
+async def postgres_rls_owner(postgres_test_url):
+    """Real isolated-schema migration owner; never bypasses RLS, even while seeding."""
+    from app.db.base import Database
+
+    db = Database(postgres_test_url)
+    try:
+        await db.migrate()
+        yield db
+    finally:
+        await db.dispose()
+
+
+@pytest.fixture
+async def postgres_rls_db(postgres_rls_owner):
+    """Separate non-owner application login. Never SET ROLE from a privileged session."""
+    from sqlalchemy import text
+    from sqlalchemy.engine import make_url
+
+    from app.db.base import Database
+    from app.db.tenant import check_application_role
+
+    from .postgres import UnsafePostgresTarget, disposable_postgres_url
+
+    raw = os.environ.get("TEST_POSTGRES_APP_URL")
+    if not raw:
+        pytest.fail("TEST_POSTGRES_APP_URL required for real non-owner RLS application-role tests", pytrace=False)
+    try:
+        app_url = disposable_postgres_url({"TEST_POSTGRES_URL": raw, "TEST_POSTGRES_DISPOSABLE": "1"})
+        owner_url = postgres_rls_owner.engine.url
+        target = make_url(app_url)
+        if (target.host, target.port, target.database, target.query) != (
+            owner_url.host,
+            owner_url.port,
+            owner_url.database,
+            owner_url.query,
+        ) or target.username == owner_url.username:
+            pytest.fail("application login must be separate, in the same disposable local database", pytrace=False)
+    except UnsafePostgresTarget as exc:
+        pytest.fail(str(exc), pytrace=False)
+    db = Database(app_url)
+    # One physical connection makes accidental cross-request GUC inheritance observable.
+    await db.engine.dispose()
+    from app.db import base
+
+    db.engine = base.create_async_engine(app_url, pool_pre_ping=True, pool_size=1, max_overflow=0)
+    db.sessionmaker.configure(bind=db.engine)
+    try:
+        async with db.engine.connect() as conn:
+            role = (await conn.execute(text("SELECT current_user"))).scalar_one()
+            # Check unsafe role attributes before granting any isolated-schema privilege.
+            attrs = (
+                await conn.execute(
+                    text(
+                        "SELECT rolsuper, rolbypassrls, rolcreaterole, rolcreatedb "
+                        "FROM pg_roles WHERE rolname=current_user"
+                    )
+                )
+            ).one()
+            if any(attrs):
+                pytest.fail("application login has unsafe PostgreSQL role attributes", pytrace=False)
+        async with postgres_rls_owner.engine.begin() as conn:
+            schema = (await conn.execute(text("SELECT current_schema()"))).scalar_one()
+            quote = conn.dialect.identifier_preparer.quote_identifier
+            # Server-returned identifiers are quoted; privileges touch only the random schema.
+            await conn.execute(text(f"GRANT USAGE ON SCHEMA {quote(schema)} TO {quote(role)}"))
+            from app.db.base import Base
+
+            tables = ", ".join(f"{quote(schema)}.{quote(name)}" for name in Base.metadata.tables)
+            await conn.execute(text(f"GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE {tables} TO {quote(role)}"))
+            await conn.execute(text(f"GRANT SELECT ON TABLE {quote(schema)}.alembic_version TO {quote(role)}"))
+            await conn.execute(text(f"GRANT USAGE ON ALL SEQUENCES IN SCHEMA {quote(schema)} TO {quote(role)}"))
+        async with db.engine.connect() as conn:
+            await check_application_role(conn)
+        yield db
+    finally:
+        await db.dispose()

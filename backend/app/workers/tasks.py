@@ -22,6 +22,11 @@ async def startup(ctx: dict[str, Any]) -> None:
     settings = get_settings()
     ctx["db"] = Database(settings.database_url)
     await ctx["db"].check_migrated()
+    try:
+        await ctx["db"].check_runtime_access()
+    except Exception:
+        await ctx["db"].dispose()
+        raise
     ctx["store"] = EncryptedStore(settings)
     ctx["audit"] = AuditService(ctx["db"])
     ctx["ai"] = AIRuntime(settings)

@@ -8,6 +8,7 @@ from sqlalchemy import inspect, text
 from alembic import command
 from app.db.base import Base, Database
 from app.db.models import Tenant
+from app.db.tenant import TenantScope, set_local_scope
 
 
 async def test_initial_migration_schema_parity_idempotence_and_roundtrip(tmp_path):
@@ -16,6 +17,7 @@ async def test_initial_migration_schema_parity_idempotence_and_roundtrip(tmp_pat
 
 async def assert_migration_roundtrip(url):
     db = Database(url)
+    scope = TenantScope("00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002", "admin")
     try:
         with pytest.raises(RuntimeError, match="migration required"):
             await db.check_migrated()
@@ -27,11 +29,13 @@ async def assert_migration_roundtrip(url):
             assert diff == []
             tables = await c.run_sync(lambda conn: inspect(conn).get_table_names())
             assert set(tables) == set(Base.metadata.tables) | {"alembic_version"}
-            await c.execute(Tenant.__table__.insert().values(id="migration-sentinel", name="synthetic"))
+            await set_local_scope(c, scope)
+            await c.execute(Tenant.__table__.insert().values(id=scope.org_id, name="synthetic"))
         await db.migrate()
         async with db.engine.begin() as c:
+            await set_local_scope(c, scope)
             assert (
-                await c.execute(text("SELECT name FROM tenants WHERE id='migration-sentinel'"))
+                await c.execute(text("SELECT name FROM tenants WHERE id=:id"), {"id": scope.org_id})
             ).scalar() == "synthetic"
 
             def down(conn):

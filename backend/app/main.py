@@ -91,6 +91,11 @@ def create_app(
             await db.migrate()  # Tests exercise the same versioned schema, never create_all.
         else:
             await db.check_migrated()
+        try:
+            await db.check_runtime_access()
+        except Exception:
+            await db.dispose()
+            raise
         await bootstrap(db, settings)
         r = redis or Redis.from_url(settings.redis_url)
         app.state.settings, app.state.db, app.state.redis = settings, db, r

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from alembic.autogenerate import compare_metadata
@@ -12,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
 from alembic import command
+from app.db.tenant import TenantScope, TenantSession, bind_scope, check_application_role
 
 
 class Base(DeclarativeBase):
@@ -21,7 +23,7 @@ class Base(DeclarativeBase):
 class Database:
     def __init__(self, url: str) -> None:
         self.engine: AsyncEngine = create_async_engine(url, pool_pre_ping=True)
-        self.sessionmaker = async_sessionmaker(self.engine, expire_on_commit=False)
+        self.sessionmaker = async_sessionmaker(self.engine, expire_on_commit=False, sync_session_class=TenantSession)
         self.is_postgres = url.startswith("postgresql")
 
     @staticmethod
@@ -56,7 +58,10 @@ class Database:
                     raise RuntimeError("Legacy schema primary key differs; manual migration review required")
             config = self.migration_config()
             config.attributes["connection"] = connection
-            command.stamp(config, "head")
+            # Schema parity does NOT prove that PostgreSQL policies exist. Stamp only
+            # the legacy schema revision, then actually execute later migrations.
+            command.stamp(config, "0001_m2_initial")
+            command.upgrade(config, "head")
 
         async with self.engine.begin() as connection:
             await connection.run_sync(adopt)
@@ -71,8 +76,28 @@ class Database:
         async with self.engine.connect() as connection:
             await connection.run_sync(check)
 
+    async def check_runtime_access(self) -> None:
+        if not self.is_postgres:
+            return
+        async with self.engine.connect() as connection:
+            await check_application_role(connection)
+        # Do not silently ship a database-only milestone as an operational API.
+        # In particular, a pre-auth lookup and the existing shared audit chain
+        # cannot safely use an all-tenants GUC to evade the new restrictions.
+        raise RuntimeError(
+            "PostgreSQL RLS deployment blocked: pre-authentication lookup, shared audit-chain "
+            "access and background-worker tenant context are not yet integrated; "
+            "the migration and scoped-session harness are not full API acceptance"
+        )
+
     async def session(self) -> AsyncIterator[AsyncSession]:
         async with self.sessionmaker() as s:
+            yield s
+
+    @asynccontextmanager
+    async def tenant_session(self, scope: TenantScope) -> AsyncIterator[AsyncSession]:
+        async with self.sessionmaker() as s:
+            bind_scope(s, scope)
             yield s
 
     async def dispose(self) -> None:
