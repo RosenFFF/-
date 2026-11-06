@@ -1,94 +1,222 @@
-import { useState, type FormEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { askStream } from '../mock/api';
-import type { AnswerLang } from '../mock/types';
-
-type Msg = { role: 'user' | 'assistant' | 'system'; text: string; citation?: string };
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { api, useMock } from "../api";
+import { aborted, ApiError } from "../api/http";
+import { askStream } from "../api/real";
+import type { Language, ChatMessage } from "../api/types";
+import { languages } from "../api/languages";
+import { ErrorNotice } from "../components/ErrorNotice";
+import { CitationSource } from "../components/Provenance";
 
 export function AskPage() {
+  const [query] = useSearchParams();
+  return <AskContent key={query.get("review") ?? ""} />;
+}
+
+function AskContent() {
+  const { id = "" } = useParams();
+  const [query] = useSearchParams();
+  const reviewId = query.get("review") ?? "";
   const { t } = useTranslation();
-  const [lang, setLang] = useState<AnswerLang>('ru');
-  const [input, setInput] = useState('');
-  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [lang, setLang] = useState<Language>("zh-CN");
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const controller = useRef<AbortController | null>(null);
+  const liveRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const c = new AbortController();
+    if (reviewId)
+      void api
+        .messages(reviewId, c.signal)
+        .then((r) => {
+          setMessages(r.items);
+          setHistoryLoaded(true);
+        })
+        .catch((e: unknown) => {
+          if (!aborted(e)) setError(e);
+        });
+    return () => {
+      c.abort();
+      controller.current?.abort();
+    };
+  }, [reviewId]);
+
+  useEffect(() => {
+    if (reconnecting) liveRef.current?.focus();
+  }, [reconnecting]);
 
   async function send(e: FormEvent) {
     e.preventDefault();
-    const q = input.trim();
-    if (!q || busy) return;
-    setInput('');
-    setMsgs((m) => [...m, { role: 'user', text: q }]);
+    const content = input.trim();
+    if (!content || busy || !reviewId || !historyLoaded) return;
+    const replyId = crypto.randomUUID();
+    const userId = crypto.randomUUID();
+    const stamp = new Date().toISOString();
+    setInput("");
     setBusy(true);
-    let assistant = '';
-    let citation = '';
-    setMsgs((m) => [...m, { role: 'assistant', text: '' }]);
+    setError(null);
+    setReconnecting(false);
+    controller.current = new AbortController();
+    const signal = controller.current.signal;
+    const user: ChatMessage = {
+      id: userId,
+      role: "user",
+      content,
+      blocked: false,
+      created_at: stamp,
+    };
+    let reply: ChatMessage = {
+      id: replyId,
+      role: "assistant",
+      content: "",
+      blocked: false,
+      created_at: stamp,
+      citations: [],
+    };
+    setMessages((m) => [...m, user, reply]);
+    const applyReply = (snapshot: ChatMessage) => {
+      reply = snapshot;
+      setMessages((m) =>
+        m.map((v) =>
+          v.id === replyId || v.id === snapshot.id ? snapshot : v,
+        ),
+      );
+    };
     try {
-      for await (const ev of askStream(q, lang)) {
-        if (ev.event === 'delta') {
-          assistant += ev.text;
-          const snap = assistant;
-          setMsgs((m) => {
-            const copy = [...m];
-            copy[copy.length - 1] = { role: 'assistant', text: snap, citation };
-            return copy;
+      const stream = useMock
+        ? api.ask(reviewId, content, lang, signal)
+        : askStream(reviewId, content, lang, {
+            signal,
+            onResume: () => setReconnecting(true),
           });
-        } else if (ev.event === 'citation') {
-          citation = `${ev.rule_id}: ${ev.text}`;
-          setMsgs((m) => {
-            const copy = [...m];
-            copy[copy.length - 1] = { role: 'assistant', text: assistant, citation };
-            return copy;
+      for await (const ev of stream) {
+        setReconnecting(false);
+        if (ev.event === "error") throw new ApiError(ev.data);
+        if (ev.event === "delta")
+          applyReply({ ...reply, content: reply.content + ev.data.text });
+        if (ev.event === "citation")
+          applyReply({
+            ...reply,
+            citations: [...(reply.citations ?? []), ev.data],
           });
-        } else if (ev.event === 'error') {
-          setMsgs((m) => {
-            const copy = [...m];
-            copy[copy.length - 1] = { role: 'system', text: t('ask.jailbreakBlocked') };
-            return copy;
-          });
+        if (ev.event === "done") applyReply(ev.data);
+      }
+    } catch (err) {
+      if (!aborted(err)) {
+        // Resume already attempted inside askStream. On 404/interrupt, reload history once — never invent a new POST.
+        try {
+          const history = await api.messages(reviewId, signal);
+          setMessages(history.items);
+        } catch (historyError) {
+          if (!aborted(historyError) && !signal.aborted) {
+            /* keep primary error */
+          }
         }
+        if (!signal.aborted) setError(err);
       }
     } finally {
       setBusy(false);
+      setReconnecting(false);
     }
   }
 
   return (
-    <div className="stack" style={{ maxWidth: 860 }}>
+    <div className="stack ask-page">
       <div className="page-head">
-        <h1 className="page-title" style={{ margin: 0 }}>{t('ask.title')}</h1>
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
-          <span className="muted">{t('report.answerLang')}</span>
-          <select className="select" style={{ width: 'auto' }} value={lang} onChange={(e) => setLang(e.target.value as AnswerLang)}>
-            {(['zh', 'en', 'ru', 'vi', 'pt', 'ar'] as AnswerLang[]).map((l) => (
-              <option key={l} value={l}>{t(`answer.${l}`)}</option>
+        <h1 className="page-title">{t("ask.title")}</h1>
+        <label>
+          {t("report.answerLang")}
+          <select
+            className="select"
+            value={lang}
+            onChange={(e) => setLang(e.target.value as Language)}
+          >
+            {languages.map((l) => (
+              <option key={l} value={l}>
+                {t(`answer.${l === "zh-CN" ? "zh" : l}`)}
+              </option>
             ))}
           </select>
         </label>
       </div>
-      <div className="panel" style={{ padding: 16, minHeight: 360, display: 'grid', gap: 12 }}>
-        {msgs.map((m, i) => (
-          <div key={i} style={{ justifySelf: m.role === 'user' ? 'end' : 'start', maxWidth: '85%' }}>
-            <div
-              style={{
-                padding: '10px 12px',
-                borderRadius: 6,
-                border: '1px solid var(--line)',
-                background: m.role === 'user' ? 'var(--brand-subtle)' : m.role === 'system' ? '#fef3f2' : 'var(--paper)',
-              }}
-            >
-              {m.text}
+      {!reviewId ? (
+        <div className="banner">
+          {t("ask.needReview")}{" "}
+          <Link to={`/cases/${id}/report`}>{t("report.title")}</Link>
+        </div>
+      ) : null}
+      <ErrorNotice error={error} />
+      {reconnecting ? (
+        <div
+          className="banner ask-reconnect"
+          role="status"
+          aria-live="polite"
+          tabIndex={-1}
+          ref={liveRef}
+        >
+          {t("ask.reconnecting")}
+        </div>
+      ) : null}
+      <div className="panel chat-history" aria-live="polite">
+        {messages.map((m) => (
+          <div
+            key={m.id}
+            className={`chat-message ${m.role}${m.blocked ? " blocked" : ""}`}
+          >
+            <div>
+              {m.blocked
+                ? t("ask.jailbreakBlocked")
+                : m.content || (busy ? t("status.running") : "")}
             </div>
-            {m.citation ? (
-              <blockquote className="serif" style={{ margin: '8px 0 0', padding: 10, background: 'var(--canvas)', borderLeft: '3px solid var(--brand)', fontSize: 13 }}>
-                {m.citation}
-              </blockquote>
+            {m.blocked && m.block_reason ? (
+              <p className="muted">
+                {t("ask.blockReason")}: {t(`ask.blockReason.${m.block_reason}`)}
+              </p>
             ) : null}
+            {m.citations?.map((c, i) => (
+              <div key={`${c.rule_id}-${i}`} className="chat-citation">
+                <CitationSource value={c} />
+                <blockquote className="serif citation">
+                  {c.source} · {c.article}: {c.excerpt}
+                </blockquote>
+              </div>
+            ))}
+            {m.aigc ? <p className="muted">{m.aigc.explicit_text}</p> : null}
           </div>
         ))}
       </div>
-      <form onSubmit={send} style={{ display: 'flex', gap: 8 }}>
-        <input className="input" value={input} onChange={(e) => setInput(e.target.value)} placeholder={t('ask.placeholder')} />
-        <button className="btn" type="submit" disabled={busy}>{t('ask.send')}</button>
+      <form onSubmit={send} className="action-row">
+        <input
+          className="input"
+          aria-label={t("ask.placeholder")}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={t("ask.placeholder")}
+          maxLength={2000}
+          disabled={!reviewId || !historyLoaded || busy}
+        />
+        <button
+          className="btn"
+          type="submit"
+          disabled={busy || !reviewId || !historyLoaded || !input.trim()}
+        >
+          {t("ask.send")}
+        </button>
+        {busy ? (
+          <button
+            className="btn btn-secondary"
+            type="button"
+            onClick={() => controller.current?.abort()}
+          >
+            {t("common.cancelWait")}
+          </button>
+        ) : null}
       </form>
     </div>
   );

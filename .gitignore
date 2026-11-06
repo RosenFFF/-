@@ -12,3 +12,9 @@ dist/
 # frontend
 web/node_modules/
 web/dist/
+
+# local browser test artifacts
+web/test-results/
+web/playwright-report/
+
+web/test-results-real/

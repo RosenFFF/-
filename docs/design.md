@@ -190,3 +190,12 @@
 - 追问走 SSE：`delta` → `citation` → `done`。
 - OCR 坐标 0–1 归一化；看板 `/audit/stats`，模型链路 `/system/models`。
 - 工程：在 `/workspace/competition/st143-frontend` worktree 开发，不直接切换共享 `st143` 检出。
+
+## 11. M1 落地约束
+
+- 延用既定颜色/字体/双栏验单台；原件使用受鉴权页图，不拿模拟文字替代扫描页。
+- Loading：状态/进度、有限轮询；Empty：字段为空时明示尚未抽取，OCR 块独立核对；Error：三语错误码/请求编号；Success：仅呈现服务端真实结果。
+- mock 显式 `VITE_USE_MOCK=true`，常驻红色「MOCK 数据 · 仅开发」。第 6 节真实演示要求仅适用于真实模式，禁止隐瞒 mock；生产构建强制关闭 mock。
+- 高亮覆盖原尺寸图片归一化坐标，字段支持跨页，报告证据链接回原件。键盘可通过字段/翻页按钮核对。
+- 新异步状态无装饰动效；移动导航全部可见且换行，不隐藏入口。
+- M1 补验收已完成 Chromium 390×844 / 1440×900 的 mock 视觉、空数据/错误态、键盘与 axe 检查，见 reports/progress/frontend-m1-visual-a11y.md；仍需真实后端联调、真机及屏幕阅读器人工验收。

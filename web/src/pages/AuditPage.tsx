@@ -1,98 +1,115 @@
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '../auth/AuthContext';
-import { getCaseAudit, getGlobalAudit, verifyAuditChain } from '../mock/api';
-import type { AuditEvent } from '../mock/types';
-
+import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { api } from "../api";
+import type { AuditLog, Verify } from "../api/types";
+import { ErrorNotice } from "../components/ErrorNotice";
 export function AuditPage() {
   const { t } = useTranslation();
-  const { role } = useAuth();
-  const [own, setOwn] = useState<AuditEvent[] | null>(null);
-  const [globalErr, setGlobalErr] = useState('');
-  const [global, setGlobal] = useState<Awaited<ReturnType<typeof getGlobalAudit>> | null>(null);
-  const [verify, setVerify] = useState('');
-
-  async function loadOwn() {
-    setOwn(await getCaseAudit());
-  }
-
-  async function loadGlobal() {
-    setGlobalErr('');
-    setGlobal(null);
+  const [query] = useSearchParams();
+  const [reviewId, setReviewId] = useState(query.get("review") ?? "");
+  const [logs, setLogs] = useState<AuditLog[] | null>(null);
+  const [verify, setVerify] = useState<Verify | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  const [busy, setBusy] = useState(false);
+  async function load(own = false) {
+    setBusy(true);
+    setError(null);
+    setLogs(null);
     try {
-      setGlobal(await getGlobalAudit(role ?? 'reviewer'));
+      setLogs((await api.audit(own ? reviewId : undefined)).items);
     } catch (e) {
-      const err = e as { code?: string };
-      setGlobalErr(err.code === 'FORBIDDEN' ? t('audit.forbidden') : 'error');
+      setError(e);
+    } finally {
+      setBusy(false);
     }
   }
-
-  async function onVerify() {
-    const res = await verifyAuditChain();
-    setVerify(res.ok ? t('audit.verified') : `broken at ${res.broken_at}`);
+  async function check() {
+    setBusy(true);
+    setError(null);
+    setVerify(null);
+    try {
+      setVerify(await api.verifyAudit());
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
   }
-
   return (
     <div className="stack">
-      <h1 className="page-title">{t('audit.title')}</h1>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button className="btn btn-secondary" type="button" onClick={() => void loadOwn()}>{t('audit.own')}</button>
-        <button className="btn btn-secondary" type="button" onClick={() => void loadGlobal()}>{t('audit.global')}</button>
-        <button className="btn" type="button" onClick={() => void onVerify()}>{t('audit.verify')}</button>
+      <h1 className="page-title">{t("audit.title")}</h1>
+      <div className="action-row">
+        <input
+          className="input"
+          value={reviewId}
+          onChange={(e) => setReviewId(e.target.value)}
+          aria-label={t("audit.reviewId")}
+          placeholder={t("audit.reviewId")}
+        />
+        <button
+          className="btn btn-secondary"
+          disabled={busy || !reviewId}
+          onClick={() => void load(true)}
+        >
+          {t("audit.own")}
+        </button>
+        <button
+          className="btn btn-secondary"
+          disabled={busy}
+          onClick={() => void load()}
+        >
+          {t("audit.global")}
+        </button>
+        <button className="btn" disabled={busy} onClick={() => void check()}>
+          {t("audit.verify")}
+        </button>
       </div>
-      {verify ? <div className="banner" style={{ background: 'var(--brand-subtle)', color: 'var(--brand)' }}>{verify}</div> : null}
-      {globalErr ? <div className="banner" style={{ background: '#fef3f2', color: 'var(--risk-high)' }}>{globalErr}</div> : null}
-      {own ? (
-        <div className="panel" style={{ overflow: 'auto' }}>
-          <table className="table">
-            <thead>
-              <tr><th>Time</th><th>Actor</th><th>Action</th><th>Outcome</th><th>Detail</th></tr>
-            </thead>
-            <tbody>
-              {own.map((e) => (
-                <tr key={e.id}>
-                  <td className="mono">{e.at}</td>
-                  <td>{e.actor}</td>
-                  <td className="mono">{e.action}</td>
-                  <td>{e.outcome}</td>
-                  <td>{e.detail}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <ErrorNotice error={error} />
+      {verify ? (
+        <div className="banner">
+          {verify.valid
+            ? t("audit.verified")
+            : `${t("audit.broken")}: ${verify.first_broken_id}`}{" "}
+          · {verify.checked}
+          <div className="mono">{verify.head_hash}</div>
         </div>
       ) : null}
-      {global ? (
-        <div className="stack">
-          <div className="panel" style={{ padding: 16, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-            <div><div className="muted">logins</div><div className="mono" style={{ fontSize: 24 }}>{global.stats.logins}</div></div>
-            <div><div className="muted">denials</div><div className="mono" style={{ fontSize: 24 }}>{global.stats.denials}</div></div>
-            <div><div className="muted">blocks</div><div className="mono" style={{ fontSize: 24 }}>{global.stats.blocks}</div></div>
-            <div><div className="muted">model_calls</div><div className="mono" style={{ fontSize: 24 }}>{global.stats.model_calls}</div></div>
-          </div>
-          <div className="panel" style={{ padding: 16 }}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>redaction preview</div>
-            <div className="mono" style={{ fontSize: 13 }}><strong>in:</strong> {global.redaction.original}</div>
-            <div className="mono" style={{ fontSize: 13, marginTop: 8 }}><strong>out:</strong> {global.redaction.redacted}</div>
-          </div>
-          <div className="panel" style={{ overflow: 'auto' }}>
+      {logs ? (
+        <div className="panel table-wrap">
+          {logs.length ? (
             <table className="table">
               <thead>
-                <tr><th>Time</th><th>Actor</th><th>Action</th><th>Outcome</th><th>Detail</th></tr>
+                <tr>
+                  <th>{t("common.time")}</th>
+                  <th>Actor</th>
+                  <th>Action</th>
+                  <th>{t("common.status")}</th>
+                  <th>{t("common.requestId")}</th>
+                </tr>
               </thead>
               <tbody>
-                {global.logs.map((e) => (
-                  <tr key={e.id}>
-                    <td className="mono">{e.at}</td>
-                    <td>{e.actor}</td>
-                    <td className="mono">{e.action}</td>
-                    <td>{e.outcome}</td>
-                    <td>{e.detail}</td>
+                {logs.map((log) => (
+                  <tr key={log.id}>
+                    <td>
+                      {new Date(log.ts).toLocaleString(undefined, {
+                        timeZone: "America/Tijuana",
+                      })}{" "}
+                      (America/Tijuana)
+                    </td>
+                    <td>{log.actor_username ?? "—"}</td>
+                    <td>{log.action}</td>
+                    <td>{log.result}</td>
+                    <td className="mono">{log.request_id}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          ) : (
+            <p className="empty-message" role="status">
+              {t("common.empty")}
+            </p>
+          )}
         </div>
       ) : null}
     </div>
