@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -104,3 +104,20 @@ def security_flags() -> dict:
         # Conservative defaults also cover legacy rows without provenance metadata.
         **provenance([], "lightweight_hash"),
     }
+
+
+@dataclass
+class TextChunk:
+    """Provider text delta, or terminal completion metadata (never a rule fallback)."""
+
+    text: str = ""
+    traces: list[dict] = field(default_factory=list)
+    finished: bool = False
+
+
+class ModelUnavailable(Exception):
+    """Safe failure marker; do not attach upstream exception text or response bodies."""
+
+    def __init__(self, traces: list[dict] | None = None):
+        super().__init__("LLM generation unavailable")
+        self.traces = traces or []

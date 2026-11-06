@@ -3,6 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Path, Query, Request
+from fastapi.responses import StreamingResponse
 from pydantic import Field, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,7 @@ from app.core.errors import AppError
 from app.db.models import Review
 from app.deps import Ctx, CurrentUser, ctx, enforce_rate, require, session
 from app.security.rbac import Perm, Role
+from app.services.chat import encode_event, history
 from app.services.review import create_review_record, process_review, review_out
 
 from .documents import UUID_RE
@@ -104,6 +106,18 @@ async def get_review(
     return review_out(row)
 
 
+class ChatIn(StrictModel):
+    content: str = Field(min_length=1, max_length=2000)
+    language: Language | None = None
+
+    @field_validator("content")
+    @classmethod
+    def _nonblank(cls, value):
+        if not value.strip():
+            raise ValueError("追问内容不能为空")
+        return value
+
+
 @router.get("/{review_id}/messages")
 async def messages(
     review_id: str = Path(pattern=UUID_RE),
@@ -111,14 +125,46 @@ async def messages(
     s: AsyncSession = Depends(session),
 ):
     await _get(s, user, review_id)
-    raise AppError(501, "MODEL_UNAVAILABLE", "M1 暂未实现追问历史")
+    return {"items": await history(s, review_id, user.tenant_id)}
 
 
 @router.post("/{review_id}/messages")
 async def post_message(
+    body: ChatIn,
+    request: Request,
     review_id: str = Path(pattern=UUID_RE),
     user: CurrentUser = Depends(require(Perm.chat_write)),
+    c: Ctx = Depends(ctx),
     s: AsyncSession = Depends(session),
 ):
-    await _get(s, user, review_id)
-    raise AppError(501, "MODEL_UNAVAILABLE", "功能暂未实现：追问/SSE")
+    review = await _get(s, user, review_id)
+    await s.commit()  # Release the request's read transaction before independent producer writes.
+    await enforce_rate(c, f"chat:{user.id}", c.settings.rl_chat_per_min, user.actor)
+    service = request.app.state.chat
+    language = body.language or review.language
+    streaming = "text/event-stream" in request.headers.get("accept", "")
+    last_id = request.headers.get("last-event-id")
+    if last_id is not None:
+        if not streaming:
+            raise AppError(422, "VALIDATION_FAILED", "Last-Event-ID 仅适用于 SSE")
+        stream_id, cursor = await service.resume(last_id, review, user, body.content, language)
+    else:
+        stream_id = await service.start(review, user, body.content, language, c.request_id)
+        cursor = 0
+    if not streaming:
+        return await service.result(stream_id)
+
+    async def stream():
+        yield f": stream {stream_id}\n\n"
+        async for event in service.events(stream_id, cursor):
+            yield encode_event(event) if event else ": keepalive\n\n"
+
+    return StreamingResponse(
+        stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-store",
+            "X-Accel-Buffering": "no",
+            "X-Chat-Stream-ID": stream_id,
+        },
+    )

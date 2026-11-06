@@ -9,18 +9,21 @@ import asyncio
 import json
 import time
 from collections import deque
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Protocol
 
 import httpx
 from pydantic import BaseModel, ValidationError
 
-from app.ai.types import LLMResult, trace
+from app.ai.types import LLMResult, ModelUnavailable, TextChunk, trace
 from app.core.config import Settings
 
 
 class LLMClient(Protocol):
     async def chat_json(self, messages: list[dict], schema: type[BaseModel], *, task: str) -> LLMResult: ...
+    def chat_stream(self, messages: list[dict], *, task: str) -> AsyncIterator[TextChunk]: ...
+    async def chat_text(self, messages: list[dict], *, task: str) -> LLMResult: ...
     async def health(self) -> list[dict]: ...
 
 
@@ -157,6 +160,113 @@ class ProviderChain:
                 )
                 return LLMResult(value, traces, level(provider.name, index))
         return LLMResult(None, traces, "L3")
+
+    async def chat_text(self, messages: list[dict], *, task: str = "chat") -> LLMResult:
+        text, traces = "", []
+        try:
+            async for chunk in self.chat_stream(messages, task=task):
+                text += chunk.text
+                traces = chunk.traces or traces
+        except ModelUnavailable as exc:
+            return LLMResult(None, exc.traces, "L3")
+        successful = next(t for t in reversed(traces) if t["status"] != "failed")
+        index = next(i for i, p in enumerate(self.providers) if p.name == successful["provider"])
+        return LLMResult(text, traces, level(successful["provider"], index))
+
+    async def chat_stream(self, messages: list[dict], *, task: str = "chat") -> AsyncIterator[TextChunk]:
+        """Real OpenAI-compatible SSE. Failover only before the first text delta.
+
+        A truncated/empty/length-limited stream is NOT successful. No rules fallback.
+        Consumers must validate the full answer before exposing untrusted model prose.
+        """
+        traces = []
+        s = self.settings
+        if sum(len(m.get("content", "")) for m in messages) > s.llm_max_input_chars:
+            raise ModelUnavailable()
+        for index, provider in enumerate(self.providers):
+            if not provider.available or provider.circuit_open(s):
+                continue
+            for _attempt in range(s.llm_max_retries + 1):
+                t0 = time.perf_counter()
+                emitted, stopped, ended, size = False, False, False, 0
+                try:
+                    headers = {"Authorization": f"Bearer {provider.key}"} if provider.key else {}
+                    async with (
+                        httpx.AsyncClient(transport=self.transport, timeout=s.llm_timeout_s, trust_env=False) as client,
+                        client.stream(
+                            "POST",
+                            provider.api_url + "/chat/completions",
+                            headers=headers,
+                            json={
+                                "model": provider.model,
+                                "messages": messages,
+                                "temperature": 0,
+                                "max_tokens": s.llm_max_tokens,
+                                "stream": True,
+                            },
+                        ) as response,
+                    ):
+                        response.raise_for_status()
+                        async for line in response.aiter_lines():
+                            if len(line) > 64000:
+                                raise ValueError("oversized stream frame")
+                            if not line.startswith("data:"):
+                                continue
+                            data = line[5:].strip()
+                            if data == "[DONE]":
+                                ended = True
+                                break
+                            envelope = json.loads(data)
+                            choices = envelope.get("choices", [])
+                            if not choices:
+                                if "error" in envelope:
+                                    raise ValueError("upstream error")
+                                continue  # usage-only frame
+                            choice = choices[0]
+                            text = choice.get("delta", {}).get("content") or ""
+                            if not isinstance(text, str) or (stopped and text):
+                                raise ValueError("invalid delta")
+                            finish = choice.get("finish_reason")
+                            if finish is not None:
+                                if finish != "stop":
+                                    raise ValueError("incomplete generation")
+                                stopped = True
+                            size += len(text)
+                            if size > s.chat_max_output_chars:
+                                raise ValueError("oversized answer")
+                            if text:
+                                emitted = True
+                                yield TextChunk(text=text)
+                    if not (emitted and stopped and ended):
+                        raise ValueError("truncated or empty stream")
+                except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError, AttributeError):
+                    ms = int((time.perf_counter() - t0) * 1000)
+                    provider.failures += 1
+                    provider.healthy = False
+                    provider.opened_at = time.monotonic()
+                    provider.calls.append((time.time(), ms))
+                    traces.append(trace("llm", provider.model, task, ms, provider=provider.name, status="failed"))
+                    if emitted:
+                        raise ModelUnavailable(traces) from None
+                    continue
+                ms = int((time.perf_counter() - t0) * 1000)
+                provider.failures, provider.healthy = 0, True
+                provider.checked_at = time.monotonic()
+                provider.calls.append((time.time(), ms))
+                traces.append(
+                    trace(
+                        "llm",
+                        provider.model,
+                        task,
+                        ms,
+                        provider=provider.name,
+                        status="ok" if index == 0 and not traces else "fallback",
+                        prompt_version="chat-v1",
+                    )
+                )
+                yield TextChunk(traces=traces, finished=True)
+                return
+        raise ModelUnavailable(traces)
 
     async def _probe(self, p: Provider) -> dict:
         if p.available and not p.circuit_open(self.settings) and time.monotonic() - p.checked_at > 15:

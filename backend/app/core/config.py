@@ -71,6 +71,10 @@ class Settings(BaseSettings):
     reranker_model: str = "BAAI/bge-reranker-v2-m3"
     rules_dir: Path = Path(__file__).resolve().parents[2] / "data" / "rules"
     rl_review_per_min: int = 10
+    rl_chat_per_min: int = Field(default=20, ge=1)
+    chat_replay_ttl_s: int = Field(default=900, ge=60, le=3600)
+    chat_generation_timeout_s: float = Field(default=90, gt=0, le=300)
+    chat_max_output_chars: int = Field(default=12000, ge=100, le=50000)
 
     @field_validator("llm_provider_chain")
     @classmethod

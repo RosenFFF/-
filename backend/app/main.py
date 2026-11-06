@@ -23,6 +23,7 @@ from app.db.models import Tenant, User
 from app.security.cookies import CSRF_HEADER, csrf_ok
 from app.security.passwords import hash_password
 from app.security.ratelimit import RateLimiter
+from app.services.chat import ChatStreams
 from app.services.storage import EncryptedStore
 
 log = structlog.get_logger()
@@ -81,13 +82,17 @@ def create_app(
             from arq.connections import RedisSettings
 
             app.state.arq = arq_pool or await create_pool(RedisSettings.from_dsn(settings.redis_url))
-        yield
-        await db.dispose()
+        app.state.chat = ChatStreams(db, r, app.state.audit, app.state.ai, settings)
+        try:
+            yield
+        finally:
+            await app.state.chat.close()
+            await db.dispose()
 
     docs = settings.env != "prod"
     app = FastAPI(
         title="丝路智审 API",
-        version="0.1.0",
+        version="0.3.3",
         lifespan=lifespan,
         docs_url="/api/docs" if docs else None,
         redoc_url=None,
@@ -99,8 +104,8 @@ def create_app(
         allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
-        allow_headers=["Authorization", "Content-Type", "X-Request-ID", CSRF_HEADER],
-        expose_headers=["X-Request-ID", "Retry-After"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID", CSRF_HEADER, "Accept", "Last-Event-ID"],
+        expose_headers=["X-Request-ID", "Retry-After", "X-Chat-Stream-ID"],
     )
 
     @app.middleware("http")

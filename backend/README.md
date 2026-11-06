@@ -84,7 +84,18 @@ uv run pytest -q          # SQLite + fakeredis + 真实 RapidOCR，不需要 Doc
 
 `public_verified` 仅表示**公开出处可追溯**，不是法律意见、现行性保证或适用性判断。WCO 是体系说明，不是目的国申报规则；美国发票规则不得套到其他目的国。确定性检查仍为合成测试规则，并总附 SYN-REVIEW，所以当前正常报告预期为 mixed 或 synthetic，绝不能宣称真实清关结论。
 
-仍未实现：追问历史/POST/SSE 和已有报告二次翻译，显式返回 501；新建审查可要求 LLM 生成指定语言，但规则引擎固定中文解释，L3 不伪装多语种生成。保留 M0 `create_all`，新增表可自动建，Alembic/RLS、跨进程全局熔断和每日 token 配额不在本次交付内。正则脱敏/注入检测只是防护一层，不保证任意姓名或混淆攻击全覆盖。
+仍未实现：已有报告二次翻译，显式返回 501；新建审查可要求 LLM 生成指定语言，但规则引擎固定中文解释，L3 不伪装多语种生成。保留 M0 `create_all`，新增表可自动建，Alembic/RLS、跨进程全局熔断和每日 token 配额不在本次交付内。正则脱敏/注入检测只是防护一层，不保证任意姓名或混淆攻击全覆盖。
+
+### 追问历史与 SSE（M1b，契约 0.3.3）
+
+- `GET /api/v1/reviews/{id}/messages` 返回 `{items: ChatMessage[]}`，按创建时间升序；消息与审查相同租户/owner 权限。用户和助手消息都存 `chat_messages`（M0 `create_all`），仅存脱敏文本，不存映射；注入/越权意图拦截消息带 `blocked=true` 和原因并审计，**不调用 LLM**。
+- `POST /api/v1/reviews/{id}/messages` 请求 `{"content":"解释此风险项","language":"zh-CN"}`；须 `chat_write`、Cookie CSRF/Origin 与已完成报告；默认每用户每分钟 20 次。结合脱敏 summary/findings、最近 12 条历史和 RAG，引用来自当前召回的真实规则 ID，所有 provenance 原样取 `RuleIndex.citation()`。
+- JSON 模式成功返回完整 ChatMessage。**没有可用模型、超时、截断或输出/引用验证不通过：HTTP 503 `MODEL_UNAVAILABLE`，不造规则回退助手正文。** 用户问题保留在历史，失败没有助手成功消息。
+- `Accept: text/event-stream` 用 fetch POST：事件 `delta` (`{"text"}`) → `citation` → `done`（完整已存消息）；失败只发 `error`（Problem，status=503、MODEL_UNAVAILABLE）并终止，HTTP 状态仍 200，**前端不能只凭 HTTP 200 判成功**。拦截输入仅 `done`（blocked=true），没有生成 delta。每事件带 `id: <stream UUID>:<序号>`，注释心跳不占 ID。
+- 生产 ProviderChain 实际请求上游 `stream=true`；**完整回答先安全校验，再发送 80 字符分段的 SSE**，防止 PII/注入跨 token 泄露；不是实时首 token 透传。只能通过包含完整 stop + [DONE] 的上游流进入成功路径；首 delta 后失败不混入其他提供方的正文。
+- 断线恢复：重发相同 POST URL/content/language、Cookie 与 CSRF/Origin，`Last-Event-ID` 填最后事件 ID（首事件前可从 `X-Chat-Stream-ID` 响应头取 ID，加 `:0`）。Redis 回放默认 900 秒，恢复只跟随原任务，不重入库/重调模型；done/error 已确认则空 SSE。流绑定发起用户+租户+审查；错误/超前游标 422，问题不一致 409，过期/越权 404 后应读取历史，不能自动重发问题。CORS 已允许 Accept/Last-Event-ID 并暴露流 ID 头。
+- 连接断开不取消生成，正常关机取消并记 error。**进程崩溃没有 durable job 接管**，等待生成时限+5秒后返回 error，不重启生成；已入库历史仍可读。默认生成时限 90 秒、输出 12000 字符；`RL_CHAT_PER_MIN`、`CHAT_REPLAY_TTL_S`、`CHAT_GENERATION_TIMEOUT_S`、`CHAT_MAX_OUTPUT_CHARS` 可调整。删除单证时也清理派生聊天与回放。
+- 自动化 `tests/test_m1_chat_sse.py` 明确使用 `provider=fake / model=test-fixture-only` 或 httpx fixture transport，**都不是真实模型验收证据**。当前真实模型验收仍阻塞：本轮没有重试下载/更换镜像/改 DNS，也没有网络绕过；实际模型身份+真实成功调用+对应报告的证据仍单独待验。
 
 ### 离线验证
 

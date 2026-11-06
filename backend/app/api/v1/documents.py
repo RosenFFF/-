@@ -9,7 +9,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
-from app.db.models import Document, DocumentFields, OcrPage, Review, ReviewDocument, uid
+from app.db.models import ChatMessage, Document, DocumentFields, OcrPage, Review, ReviewDocument, uid
 from app.deps import Ctx, CurrentUser, ctx, enforce_rate, require, session
 from app.security.rbac import Perm
 from app.services import files
@@ -160,13 +160,25 @@ async def delete_document(
     d = await _get(s, user, document_id)
     review_ids = select(ReviewDocument.review_id).where(ReviewDocument.document_id == d.id)
     linked = list((await s.execute(review_ids)).scalars())
+    streams = []
     if linked:
+        streams = list(
+            (
+                await s.execute(
+                    select(ChatMessage.stream_id)
+                    .where(ChatMessage.review_id.in_(linked), ChatMessage.stream_id.is_not(None))
+                    .distinct()
+                )
+            ).scalars()
+        )
+        await s.execute(delete(ChatMessage).where(ChatMessage.review_id.in_(linked)))
         await s.execute(delete(ReviewDocument).where(ReviewDocument.review_id.in_(linked)))
         await s.execute(delete(Review).where(Review.id.in_(linked)))
     await s.execute(delete(DocumentFields).where(DocumentFields.document_id == d.id))
     await s.execute(delete(OcrPage).where(OcrPage.document_id == d.id))
     await s.delete(d)
     await s.commit()
+    await request.app.state.chat.forget(streams)
     request.app.state.store.delete(d.id)
     await c.audit.record(
         "document.delete",

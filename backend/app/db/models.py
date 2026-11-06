@@ -157,3 +157,22 @@ class ReviewDocument(Base):
     version: Mapped[int] = mapped_column(Integer)
     fields_snapshot: Mapped[dict] = mapped_column(JSON_DATA)  # encrypted, immutable input snapshot
     doc_type: Mapped[str] = mapped_column(String(32))
+
+
+class ChatMessage(Base):
+    """Only masked chat prose is persisted; no PII placeholder mappings or raw prompts."""
+
+    __tablename__ = "chat_messages"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    review_id: Mapped[str] = mapped_column(ForeignKey("reviews.id", ondelete="CASCADE"), index=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    role: Mapped[str] = mapped_column(String(16))
+    content: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    blocked: Mapped[bool] = mapped_column(Boolean, default=False)
+    block_reason: Mapped[str | None] = mapped_column(String(32))
+    language: Mapped[str] = mapped_column(String(8))
+    citations: Mapped[list] = mapped_column(JSON_DATA, default=list)
+    models: Mapped[list] = mapped_column(JSON_DATA, default=list)
+    aigc_meta: Mapped[dict] = mapped_column(JSON_DATA, default=dict)
+    stream_id: Mapped[str | None] = mapped_column(String(36), index=True)

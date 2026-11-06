@@ -252,11 +252,11 @@ async def test_delete_document_removes_review_snapshots(fake_api, quick_ocr):
         assert await s.get(ReviewDocument, (review_id, doc_id)) is None
 
 
-async def test_stub_chat_and_translation_are_explicit_501(fake_api, quick_ocr):
+async def test_chat_is_available_but_translation_is_explicit_501(fake_api, quick_ocr):
     c = await fake_api.login("reviewer")
     _, review_id, _ = await _report(fake_api, c)
     response = await c.post(f"/api/v1/reviews/{review_id}/messages", json={"content": "why?"})
-    assert response.status_code == 501 and "功能暂未实现" in response.json()["title"]
+    assert response.status_code == 200 and response.json()["role"] == "assistant"
     assert (await c.get(f"/api/v1/reviews/{review_id}?language=en")).status_code == 501
 
 
@@ -322,3 +322,26 @@ async def test_system_models_reads_worker_audit_not_api_process_counters(api):
     model = next(m for m in status["models"] if m["category"] == "llm")
     assert model["calls_24h"] == api.settings.llm_circuit_failures and model["p95_latency_ms"] == 12
     assert model["circuit_open"] and not model["healthy"] and status["degrade_level"] == "L3"
+
+
+async def test_delete_document_cleans_derived_chat_and_replay(fake_api, quick_ocr):
+    from app.db.models import ChatMessage
+
+    c = await fake_api.login("reviewer")
+    doc_id, review_id, _ = await _report(fake_api, c)
+    result = await c.post(
+        f"/api/v1/reviews/{review_id}/messages",
+        json={"content": "Explain this report"},
+        headers={"Accept": "text/event-stream"},
+    )
+    assert result.status_code == 200 and "event: done" in result.text
+    stream_id = result.headers["x-chat-stream-id"]
+    service = fake_api.app.state.chat
+    assert await fake_api.app.state.redis.exists(service.key(stream_id, "meta"))
+    assert (await c.delete(f"/api/v1/documents/{doc_id}")).status_code == 204
+    assert (await c.get(f"/api/v1/reviews/{review_id}/messages")).status_code == 404
+    async with fake_api.app.state.db.sessionmaker() as s:
+        assert not (await s.execute(select(ChatMessage).where(ChatMessage.review_id == review_id))).scalars().all()
+    for part in ("meta", "events", "terminal"):
+        assert not await fake_api.app.state.redis.exists(service.key(stream_id, part))
+    await c.aclose()
