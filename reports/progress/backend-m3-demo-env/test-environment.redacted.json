@@ -1,0 +1,47 @@
+{
+  "TEST_POSTGRES_DISPOSABLE": "1",
+  "TEST_POSTGRES_URL": "<redacted>",
+  "TEST_POSTGRES_APP_URL": "<redacted>",
+  "TEST_REDIS_SERVER": "/workspace/competition/m3-demo-env/src/redis-stable/src/redis-server",
+  "TZ": "America/Tijuana",
+  "credential_values_included": false,
+  "notes": "Values redacted for repo; live secrets only in private m3-demo-env/runtime/test-environment.json (mode 600).",
+  "live_probe": {
+    "generated_at": "2026-11-06T07:24:03.151183-08:00",
+    "timezone": "America/Tijuana",
+    "postgresql": {
+      "live": true,
+      "roles": {
+        "migration": {
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false
+        },
+        "application": {
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false
+        }
+      },
+      "version": "18.6",
+      "binding": "127.0.0.1",
+      "runtime_owned_business_tables": 0
+    },
+    "redis": {
+      "live": true,
+      "binding": "127.0.0.1",
+      "persistence": false,
+      "version": "8.10.2"
+    },
+    "llm": {
+      "verified": false,
+      "real_inference_executed": false,
+      "success_stream_provider": "FakeLLM test double",
+      "local_ollama_model_count": 0
+    },
+    "application_transport": "ASGITransport, not production HTTPS",
+    "ocr": "quick_ocr stand-in; worker warmup replaced"
+  }
+}

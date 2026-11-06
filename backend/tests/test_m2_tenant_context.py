@@ -23,17 +23,6 @@ from .test_m1_chat_sse import parse_sse, path, seed_review
 from .test_m2_audit_isolation import foreign_admin
 
 
-@pytest.fixture
-async def workers(api, monkeypatch):
-    # ARQ settings intentionally require configured secrets at import/startup.
-    # Supply this test's synthetic Settings, never an environment/credential file.
-    monkeypatch.setattr("app.core.config.get_settings", lambda: api.settings)
-    from app.workers import tasks
-
-    monkeypatch.setattr(tasks, "get_settings", lambda: api.settings)
-    return tasks
-
-
 async def identity(api, username="admin"):
     async with api.app.state.db.maintenance_sessionmaker() as s:
         u = await s.scalar(select(User).where(User.username == username))

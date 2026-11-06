@@ -1,0 +1,8 @@
+# Exact historical false positives: verified source SHA-256 digests, not credentials.
+# No path/rule/global suppression; current tree paths and hashes are separate fields.
+077b21d372397fa913a98e7a6acfa59616c4f85a:reports/progress/backend-m3-demo-env/validation-summary.json:generic-api-key:52
+077b21d372397fa913a98e7a6acfa59616c4f85a:reports/progress/backend-m3-demo-env/validation-summary.json:generic-api-key:80
+077b21d372397fa913a98e7a6acfa59616c4f85a:reports/progress/backend-m3-demo-env/validation-summary.json:generic-api-key:84
+077b21d372397fa913a98e7a6acfa59616c4f85a:reports/progress/backend-m3-demo-env/validation-summary.json:generic-api-key:87
+077b21d372397fa913a98e7a6acfa59616c4f85a:reports/progress/backend-m3-demo-env/validation-summary.json:generic-api-key:106
+077b21d372397fa913a98e7a6acfa59616c4f85a:reports/progress/backend-m3-demo-env/validation-summary.json:generic-api-key:118

@@ -17,3 +17,10 @@ web/test-results/
 web/playwright-report/
 web/test-results-real/
 web/test-results-real-audit/
+
+# M3 private runtimes and raw pytest artifacts may contain credentials.
+/m3-demo-env/
+/runtime/test-environment.json
+**/test-environment.private.json
+reports/progress/backend-m3-demo-env/*.log
+reports/progress/backend-m3-demo-env/*.xml

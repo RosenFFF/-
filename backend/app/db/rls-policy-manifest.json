@@ -1,0 +1,277 @@
+[
+  {
+    "tablename": "audit_logs",
+    "policyname": "tenant_allow",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "true",
+    "with_check": "true"
+  },
+  {
+    "tablename": "audit_logs",
+    "policyname": "tenant_guard",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "(((tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text)) OR ((tenant_id IS NULL) AND (actor_id IS NULL) AND (current_setting('app.audit_platform'::text, true) = '1'::text)))",
+    "with_check": "(((tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text)) OR ((tenant_id IS NULL) AND (actor_id IS NULL) AND (current_setting('app.audit_platform'::text, true) = '1'::text)))"
+  },
+  {
+    "tablename": "chat_messages",
+    "policyname": "tenant_allow",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "true",
+    "with_check": "true"
+  },
+  {
+    "tablename": "chat_messages",
+    "policyname": "tenant_guard",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "(((tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text)) AND (EXISTS ( SELECT 1\n   FROM reviews r\n  WHERE (((r.id)::text = (chat_messages.review_id)::text) AND ((r.tenant_id)::text = (chat_messages.tenant_id)::text)))))",
+    "with_check": "(((tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text)) AND (EXISTS ( SELECT 1\n   FROM reviews r\n  WHERE (((r.id)::text = (chat_messages.review_id)::text) AND ((r.tenant_id)::text = (chat_messages.tenant_id)::text)))))"
+  },
+  {
+    "tablename": "demo_tamper_backups",
+    "policyname": "tenant_allow",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "true",
+    "with_check": "true"
+  },
+  {
+    "tablename": "demo_tamper_backups",
+    "policyname": "tenant_guard",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "(EXISTS ( SELECT 1\n   FROM audit_logs a\n  WHERE ((a.id)::text = (demo_tamper_backups.log_id)::text)))",
+    "with_check": "(EXISTS ( SELECT 1\n   FROM audit_logs a\n  WHERE ((a.id)::text = (demo_tamper_backups.log_id)::text)))"
+  },
+  {
+    "tablename": "document_fields",
+    "policyname": "tenant_allow",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "true",
+    "with_check": "true"
+  },
+  {
+    "tablename": "document_fields",
+    "policyname": "tenant_guard",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "((EXISTS ( SELECT 1\n   FROM documents d\n  WHERE ((d.id)::text = (document_fields.document_id)::text))) AND ((updated_by IS NULL) OR (EXISTS ( SELECT 1\n   FROM users u\n  WHERE ((u.id)::text = (document_fields.updated_by)::text)))))",
+    "with_check": "((EXISTS ( SELECT 1\n   FROM documents d\n  WHERE ((d.id)::text = (document_fields.document_id)::text))) AND ((updated_by IS NULL) OR (EXISTS ( SELECT 1\n   FROM users u\n  WHERE ((u.id)::text = (document_fields.updated_by)::text)))))"
+  },
+  {
+    "tablename": "documents",
+    "policyname": "tenant_allow",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "true",
+    "with_check": "true"
+  },
+  {
+    "tablename": "documents",
+    "policyname": "tenant_guard",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "(((tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text)) AND (((owner_id)::text = NULLIF(current_setting('app.current_user_id'::text, true), ''::text)) OR (NULLIF(current_setting('app.current_role'::text, true), ''::text) = ANY (ARRAY['admin'::text, 'auditor'::text]))) AND (EXISTS ( SELECT 1\n   FROM users u\n  WHERE (((u.id)::text = (documents.owner_id)::text) AND ((u.tenant_id)::text = (documents.tenant_id)::text)))))",
+    "with_check": "(((tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text)) AND (((owner_id)::text = NULLIF(current_setting('app.current_user_id'::text, true), ''::text)) OR (NULLIF(current_setting('app.current_role'::text, true), ''::text) = ANY (ARRAY['admin'::text, 'auditor'::text]))) AND (EXISTS ( SELECT 1\n   FROM users u\n  WHERE (((u.id)::text = (documents.owner_id)::text) AND ((u.tenant_id)::text = (documents.tenant_id)::text)))))"
+  },
+  {
+    "tablename": "ocr_pages",
+    "policyname": "tenant_allow",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "true",
+    "with_check": "true"
+  },
+  {
+    "tablename": "ocr_pages",
+    "policyname": "tenant_guard",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "(EXISTS ( SELECT 1\n   FROM documents d\n  WHERE ((d.id)::text = (ocr_pages.document_id)::text)))",
+    "with_check": "(EXISTS ( SELECT 1\n   FROM documents d\n  WHERE ((d.id)::text = (ocr_pages.document_id)::text)))"
+  },
+  {
+    "tablename": "refresh_tokens",
+    "policyname": "tenant_allow",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "true",
+    "with_check": "true"
+  },
+  {
+    "tablename": "refresh_tokens",
+    "policyname": "tenant_guard",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "(((user_id)::text = NULLIF(current_setting('app.current_user_id'::text, true), ''::text)) AND (EXISTS ( SELECT 1\n   FROM users u\n  WHERE (((u.id)::text = (refresh_tokens.user_id)::text) AND ((u.tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text))))))",
+    "with_check": "(((user_id)::text = NULLIF(current_setting('app.current_user_id'::text, true), ''::text)) AND (EXISTS ( SELECT 1\n   FROM users u\n  WHERE (((u.id)::text = (refresh_tokens.user_id)::text) AND ((u.tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text))))))"
+  },
+  {
+    "tablename": "review_documents",
+    "policyname": "tenant_allow",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "true",
+    "with_check": "true"
+  },
+  {
+    "tablename": "review_documents",
+    "policyname": "tenant_guard",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "((EXISTS ( SELECT 1\n   FROM reviews r\n  WHERE ((r.id)::text = (review_documents.review_id)::text))) AND (EXISTS ( SELECT 1\n   FROM documents d\n  WHERE ((d.id)::text = (review_documents.document_id)::text))))",
+    "with_check": "((EXISTS ( SELECT 1\n   FROM reviews r\n  WHERE ((r.id)::text = (review_documents.review_id)::text))) AND (EXISTS ( SELECT 1\n   FROM documents d\n  WHERE ((d.id)::text = (review_documents.document_id)::text))))"
+  },
+  {
+    "tablename": "reviews",
+    "policyname": "tenant_allow",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "true",
+    "with_check": "true"
+  },
+  {
+    "tablename": "reviews",
+    "policyname": "tenant_guard",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "(((tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text)) AND (((owner_id)::text = NULLIF(current_setting('app.current_user_id'::text, true), ''::text)) OR (NULLIF(current_setting('app.current_role'::text, true), ''::text) = ANY (ARRAY['admin'::text, 'auditor'::text]))) AND (EXISTS ( SELECT 1\n   FROM users u\n  WHERE (((u.id)::text = (reviews.owner_id)::text) AND ((u.tenant_id)::text = (reviews.tenant_id)::text)))))",
+    "with_check": "(((tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text)) AND (((owner_id)::text = NULLIF(current_setting('app.current_user_id'::text, true), ''::text)) OR (NULLIF(current_setting('app.current_role'::text, true), ''::text) = ANY (ARRAY['admin'::text, 'auditor'::text]))) AND (EXISTS ( SELECT 1\n   FROM users u\n  WHERE (((u.id)::text = (reviews.owner_id)::text) AND ((u.tenant_id)::text = (reviews.tenant_id)::text)))))"
+  },
+  {
+    "tablename": "tenants",
+    "policyname": "tenant_allow",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "true",
+    "with_check": "true"
+  },
+  {
+    "tablename": "tenants",
+    "policyname": "tenant_guard",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "((id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text))",
+    "with_check": "((id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text))"
+  },
+  {
+    "tablename": "users",
+    "policyname": "tenant_allow",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "ALL",
+    "qual": "true",
+    "with_check": "true"
+  },
+  {
+    "tablename": "users",
+    "policyname": "tenant_delete",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "DELETE",
+    "qual": "((tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text))",
+    "with_check": null
+  },
+  {
+    "tablename": "users",
+    "policyname": "tenant_guard",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "SELECT",
+    "qual": "(((tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text)) OR ((username)::text = NULLIF(current_setting('app.auth_username'::text, true), ''::text)))",
+    "with_check": null
+  },
+  {
+    "tablename": "users",
+    "policyname": "tenant_insert",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "((tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text))"
+  },
+  {
+    "tablename": "users",
+    "policyname": "tenant_update",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "public"
+    ],
+    "cmd": "UPDATE",
+    "qual": "((tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text))",
+    "with_check": "((tenant_id)::text = NULLIF(current_setting('app.current_org_id'::text, true), ''::text))"
+  }
+]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -86,15 +87,46 @@ class Database:
     async def check_runtime_access(self) -> None:
         if not self.is_postgres:
             return
+        # A SQLite/mock connection cannot release PostgreSQL acceptance protection.
+        if self.engine.dialect.name != "postgresql":
+            raise RuntimeError(
+                "PostgreSQL RLS deployment blocked: pre-authentication/audit/worker tenant integration "
+                "requires real non-owner PostgreSQL catalog validation"
+            )
+        from app.db import models  # noqa: F401
+
+        # Frozen from the real 18.6 catalog AFTER non-owner direct SQL acceptance.
+        # Never generate this allowlist from the target at startup. Any expression,
+        # role, command, policy addition/removal or deparser drift fails closed.
+        expected = json.loads(Path(__file__).with_name("rls-policy-manifest.json").read_text())
+        await self.check_migrated()
         async with self.engine.connect() as connection:
             await check_application_role(connection)
-        # Do not silently ship a database-only milestone as an operational API.
-        # In particular, a pre-auth lookup and the existing shared audit chain
-        # cannot safely use an all-tenants GUC to evade the new restrictions.
-        raise RuntimeError(
-            "PostgreSQL RLS deployment blocked: pre-authentication/audit/worker tenant integration "
-            "requires real non-owner PostgreSQL acceptance; SQLite/fakeredis tests do not release this gate"
-        )
+            rows = (
+                await connection.execute(
+                    text(
+                        "SELECT relname, relrowsecurity, relforcerowsecurity, "
+                        "has_table_privilege(oid, 'SELECT') AND has_table_privilege(oid, 'INSERT') "
+                        "AND has_table_privilege(oid, 'UPDATE') AND has_table_privilege(oid, 'DELETE') AS granted "
+                        "FROM pg_class WHERE relnamespace=current_schema()::regnamespace "
+                        "AND relkind='r' AND relname <> 'alembic_version'"
+                    )
+                )
+            ).all()
+            if {r.relname for r in rows} != set(Base.metadata.tables) or not all(
+                r.relrowsecurity and r.relforcerowsecurity and r.granted for r in rows
+            ):
+                raise RuntimeError("PostgreSQL RLS deployment blocked: missing/unsafe tables, FORCE RLS or grants")
+            policies = (
+                await connection.execute(
+                    text(
+                        "SELECT tablename, policyname, permissive, roles, cmd, qual, with_check FROM pg_policies "
+                        "WHERE schemaname=current_schema() ORDER BY tablename, policyname"
+                    )
+                )
+            ).mappings()
+            if [dict(p) for p in policies] != expected:
+                raise RuntimeError("PostgreSQL RLS deployment blocked: policy catalog differs from verified manifest")
 
     async def session(self) -> AsyncIterator[AsyncSession]:
         async with self.sessionmaker() as s:

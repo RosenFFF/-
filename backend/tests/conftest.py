@@ -10,7 +10,8 @@ import httpx
 import pytest
 
 from app.core.config import Settings
-from app.db.models import Tenant, User
+from app.db.models import Tenant, User, uid
+from app.db.tenant import TenantScope
 from app.main import create_app
 from app.security.passwords import hash_password
 
@@ -62,13 +63,24 @@ class Api:
 
 
 async def _seed(app) -> None:
-    async with app.state.db.maintenance_sessionmaker() as s:
-        t = Tenant(name="t1")
+    t = Tenant(id=uid(), name="t1")
+    admin_id = uid()
+    # Scope precedes even fixture SQL; a real PG runtime login never bypasses RLS.
+    scope = TenantScope(t.id, admin_id, "admin")
+    async with app.state.db.tenant_session(scope) as s:
         s.add(t)
         await s.flush()
         for name in PASSWORDS:
             role = "reviewer" if name.startswith("reviewer") else name
-            s.add(User(tenant_id=t.id, username=name, password_hash=hash_password(PASSWORDS[name]), role=role))
+            s.add(
+                User(
+                    id=admin_id if name == "admin" else uid(),
+                    tenant_id=t.id,
+                    username=name,
+                    password_hash=hash_password(PASSWORDS[name]),
+                    role=role,
+                )
+            )
         await s.commit()
 
 
@@ -137,8 +149,12 @@ async def postgres_test_url(monkeypatch):
 
         def schema_engine(target, **kwargs):
             # Connection option only; this is not a DB/transport/query substitute.
-            connect_args = kwargs.setdefault("connect_args", {})
-            connect_args.setdefault("server_settings", {})["search_path"] = schema
+            # A worker test may also construct an independent SQLite fixture.
+            from sqlalchemy.engine import make_url
+
+            if make_url(target).get_backend_name() == "postgresql":
+                connect_args = kwargs.setdefault("connect_args", {})
+                connect_args.setdefault("server_settings", {})["search_path"] = schema
             return create_async_engine(target, **kwargs)
 
         monkeypatch.setattr(base, "create_async_engine", schema_engine)
@@ -230,3 +246,72 @@ async def postgres_rls_db(postgres_rls_owner):
         yield db
     finally:
         await db.dispose()
+
+
+@pytest.fixture
+async def workers(api, monkeypatch):
+    """Shared ARQ tasks module with test Settings injected; never load env credentials."""
+    monkeypatch.setattr("app.core.config.get_settings", lambda: api.settings)
+    from app.workers import tasks
+
+    monkeypatch.setattr(tasks, "get_settings", lambda: api.settings)
+    return tasks
+
+
+@pytest.fixture
+async def live_redis(tmp_path):
+    """Opt-in real isolated Redis process, never substitutes fakeredis on failure."""
+    import asyncio
+    import socket
+    from pathlib import Path
+
+    from redis.asyncio import Redis
+    from redis.exceptions import ConnectionError as RedisConnectionError
+
+    raw = os.environ.get("TEST_REDIS_SERVER")
+    if not raw:
+        pytest.skip("real Redis requires explicit local TEST_REDIS_SERVER binary; fakeredis is not evidence")
+    binary = Path(raw)
+    assert binary.is_absolute() and binary.is_file(), "TEST_REDIS_SERVER must be an absolute installed binary"
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+    log = tmp_path / "redis.log"
+    # Trusted operator-supplied executable, no shell; isolated loopback-only process.
+    process = await asyncio.create_subprocess_exec(
+        str(binary),
+        "--bind",
+        "127.0.0.1",
+        "--port",
+        str(port),
+        "--protected-mode",
+        "yes",
+        "--save",
+        "",
+        "--appendonly",
+        "no",
+        "--dir",
+        str(tmp_path),
+        "--logfile",
+        str(log),
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL,
+    )
+    redis = Redis(host="127.0.0.1", port=port, socket_connect_timeout=1, socket_timeout=2)
+    try:
+        async with asyncio.timeout(8):
+            while True:
+                assert process.returncode is None, "real Redis exited before readiness; inspect temporary redis.log"
+                try:
+                    if await redis.ping():
+                        break
+                except RedisConnectionError:
+                    await asyncio.sleep(0.05)
+        info = await redis.info("server")
+        assert info["redis_version"] and info["redis_mode"] == "standalone"
+        yield redis, process
+    finally:
+        await redis.aclose()
+        if process.returncode is None:
+            process.terminate()
+            await asyncio.wait_for(process.wait(), 5)

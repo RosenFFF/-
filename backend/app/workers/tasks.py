@@ -21,8 +21,8 @@ async def startup(ctx: dict[str, Any]) -> None:
     setup_logging()
     settings = get_settings()
     ctx["db"] = Database(settings.database_url)
-    await ctx["db"].check_migrated()
     try:
+        await ctx["db"].check_migrated()
         await ctx["db"].check_runtime_access()
     except Exception:
         await ctx["db"].dispose()

@@ -42,6 +42,11 @@ SECURITY_HEADERS = {
 
 
 async def bootstrap(db: Database, settings: Settings) -> None:
+    if db.is_postgres:
+        # Runtime never owns/bootstraps a global tenant directory under RLS.
+        if settings.bootstrap_admin_username or settings.bootstrap_admin_password:
+            raise RuntimeError("PostgreSQL bootstrap requires explicit scoped operator provisioning before startup")
+        return
     async with db.maintenance_sessionmaker() as s:
         if (await s.execute(select(func.count()).select_from(User))).scalar_one() > 0:
             return
@@ -88,16 +93,16 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         db = Database(settings.database_url)
-        if settings.env == "test":
-            await db.migrate()  # Tests exercise the same versioned schema, never create_all.
-        else:
-            await db.check_migrated()
         try:
+            if settings.env == "test" and not db.is_postgres:
+                await db.migrate()  # SQLite tests only; PG runtime must not acquire DDL authority.
+            else:
+                await db.check_migrated()
             await db.check_runtime_access()
+            await bootstrap(db, settings)
         except Exception:
             await db.dispose()
             raise
-        await bootstrap(db, settings)
         r = redis or Redis.from_url(settings.redis_url)
         app.state.settings, app.state.db, app.state.redis = settings, db, r
         app.state.audit = AuditService(db)

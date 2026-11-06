@@ -11,6 +11,7 @@ from sqlalchemy import select
 from app.ai.llm import Provider, ProviderChain
 from app.ai.types import ModelUnavailable, TextChunk, trace
 from app.db.models import AuditLog, ChatMessage, Review, Tenant, User, uid
+from app.db.tenant import TenantScope
 
 from .conftest import make_settings
 from .fakes import FakeLLM
@@ -23,8 +24,10 @@ async def chat_api(api):
 
 
 async def seed_review(api, *, username="reviewer", status="completed", **kw):
-    async with api.app.state.db.maintenance_sessionmaker() as s:
-        user = (await s.execute(select(User).where(User.username == username))).scalar_one()
+    candidate = await api.app.state.db.login_candidate(username)
+    scope = TenantScope(candidate["tenant_id"], candidate["id"], candidate["role"])
+    async with api.app.state.db.tenant_session(scope) as s:
+        user = await s.get(User, scope.user_id)
         row = Review(
             id=uid(),
             tenant_id=user.tenant_id,

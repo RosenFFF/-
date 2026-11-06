@@ -1,8 +1,8 @@
 """REAL PostgreSQL acceptance harness; not evidence until this module actually runs.
 
 Redis, OCR and LLM use declared test fixtures. Raw-SQL RLS enforcement lives
-in test_m2_postgres_rls.py. Full API startup is explicitly gated until the
-pre-auth/audit/worker paths are integrated; configured execution must fail, not skip.
+in test_m2_postgres_rls.py. Migrations use a separate owner login; actual API
+startup and requests use a distinct non-owner runtime login, never SET ROLE.
 """
 
 import fakeredis.aioredis
@@ -18,8 +18,8 @@ from .test_m2_migrations import assert_migration_roundtrip
 
 
 @pytest.fixture
-async def postgres_api(tmp_path, postgres_test_url):
-    settings = make_settings(tmp_path, database_url=postgres_test_url)
+async def postgres_api(tmp_path, postgres_rls_db):
+    settings = make_settings(tmp_path, database_url=postgres_rls_db.engine.url.render_as_string(hide_password=False))
     redis = fakeredis.aioredis.FakeRedis()
     app = create_app(settings, redis=redis)
     try:

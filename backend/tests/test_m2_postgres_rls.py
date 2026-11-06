@@ -373,9 +373,8 @@ async def test_pg_rls_owner_ddl_permission_is_not_runtime_safe(postgres_rls_owne
             await check_application_role(c)
 
 
-async def test_pg_rls_unintegrated_api_startup_is_explicitly_blocked(postgres_rls_db):
-    with pytest.raises(RuntimeError, match="deployment blocked"):
-        await postgres_rls_db.check_runtime_access()
+async def test_pg_rls_verified_non_owner_catalog_releases_runtime_gate(postgres_rls_db):
+    await postgres_rls_db.check_runtime_access()
 
 
 async def test_pg_rls_same_tenant_application_role_can_insert_update_delete_all_tables(postgres_rls_db):
