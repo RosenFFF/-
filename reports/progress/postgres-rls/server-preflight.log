@@ -1,0 +1,13 @@
+America/Tijuana: 2026-11-05T19:37:46-08:00
+
+$ psql --version
+psql (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1)
+
+$ pg_isready -h 127.0.0.1 -p 5432
+127.0.0.1:5432 - no response
+pg_isready_exit=2
+
+$ command -v postgres pg_ctl initdb
+server_binary_lookup_exit=1
+
+No mirror, protocol, signature, DNS or network policy changes attempted.

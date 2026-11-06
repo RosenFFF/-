@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.057" timestamp="2026-11-06T11:38:16.493560+08:00" hostname="grok-bot-vm-506512876"><testcase classname="tests.test_m2_postgres_rls" name="test_pg_rls_catalog_all_business_tables_forced_and_restrictive" time="0.016"><error message="failed on setup with &quot;Failed: local disposable PostgreSQL unavailable or CREATE SCHEMA denied (connection withheld)&quot;">[Errno 111] Connect call failed ('127.0.0.1', 5432)
+
+During handling of the above exception, another exception occurred:
+local disposable PostgreSQL unavailable or CREATE SCHEMA denied (connection withheld)</error></testcase></testsuite></testsuites>

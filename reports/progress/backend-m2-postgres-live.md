@@ -1,3 +1,5 @@
+> 历史报告（截至 `442f8c1`）；新 RLS 候选迁移、apt 重试及当前阻塞以 [backend-m2-postgres-rls.md](backend-m2-postgres-rls.md) 为准。本页原数字和“未实现”结论仅属于旧快照。
+
 # 后端 M2 PostgreSQL 活库验收：未完成（环境阻塞）
 
 **不可验收为通过：PG 活库迁移、PG 应用隔离、DB RLS 三项均无成功执行证据。**
