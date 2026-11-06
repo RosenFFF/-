@@ -1,139 +1,250 @@
-import { DEMO_CASE, FIELDS, FINDINGS, MODEL_CALLS, SYSTEM_MODELS, auditLog, pushAudit, REDACT_DEMO } from './data';
-import type { AnswerLang, Role } from './types';
+import { FIELDS, FINDINGS } from "./data";
+import { ApiError } from "../api/http";
+import { wait } from "../api/poll";
+import type {
+  Api,
+  CurrentUser,
+  Document,
+  Recognition,
+  Review,
+  ChatMessage,
+  Role,
+} from "../api/types";
 
-export type Session = { token: string; username: string; role: Role };
-
-const delay = (ms = 400) => new Promise((r) => setTimeout(r, ms));
-
-export async function login(username: string, password: string): Promise<Session> {
-  await delay(300);
-  if (!password) throw Object.assign(new Error('invalid'), { code: 'AUTH_INVALID' });
-  const u = username.trim().toLowerCase();
-  let role: Role;
-  if (u === 'admin' || u === 'auditor') role = u as Role;
-  else if (u === 'reviewer') role = 'reviewer';
-  else throw Object.assign(new Error('invalid'), { code: 'AUTH_INVALID' });
-  pushAudit({ actor: u, action: 'auth.login', detail: `role=${role}`, outcome: 'ok' });
-  return { token: `mock.${u}`, username: u, role };
-}
-
-export async function listCases() {
-  await delay(200);
-  return [DEMO_CASE];
-}
-
-export async function createUpload() {
-  await delay(500);
-  pushAudit({
-    actor: 'reviewer',
-    action: 'document.upload',
-    detail: DEMO_CASE.id,
-    outcome: 'ok',
-    caseId: DEMO_CASE.id,
-  });
-  return { document_id: 'doc_001', case_id: DEMO_CASE.id, status: 'accepted' as const };
-}
-
-export async function pollRecognition() {
-  await delay(600);
-  return { status: 'done' as const, pages: 2, fields: FIELDS };
-}
-
-export async function startReview(answerLang: AnswerLang) {
-  await delay(400);
-  pushAudit({
-    actor: 'reviewer',
-    action: 'review.start',
-    detail: `lang=${answerLang}`,
-    outcome: 'ok',
-    caseId: DEMO_CASE.id,
-  });
-  return { review_id: 'rev_001', status: 'queued' as const };
-}
-
-export async function pollReview() {
-  await delay(700);
-  return {
-    status: 'done' as const,
-    findings: FINDINGS,
-    model_calls: MODEL_CALLS,
-    aigc: true,
-    offline: false,
-  };
-}
-
-export async function* askStream(question: string, answerLang: AnswerLang) {
-  const q = question.toLowerCase();
-  if (q.includes('ignore previous') || q.includes('越狱') || q.includes('jailbreak')) {
-    pushAudit({
-      actor: 'reviewer',
-      action: 'ask.jailbreak_blocked',
-      detail: question.slice(0, 80),
-      outcome: 'blocked',
-      caseId: DEMO_CASE.id,
+const stamp = () => new Date().toISOString();
+const docId = "00000000-0000-4000-8000-000000000001";
+const reviewId = "00000000-0000-4000-8000-000000000002";
+const page = <T>(items: T[]) => ({
+  items,
+  total: items.length,
+  page: 1,
+  page_size: 20,
+});
+const user = (role: Role): CurrentUser => ({
+  id: docId,
+  username: role,
+  role,
+  tenant_id: docId,
+  permissions: [],
+  disabled: false,
+  created_at: stamp(),
+});
+let current: CurrentUser | null = null;
+let document: Document = {
+  id: docId,
+  doc_type: "commercial_invoice",
+  filename: "MOCK-invoice.pdf",
+  mime: "application/pdf",
+  size_bytes: 1024,
+  pages: 2,
+  status: "ready",
+  progress: 100,
+  created_at: stamp(),
+};
+const messages: ChatMessage[] = [];
+const recognition: Recognition = {
+  document_id: docId,
+  version: 1,
+  models: [],
+  fields: FIELDS.map((field) => ({
+    key: field.key,
+    label: field.label,
+    value: field.value,
+    confidence: field.confidence,
+    source: "rule",
+    locations: field.locations.map(({ page, bbox: b }) => ({
+      page,
+      bbox: [b.x, b.y, b.x + b.w, b.y + b.h],
+    })),
+    source_block_ids: field.source_block_ids,
+  })),
+  ocr: {
+    engine: "MOCK",
+    blocks: FIELDS.map((field) => {
+      const loc = field.locations[0];
+      const b = loc.bbox;
+      return {
+        id: field.source_block_ids[0],
+        page: loc.page,
+        text: field.value,
+        confidence: field.confidence,
+        bbox: [b.x, b.y, b.x + b.w, b.y + b.h],
+      };
+    }),
+  },
+};
+let review: Review = {
+  id: reviewId,
+  status: "completed",
+  destination_country: "RU",
+  document_ids: [docId],
+  created_at: stamp(),
+  language: "zh-CN",
+  degrade_level: "L3",
+  summary: "MOCK · 开发用合规报告，不是真实审查。",
+  findings: FINDINGS.map((finding) => ({
+    id: finding.id,
+    severity: finding.level === "pass" ? "info" : finding.level,
+    title: finding.title,
+    message: finding.detail,
+    category: "other",
+    determined_by: "rule",
+    document_id: docId,
+    field_keys: finding.field_ids.map(
+      (f) => FIELDS.find((field) => field.id === f)?.key ?? f,
+    ),
+    citations: [
+      {
+        rule_id: finding.rule_id,
+        source: "MOCK 开发规则",
+        article: finding.rule_id,
+        excerpt: finding.citation,
+      },
+    ],
+  })),
+};
+export const mockApi: Api = {
+  async login(username, password) {
+    if (!password || !["reviewer", "admin", "auditor"].includes(username))
+      throw new ApiError({ code: "AUTH_INVALID_CREDENTIALS", status: 401 });
+    current = user(username as Role);
+    sessionStorage.setItem("sr_mock_user", JSON.stringify(current));
+    return { expires_in: 900, user: current };
+  },
+  async me() {
+    const saved = sessionStorage.getItem("sr_mock_user");
+    try {
+      current = saved ? (JSON.parse(saved) as CurrentUser) : null;
+    } catch {
+      current = null;
+    }
+    if (!current)
+      throw new ApiError({ code: "AUTH_TOKEN_EXPIRED", status: 401 });
+    return current;
+  },
+  async logout() {
+    current = null;
+    sessionStorage.removeItem("sr_mock_user");
+  },
+  async listDocuments() {
+    return page([document]);
+  },
+  async upload(file, docType) {
+    document = {
+      ...document,
+      filename: `MOCK · ${file.name}`,
+      doc_type: docType,
+      status: "uploaded",
+      progress: 0,
+    };
+    return document;
+  },
+  async document(_id, signal) {
+    await wait(100, signal);
+    document = { ...document, status: "ready", progress: 100 };
+    return document;
+  },
+  async recognition() {
+    return recognition;
+  },
+  async image(_id, p) {
+    const lines = recognition.ocr.blocks
+      .filter((b) => b.page === p)
+      .map(
+        (b) =>
+          `<text x="${b.bbox[0] * 700}" y="${b.bbox[1] * 900 + 22}" font-size="18">${b.text}</text>`,
+      )
+      .join("");
+    return new Blob(
+      [
+        `<svg xmlns="http://www.w3.org/2000/svg" width="700" height="900"><rect width="700" height="900" fill="white"/><text x="30" y="50" font-size="22">MOCK · DEVELOPMENT ONLY · ${p}</text>${lines}</svg>`,
+      ],
+      { type: "image/svg+xml" },
+    );
+  },
+  async patchFields(_id, _version, fields) {
+    for (const f of fields) {
+      const field = recognition.fields.find((v) => v.key === f.key);
+      if (field) {
+        field.value = f.value;
+        field.source = "manual";
+      }
+    }
+    recognition.version++;
+    return structuredClone(recognition);
+  },
+  async startReview(input) {
+    review = { ...review, ...input };
+    return review;
+  },
+  async review(_id, language) {
+    return { ...review, language };
+  },
+  async rule(id) {
+    const citation = review.findings
+      .flatMap((f) => f.citations)
+      .find((c) => c.rule_id === id);
+    return {
+      id,
+      source: "MOCK 开发规则",
+      jurisdiction: "MOCK",
+      article: id,
+      title: id,
+      text: citation?.excerpt ?? "",
+    };
+  },
+  async messages() {
+    return { items: [...messages] };
+  },
+  async *ask(_id, content, _language, signal) {
+    messages.push({
+      id: crypto.randomUUID(),
+      role: "user",
+      content,
+      created_at: stamp(),
+      blocked: false,
     });
-    yield { event: 'error' as const, code: 'PROMPT_INJECTION' };
-    return;
-  }
-  const answers: Record<AnswerLang, string> = {
-    zh: '建议核对装箱单金额并更正为与发票一致的 USD 128,400.00；HS 编码请人工复核后再报关。引用：RULE-AMT-01。',
-    en: 'Align the packing-list total to the invoice USD 128,400.00 and manually verify the HS code before filing. Citation: RULE-AMT-01.',
-    ru: 'Сверьте сумму в упаковочном листе с инвойсом USD 128,400.00 и перепроверьте код ТН ВЭД. Ссылка: RULE-AMT-01.',
-    vi: 'Hãy chỉnh tổng tiền packing list khớp hóa đơn USD 128,400.00 và kiểm tra lại mã HS. Trích dẫn: RULE-AMT-01.',
-    pt: 'Alinhe o total da packing list ao invoice USD 128,400.00 e revise o código HS. Citação: RULE-AMT-01.',
-    ar: 'وحّد مبلغ قائمة التعبئة مع الفاتورة USD 128,400.00 وراجع رمز HS يدويًا. المرجع: RULE-AMT-01.',
-  };
-  const text = answers[answerLang] ?? answers.zh;
-  for (const ch of text) {
-    await delay(12);
-    yield { event: 'delta' as const, text: ch };
-  }
-  yield {
-    event: 'citation' as const,
-    rule_id: 'RULE-AMT-01',
-    text: FINDINGS[0].citation,
-  };
-  yield { event: 'done' as const };
-}
-
-export async function getCaseAudit() {
-  await delay(200);
-  return auditLog.filter((e) => !e.caseId || e.caseId === DEMO_CASE.id);
-}
-
-export async function getGlobalAudit(role: Role) {
-  await delay(200);
-  if (role === 'reviewer') {
-    pushAudit({
-      actor: 'reviewer',
-      action: 'audit.read_all',
-      detail: 'denied GET /audit/logs',
-      outcome: 'denied',
-    });
-    const err = Object.assign(new Error('forbidden'), { code: 'FORBIDDEN', status: 403 });
-    throw err;
-  }
-  return {
-    logs: auditLog,
-    stats: {
-      logins: auditLog.filter((e) => e.action === 'auth.login').length,
-      denials: auditLog.filter((e) => e.outcome === 'denied').length,
-      blocks: auditLog.filter((e) => e.outcome === 'blocked').length,
-      model_calls: MODEL_CALLS.length,
-    },
-    redaction: REDACT_DEMO,
-  };
-}
-
-export async function verifyAuditChain() {
-  await delay(250);
-  return { ok: true, broken_at: null as string | null };
-}
-
-export function getSystemModels() {
-  return SYSTEM_MODELS;
-}
-
-export function getModelCalls() {
-  return MODEL_CALLS;
-}
+    const blocked = /ignore previous|jailbreak|越狱/i.test(content);
+    const reply: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "assistant",
+      content: blocked
+        ? "MOCK · 请求已拦截"
+        : "MOCK · 请核对发票与装箱单金额。",
+      created_at: stamp(),
+      blocked,
+      citations: blocked ? [] : review.findings[0].citations,
+    };
+    for (const text of reply.content) {
+      await wait(15, signal);
+      yield { event: "delta", data: { text } };
+    }
+    messages.push(reply);
+    yield { event: "done", data: reply };
+  },
+  async audit(reviewId) {
+    if (!reviewId && current?.role === "reviewer")
+      throw new ApiError({ code: "PERMISSION_DENIED", status: 403 });
+    return page([]);
+  },
+  async verifyAudit() {
+    if (current?.role === "reviewer")
+      throw new ApiError({ code: "PERMISSION_DENIED", status: 403 });
+    return { valid: true, checked: 0, head_hash: "MOCK" };
+  },
+  async models() {
+    return {
+      degrade_level: "L3",
+      models: [
+        {
+          category: "ocr",
+          provider: "MOCK",
+          model: "MOCK",
+          deployment: "local",
+          stage: "MOCK",
+          healthy: false,
+        },
+      ],
+    };
+  },
+};

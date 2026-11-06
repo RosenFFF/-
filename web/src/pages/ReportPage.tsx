@@ -1,115 +1,312 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { pollReview, startReview } from '../mock/api';
-import type { AnswerLang, Finding } from '../mock/types';
-import { MODEL_CALLS } from '../mock/data';
-
-function badgeClass(level: Finding['level']) {
-  if (level === 'high') return 'badge badge-high';
-  if (level === 'medium') return 'badge badge-med';
-  if (level === 'low') return 'badge badge-low';
-  return 'badge badge-pass';
-}
+import { useEffect, useRef, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { api } from "../api";
+import { aborted } from "../api/http";
+import { poll } from "../api/poll";
+import type { Language, Finding, Review, Rule } from "../api/types";
+import { ErrorNotice } from "../components/ErrorNotice";
+import { languages } from "../api/languages";
 
 export function ReportPage() {
+  const { id = "" } = useParams();
+  const [query, setQuery] = useSearchParams();
+  const reviewId = query.get("review") ?? "";
   const { t } = useTranslation();
-  const [lang, setLang] = useState<AnswerLang>('ru');
-  const [findings, setFindings] = useState<Finding[] | null>(null);
-  const [active, setActive] = useState<Finding | null>(null);
+  const [lang, setLang] = useState<Language>("zh-CN");
+  const [country, setCountry] = useState("RU");
+  const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
-  const [offline, setOffline] = useState(false);
-
-  async function run() {
+  const [retry, setRetry] = useState(0);
+  const creating = useRef(false);
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => () => controller.current?.abort(), []);
+  async function start() {
+    if (creating.current) return;
+    creating.current = true;
+    controller.current = new AbortController();
     setBusy(true);
+    setError(null);
     try {
-      await startReview(lang);
-      const res = await pollReview();
-      setFindings(res.findings);
-      setActive(res.findings[0] ?? null);
-      setOffline(Boolean(res.offline));
+      const r = await api.startReview(
+        { document_ids: [id], destination_country: country, language: lang },
+        controller.current.signal,
+      );
+      setQuery({ review: r.id });
+    } catch (e) {
+      if (!aborted(e)) setError(e);
     } finally {
+      creating.current = false;
       setBusy(false);
     }
   }
-
-  useEffect(() => {
-    void run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   return (
     <div className="stack">
       <div className="page-head">
-        <h1 className="page-title" style={{ margin: 0 }}>{t('report.title')}</h1>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
-            <span className="muted">{t('report.answerLang')}</span>
-            <select className="select" style={{ width: 'auto' }} value={lang} onChange={(e) => setLang(e.target.value as AnswerLang)}>
-              {(['zh', 'en', 'ru', 'vi', 'pt', 'ar'] as AnswerLang[]).map((l) => (
-                <option key={l} value={l}>{t(`answer.${l}`)}</option>
+        <h1 className="page-title">{t("report.title")}</h1>
+        <div className="action-row">
+          <label>
+            {t("report.destination")}
+            <input
+              className="input country-input"
+              value={country}
+              disabled={!!reviewId || busy}
+              onChange={(e) =>
+                setCountry(
+                  e.target.value
+                    .toUpperCase()
+                    .replace(/[^A-Z]/g, "")
+                    .slice(0, 2),
+                )
+              }
+              maxLength={2}
+            />
+          </label>
+          <label>
+            {t("report.answerLang")}
+            <select
+              className="select"
+              value={lang}
+              onChange={(e) => setLang(e.target.value as Language)}
+            >
+              {languages.map((l) => (
+                <option key={l} value={l}>
+                  {t(`answer.${l === "zh-CN" ? "zh" : l}`)}
+                </option>
               ))}
             </select>
           </label>
-          <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => void run()}>
-            {busy ? t('status.running') : t('extract.continue')}
+          <button
+            className="btn"
+            type="button"
+            disabled={busy || country.length !== 2}
+            onClick={() => {
+              if (reviewId) setRetry((r) => r + 1);
+              else void start();
+            }}
+          >
+            {busy
+              ? t("status.running")
+              : reviewId
+                ? t("common.retry")
+                : t("extract.continue")}
           </button>
-          <Link className="btn" to="/cases/case_demo_001/ask">{t('report.ask')}</Link>
         </div>
       </div>
-      {offline ? <div className="banner">{t('report.offline')}</div> : null}
-      <div className="banner" style={{ background: 'var(--brand-subtle)', color: 'var(--brand)' }}>{t('report.aigc')}</div>
-      <div className="grid-2">
-        <div className="panel" style={{ overflow: 'auto' }}>
-          <div style={{ padding: 12, fontWeight: 600 }}>{t('report.riskSummary')}</div>
-          <table className="table">
-            <tbody>
-              {(findings ?? []).map((f) => (
-                <tr key={f.id} className={`clickable${active?.id === f.id ? ' selected' : ''}`} onClick={() => setActive(f)}>
-                  <td><span className={badgeClass(f.level)}>{f.level}</span></td>
-                  <td>
-                    <div style={{ fontWeight: 600 }}>{f.title}</div>
-                    <div className="muted" style={{ fontSize: 12 }}>{f.detail}</div>
-                  </td>
-                  <td className="mono muted">{f.rule_id}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <ErrorNotice error={error} />
+      {!reviewId && !busy && !error ? (
+        <div className="banner">{t("report.startHint")}</div>
+      ) : null}
+      {reviewId ? (
+        <ReportResult
+          key={`${id}:${reviewId}:${lang}:${retry}`}
+          id={id}
+          reviewId={reviewId}
+          lang={lang}
+        />
+      ) : null}
+    </div>
+  );
+}
+function ReportResult({
+  id,
+  reviewId,
+  lang,
+}: {
+  id: string;
+  reviewId: string;
+  lang: Language;
+}) {
+  const { t } = useTranslation();
+  const [report, setReport] = useState<Review | null>(null);
+  const [active, setActive] = useState<Finding | null>(null);
+  const [rule, setRule] = useState<Rule | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  const [ruleError, setRuleError] = useState<unknown>(null);
+  const [busy, setBusy] = useState(true);
+  const citationController = useRef<AbortController | null>(null);
+  useEffect(() => {
+    const c = new AbortController();
+    void poll(
+      () => api.review(reviewId, lang, c.signal),
+      "completed",
+      c.signal,
+      setReport,
+    )
+      .then((r) => {
+        if (!c.signal.aborted) setActive(r.findings[0] ?? null);
+      })
+      .catch((e: unknown) => {
+        if (!aborted(e)) setError(e);
+      })
+      .finally(() => {
+        if (!c.signal.aborted) setBusy(false);
+      });
+    return () => {
+      c.abort();
+      citationController.current?.abort();
+    };
+  }, [reviewId, lang]);
+  async function loadRule(ruleId: string) {
+    citationController.current?.abort();
+    citationController.current = new AbortController();
+    setRule(null);
+    setRuleError(null);
+    try {
+      const r = await api.rule(ruleId, citationController.current.signal);
+      setRule(r);
+    } catch (e) {
+      if (!aborted(e)) setRuleError(e);
+    }
+  }
+  return (
+    <div className="stack">
+      <ErrorNotice error={error} />
+      {busy ? (
+        <div role="status">
+          {t("status.running")} {report?.progress?.step}{" "}
+          {report?.progress?.percent ?? 0}%
         </div>
-        <div className="panel" style={{ padding: 16, display: 'grid', gap: 12, alignContent: 'start' }}>
-          <div style={{ fontWeight: 600 }}>{t('report.citations')}</div>
-          {active ? (
-            <>
-              <div className="mono muted">{active.rule_id}</div>
-              <blockquote className="serif" style={{ margin: 0, padding: 12, background: 'var(--canvas)', borderLeft: '3px solid var(--brand)' }}>
-                {active.citation}
-              </blockquote>
-              <div className="muted" style={{ fontSize: 13 }}>{active.detail}</div>
-            </>
-          ) : (
-            <div className="muted">{t('status.running')}</div>
-          )}
-          <div style={{ marginTop: 8 }}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>model_calls</div>
+      ) : null}
+      {report?.status === "completed" ? (
+        <Link
+          className="btn"
+          to={`/cases/${id}/ask?review=${encodeURIComponent(reviewId)}`}
+        >
+          {t("report.ask")}
+        </Link>
+      ) : null}
+      {report?.status === "completed" ? (
+        <>
+          {report.degrade_level !== "L0" ? (
+            <div className="banner">
+              {t("report.degraded")} · {report.degrade_level}
+            </div>
+          ) : null}
+          {report.aigc ? (
+            <div className="banner aigc-notice">
+              {report.aigc.explicit_text}
+            </div>
+          ) : null}
+          <div className="panel summary-strip">
+            <strong>
+              {t("report.riskSummary")}: {report.risk_level ?? "—"}
+            </strong>
+            <span>{report.summary}</span>
+            <Link to={`/audit?review=${encodeURIComponent(reviewId)}`}>
+              {t("audit.own")}
+            </Link>
+          </div>
+          <div className="grid-2">
+            <div className="panel">
+              <div className="finding-list">
+                {report.findings.length ? (
+                  report.findings.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      className={`finding${active?.id === f.id ? " selected" : ""}`}
+                      onClick={() => {
+                        citationController.current?.abort();
+                        setActive(f);
+                        setRule(null);
+                        setRuleError(null);
+                      }}
+                    >
+                      <span
+                        className={`badge badge-${f.severity === "medium" ? "med" : f.severity === "info" ? "pass" : f.severity}`}
+                      >
+                        {t(`risk.${f.severity}`)}
+                      </span>
+                      <strong>{f.title}</strong>
+                      <span>{f.message}</span>
+                      <span className="mono">{f.determined_by}</span>
+                    </button>
+                  ))
+                ) : (
+                  <p>{t("report.noFindings")}</p>
+                )}
+              </div>
+            </div>
+            <section
+              className="panel form-panel"
+              aria-label={t("report.citations")}
+            >
+              <h2 className="section-title">{t("report.citations")}</h2>
+              {active?.citations.map((c) => (
+                <div className="stack" key={c.rule_id}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => void loadRule(c.rule_id)}
+                  >
+                    {c.source} · {c.article}
+                  </button>
+                  <blockquote className="serif citation">
+                    {c.excerpt}
+                  </blockquote>
+                </div>
+              ))}
+              <ErrorNotice error={ruleError} />
+              {rule ? (
+                <article className="rule-text">
+                  <h3>{rule.title}</h3>
+                  <div>
+                    {rule.source} · {rule.article}
+                  </div>
+                  <p className="serif">{rule.text}</p>
+                </article>
+              ) : null}
+              {active ? (
+                <div className="action-row">
+                  {(active.field_keys ?? []).map((key) => (
+                    <Link
+                      className="btn btn-secondary"
+                      key={key}
+                      to={`/cases/${active.document_id ?? id}/extract?field=${encodeURIComponent(key)}`}
+                    >
+                      {t("report.locate")}: {key}
+                    </Link>
+                  ))}
+                  {(active.evidence_block_ids ?? []).map((block) => (
+                    <Link
+                      className="btn btn-secondary"
+                      key={block}
+                      to={`/cases/${active.document_id ?? id}/extract?block=${encodeURIComponent(block)}`}
+                    >
+                      {t("report.locate")}: {block}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          </div>
+          <div className="panel table-wrap">
             <table className="table">
               <thead>
-                <tr><th>Stage</th><th>Model</th><th>ms</th><th>tok</th></tr>
+                <tr>
+                  <th>{t("models.stage")}</th>
+                  <th>Model</th>
+                  <th>ms</th>
+                  <th>Tokens</th>
+                </tr>
               </thead>
               <tbody>
-                {MODEL_CALLS.map((m) => (
-                  <tr key={m.id}>
-                    <td>{m.stage}</td>
+                {(report.models ?? []).map((m, i) => (
+                  <tr key={i}>
+                    <td>{m.task}</td>
                     <td className="mono">{m.model}</td>
-                    <td className="mono">{m.latency_ms}</td>
-                    <td className="mono">{m.tokens_in}/{m.tokens_out}</td>
+                    <td>{m.latency_ms}</td>
+                    <td>
+                      {m.tokens_in ?? "—"} / {m.tokens_out ?? "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
+        </>
+      ) : null}
     </div>
   );
 }

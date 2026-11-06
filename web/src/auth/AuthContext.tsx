@@ -1,44 +1,56 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { login as apiLogin, type Session } from '../mock/api';
-import type { Role } from '../mock/types';
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { api } from "../api";
+import type { CurrentUser } from "../api/types";
+import { aborted, ApiError } from "../api/http";
 
-type AuthState = {
-  session: Session | null;
-  login: (u: string, p: string) => Promise<void>;
-  logout: () => void;
-  role: Role | null;
-};
-
-const Ctx = createContext<AuthState | null>(null);
-
+import { AuthContext as Ctx, type AuthState } from "./context";
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(() => {
-    const raw = sessionStorage.getItem('sr_session');
-    return raw ? (JSON.parse(raw) as Session) : null;
-  });
-
+  const [session, setSession] = useState<CurrentUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [initialError, setInitialError] = useState<unknown>(null);
+  useEffect(() => {
+    // Remove M0's entire legacy session, including any old mock token. Never parse or reuse it.
+    sessionStorage.removeItem("sr_session");
+    const controller = new AbortController();
+    const expired = () => setSession(null);
+    window.addEventListener("session-expired", expired);
+    void api
+      .me(controller.signal)
+      .then((user) => {
+        if (!controller.signal.aborted) setSession(user);
+      })
+      .catch((error: unknown) => {
+        if (!aborted(error)) {
+          setSession(null);
+          if (!(error instanceof ApiError) || error.problem.status !== 401)
+            setInitialError(error);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+      window.removeEventListener("session-expired", expired);
+    };
+  }, []);
   const value = useMemo<AuthState>(
     () => ({
       session,
+      loading,
+      initialError,
       role: session?.role ?? null,
       async login(u, p) {
-        const s = await apiLogin(u, p);
-        sessionStorage.setItem('sr_session', JSON.stringify(s));
-        setSession(s);
+        const result = await api.login(u, p);
+        setSession(result.user);
+        setInitialError(null);
       },
-      logout() {
-        sessionStorage.removeItem('sr_session');
+      async logout() {
+        await api.logout();
         setSession(null);
       },
     }),
-    [session],
+    [session, loading, initialError],
   );
-
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
-}
-
-export function useAuth() {
-  const v = useContext(Ctx);
-  if (!v) throw new Error('AuthProvider missing');
-  return v;
 }

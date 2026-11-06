@@ -1,68 +1,90 @@
-import type { BBox } from '../mock/types';
-
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { api } from "../api";
+import { aborted } from "../api/http";
+import type { Location } from "../api/types";
+import { ErrorNotice } from "./ErrorNotice";
 type Props = {
+  documentId: string;
   page: number;
   pages: number;
   onPage: (p: number) => void;
-  highlight?: { page: number; bbox: BBox } | null;
-  pageLabel: string;
+  highlights: Location[];
 };
-
-/** Mock multi-page document surface with normalized bbox overlay. */
-export function DocPreview({ page, pages, onPage, highlight, pageLabel }: Props) {
-  const show = highlight && highlight.page === page ? highlight.bbox : null;
+export function DocPreview(props: Props) {
+  return <PageImage key={`${props.documentId}:${props.page}`} {...props} />;
+}
+function PageImage({ documentId, page, pages, onPage, highlights }: Props) {
+  const { t } = useTranslation();
+  const [src, setSrc] = useState("");
+  const [error, setError] = useState<unknown>(null);
+  useEffect(() => {
+    const c = new AbortController();
+    let url = "";
+    void api
+      .image(documentId, page, c.signal)
+      .then((blob) => {
+        if (!c.signal.aborted) {
+          url = URL.createObjectURL(blob);
+          setSrc(url);
+        }
+      })
+      .catch((e: unknown) => {
+        if (!aborted(e)) setError(e);
+      });
+    return () => {
+      c.abort();
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [documentId, page]);
   return (
-    <div className="panel" style={{ padding: 12, display: 'grid', gap: 12, height: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button type="button" className="btn btn-secondary" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+    <section className="panel preview-panel" aria-label={t("extract.original")}>
+      <div className="action-row preview-nav">
+        <button
+          type="button"
+          className="btn btn-secondary"
+          aria-label={t("common.previousPage")}
+          disabled={page <= 1}
+          onClick={() => onPage(page - 1)}
+        >
           ‹
         </button>
-        <span className="mono muted">
-          {pageLabel} {page} / {pages}
+        <span className="mono">
+          {t("extract.page")} {page} / {pages}
         </span>
-        <button type="button" className="btn btn-secondary" disabled={page >= pages} onClick={() => onPage(page + 1)}>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          aria-label={t("common.nextPage")}
+          disabled={page >= pages}
+          onClick={() => onPage(page + 1)}
+        >
           ›
         </button>
       </div>
-      <div
-        className="doc-page"
-        style={{
-          position: 'relative',
-          flex: 1,
-          minHeight: 420,
-          background: page === 1 ? '#fbfcfd' : '#f7f8fa',
-          border: '1px solid var(--line)',
-          borderRadius: 4,
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ padding: 24, color: 'var(--ink-secondary)', fontSize: 13 }}>
-          <div style={{ fontWeight: 600, color: 'var(--ink)', marginBottom: 12 }}>
-            {page === 1 ? 'COMMERCIAL INVOICE · INV-2026-8841' : 'PACKING LIST · PL-2026-8841'}
-          </div>
-          <div className="muted">Mock page content for demo highlighting (not a scanned image).</div>
-          <div style={{ marginTop: 24, height: 1, background: 'var(--line)' }} />
-          <div style={{ marginTop: 16 }} className="mono">
-            Shipper / Consignee / Totals …
-          </div>
+      <ErrorNotice error={error} />
+      {!src && !error ? <p role="status">{t("status.running")}</p> : null}
+      {src ? (
+        <div className="document-image">
+          <img src={src} alt={`${t("extract.original")} ${page}`} />
+          {highlights
+            .filter((loc) => loc.page === page)
+            .map(({ bbox: [x0, y0, x1, y1] }, i) => (
+              <div
+                data-testid="bbox-highlight"
+                key={i}
+                className="bbox-highlight"
+                aria-hidden="true"
+                style={{
+                  left: `${x0 * 100}%`,
+                  top: `${y0 * 100}%`,
+                  width: `${(x1 - x0) * 100}%`,
+                  height: `${(y1 - y0) * 100}%`,
+                }}
+              />
+            ))}
         </div>
-        {show ? (
-          <div
-            aria-hidden
-            style={{
-              position: 'absolute',
-              left: `${show.x * 100}%`,
-              top: `${show.y * 100}%`,
-              width: `${show.w * 100}%`,
-              height: `${show.h * 100}%`,
-              border: '2px solid var(--brand)',
-              background: 'rgba(15, 92, 92, 0.12)',
-              borderRadius: 2,
-              pointerEvents: 'none',
-            }}
-          />
-        ) : null}
-      </div>
-    </div>
+      ) : null}
+    </section>
   );
 }
