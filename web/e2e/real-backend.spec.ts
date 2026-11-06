@@ -88,12 +88,12 @@ test("real backend screenshots without MOCK banner", async ({ page }, info) => {
   await expect(page.locator(".mock-banner")).toHaveCount(0);
   await shot("report");
 
+  // GET/POST messages are both 501 until real LLM is available; input stays disabled.
   await page.getByRole("link", { name: "继续追问", exact: true }).click();
-  const question = page.getByRole("textbox").first();
-  await expect(question).toBeEnabled({ timeout: 30_000 });
-  await question.fill("如何核对金额？");
-  await question.press("Enter");
   await expect(page.getByText("功能暂未实现")).toBeVisible({ timeout: 30_000 });
+  await expect(
+    page.getByRole("textbox", { name: "例如：如何修改才能合规？" }),
+  ).toBeDisabled();
   await expect(page.locator(".mock-banner")).toHaveCount(0);
   await shot("ask-501");
 

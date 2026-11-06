@@ -293,7 +293,10 @@
   ],
   "real_backend": {
     "commit": "8d94e02",
+    "frontend_commit_pending": true,
     "screenshots": [
+      "real-ask-501-1440.png",
+      "real-ask-501-390.png",
       "real-extract-1440.png",
       "real-extract-390.png",
       "real-login-1440.png",
@@ -304,6 +307,6 @@
       "real-upload-390.png"
     ],
     "mock_banner_red_top_samples": 0,
-    "ask_messages": "501 MODEL_UNAVAILABLE"
+    "ask_messages": "501 MODEL_UNAVAILABLE; input stays disabled; ErrorNotice shows 功能暂未实现"
   }
 }
