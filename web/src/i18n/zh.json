@@ -213,5 +213,17 @@
   "audit.filterResult": "结果过滤",
   "injection.prompt": "提示注入",
   "injection.scope": "越权范围",
-  "injection.output": "出域过滤"
+  "injection.output": "出域过滤",
+  "flow.label": "审查流程",
+  "flow.upload": "上传",
+  "flow.extract": "识别",
+  "flow.report": "审查",
+  "flow.ask": "追问",
+  "flow.audit": "审计",
+  "ask.historyLoading": "正在读取追问历史…",
+  "ask.historyEmpty": "尚无追问。输入问题后发送；模型不可用时会如实显示 503。",
+  "ask.modelUnavailableHint": "无可用真实模型时不会伪造流式回答。",
+  "upload.fileChosen": "已选择文件",
+  "common.skipToContent": "跳到主要内容",
+  "env.standInNote": "当前联调库为替身时，截图 sidecar 会标明 SQLite/fakeredis，不作活库验收。"
 }

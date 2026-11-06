@@ -213,5 +213,17 @@
   "audit.filterResult": "Lọc kết quả",
   "injection.prompt": "Prompt injection",
   "injection.scope": "Lạm dụng phạm vi",
-  "injection.output": "Lọc đầu ra"
+  "injection.output": "Lọc đầu ra",
+  "flow.label": "Luồng kiểm tra",
+  "flow.upload": "Tải lên",
+  "flow.extract": "Nhận dạng",
+  "flow.report": "Báo cáo",
+  "flow.ask": "Hỏi thêm",
+  "flow.audit": "Kiểm toán",
+  "ask.historyLoading": "Đang tải lịch sử hỏi…",
+  "ask.historyEmpty": "Chưa có câu hỏi. Gửi bên dưới; mô hình không khả dụng sẽ hiện 503.",
+  "ask.modelUnavailableHint": "Khi không có mô hình thật, giao diện không bịa luồng trả lời.",
+  "upload.fileChosen": "Đã chọn tệp",
+  "common.skipToContent": "Chuyển tới nội dung chính",
+  "env.standInNote": "Khi dùng fixture thay thế, sidecar ảnh ghi SQLite/fakeredis; không phải nghiệm thu DB thật."
 }

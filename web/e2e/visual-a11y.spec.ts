@@ -6,8 +6,20 @@ import { resolve } from "node:path";
 import type { Api } from "../src/api/types.js";
 
 const output =
+  process.env.M3_SCREENSHOT_DIR ??
   process.env.M1_SCREENSHOT_DIR ??
-  fileURLToPath(new URL("../../../screenshots/m2/", import.meta.url));
+  fileURLToPath(new URL("../../../screenshots/m3/", import.meta.url));
+
+const ENVIRONMENT = {
+  kind: "mock",
+  vite_use_mock: true,
+  database: "mock_in_memory",
+  redis: "mock_in_memory",
+  postgres_live: false,
+  redis_live: false,
+  real_model: false,
+  note: "MOCK adapter only; not a live backend acceptance run.",
+} as const;
 const docId = "00000000-0000-4000-8000-000000000001";
 const tabbables = "a[href],button,input,select,textarea,[tabindex]";
 
@@ -137,6 +149,7 @@ async function overflowAudit(page: Page) {
       const rect = el.getBoundingClientRect();
       if (
         !rect.width ||
+        el.classList.contains("skip-link") ||
         getComputedStyle(el).visibility === "hidden" ||
         (rect.right <= width + 1 && rect.left >= -1 && rect.width <= width + 1)
       )
@@ -211,6 +224,7 @@ test("mock review journey: screenshots, axe, overflow and real keyboard operatio
     });
     const report = {
       name,
+      environment: ENVIRONMENT,
       viewport: page.viewportSize(),
       screenshot,
       overflow,
@@ -452,7 +466,7 @@ test("mock review journey: screenshots, axe, overflow and real keyboard operatio
       name: string;
       overflow: Awaited<ReturnType<typeof overflowAudit>>;
       keyboard: Awaited<ReturnType<typeof tabAudit>>;
-      axe: { violations: { id: string }[]; incomplete: { id: string }[] };
+      axe: { violations: { id: string }[]; incomplete: { id: string; nodes?: { any?: { id: string; data?: { messageKey?: string } }[] }[] }[] };
     };
     return [
       ...(report.overflow.horizontalOverflow
@@ -462,9 +476,22 @@ test("mock review journey: screenshots, axe, overflow and real keyboard operatio
         (el) => `${report.name}: uncontained ${el.tag}.${el.className}`,
       ),
       ...report.axe.violations.map((rule) => `${report.name}: axe ${rule.id}`),
-      ...report.axe.incomplete.map(
-        (rule) => `${report.name}: axe incomplete ${rule.id}`,
-      ),
+      ...report.axe.incomplete
+        .filter((rule) => {
+          // Keep undetermined contrast (partial overlap / no bg) in the sidecar,
+          // but only hard-fail incomplete rules with a real measurable failure.
+          if (rule.id !== "color-contrast") return true;
+          return (rule.nodes ?? []).some((node) =>
+            (node.any ?? []).some(
+              (check) =>
+                check.id === "color-contrast" &&
+                check.data?.messageKey !== "elmPartiallyObscuring" &&
+                check.data?.messageKey !== "bgImage" &&
+                check.data?.messageKey !== "bgGradient",
+            ),
+          );
+        })
+        .map((rule) => `${report.name}: axe incomplete ${rule.id}`),
       ...(!report.keyboard.orderMatches ? [`${report.name}: Tab order`] : []),
       ...report.keyboard.failures.map(
         (node) => `${report.name}: keyboard focus ${node.tag}#${node.id}`,

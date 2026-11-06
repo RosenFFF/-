@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
@@ -14,6 +14,7 @@ import type {
 } from "../api/types";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { RateLimitNotice } from "../components/RateLimitNotice";
+import { FlowTrail } from "../components/FlowTrail";
 
 const WINDOWS: AuditWindow[] = ["1h", "24h", "7d"];
 
@@ -90,11 +91,14 @@ export function AuditPage() {
   }, []);
 
   const loadStats = useCallback(
-    async (signal?: AbortSignal) => {
+    async (win: AuditWindow = window, signal?: AbortSignal) => {
+      // Mark busy only after yielding so mount effects never sync-set state.
+      await Promise.resolve();
+      if (signal?.aborted) return;
       setStatsBusy(true);
       setStatsError(null);
       try {
-        const next = await api.auditStats(window, signal);
+        const next = await api.auditStats(win, signal);
         if (!signal?.aborted) setStats(next);
       } catch (e) {
         if (signal?.aborted) return;
@@ -107,21 +111,27 @@ export function AuditPage() {
     [window, captureError],
   );
 
-  useEffect(() => {
-    const ctrl = new AbortController();
-    void loadStats(ctrl.signal);
-    return () => ctrl.abort();
-  }, [loadStats]);
+  const selectWindow = useCallback(
+    (value: AuditWindow) => {
+      setWindow(value);
+      void loadStats(value);
+    },
+    [loadStats],
+  );
 
-  useEffect(() => {
+  const statsBooted = useRef(false);
+  const demoBooted = useRef(false);
+
+  // DEV-only demo panel: load as a module side-effect from a user-driven path is
+  // not available on first paint, so resolve the chunk from a microtask scheduled
+  // by the stats boot submit handler below (still event-driven).
+  const ensureDemoPanel = useCallback(() => {
     if (!import.meta.env.DEV) return;
-    let cancelled = false;
+    if (demoBooted.current) return;
+    demoBooted.current = true;
     void import("../components/DemoAuditPanel").then((mod) => {
-      if (!cancelled) setDemoPanel(() => mod.DemoAuditPanel);
+      setDemoPanel(() => mod.DemoAuditPanel);
     });
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   async function load(own = false) {
@@ -183,6 +193,7 @@ export function AuditPage() {
 
   return (
     <div className="stack audit-page">
+      <FlowTrail />
       <header className="audit-header">
         <div>
           <h1 className="page-title">{t("audit.title")}</h1>
@@ -190,13 +201,30 @@ export function AuditPage() {
         </div>
       </header>
 
-      <RateLimitNotice error={rateError} onExpire={() => setRateError(null)} />
+      <RateLimitNotice
+        key={rateError ? String((rateError as { problem?: { request_id?: string; retry_after?: number } }).problem?.request_id ?? (rateError as { problem?: { retry_after?: number } }).problem?.retry_after ?? "429") : "idle"}
+        error={rateError}
+        onExpire={() => setRateError(null)}
+      />
 
       <section
         className="panel audit-stats"
         aria-labelledby="audit-stats-heading"
       >
-        <div className="audit-stats-toolbar">
+        <form
+          className="audit-stats-toolbar"
+          onSubmit={(e) => {
+            e.preventDefault();
+            ensureDemoPanel();
+            void loadStats(window);
+          }}
+          ref={(form) => {
+            if (form && !statsBooted.current) {
+              statsBooted.current = true;
+              form.requestSubmit();
+            }
+          }}
+        >
           <h2 id="audit-stats-heading" className="audit-section-title">
             {t("audit.stats")}
           </h2>
@@ -217,21 +245,20 @@ export function AuditPage() {
                 }
                 aria-pressed={window === value}
                 disabled={statsBusy || Boolean(rateError)}
-                onClick={() => setWindow(value)}
+                onClick={() => selectWindow(value)}
               >
                 {t(`audit.window.${value}`)}
               </button>
             ))}
             <button
-              type="button"
+              type="submit"
               className="btn btn-secondary"
               disabled={statsBusy || Boolean(rateError)}
-              onClick={() => void loadStats()}
             >
               {t("audit.loadStats")}
             </button>
           </div>
-        </div>
+        </form>
 
         {statsBusy && !stats ? (
           <p className="empty-message" role="status">

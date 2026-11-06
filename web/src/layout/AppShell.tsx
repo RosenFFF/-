@@ -39,6 +39,9 @@ export function AppShell() {
   }
   return (
     <div className="shell">
+      <a className="skip-link" href="#main-content">
+        {t("common.skipToContent")}
+      </a>
       <aside className="shell-nav" aria-label={t("app.name")}>
         <div className="brand">
           <div className="brand-name">{t("app.name")}</div>
@@ -85,7 +88,7 @@ export function AppShell() {
           <ErrorNotice error={error} />
         </div>
       </aside>
-      <main className="shell-main">
+      <main id="main-content" className="shell-main" tabIndex={-1}>
         <Outlet />
       </main>
     </div>

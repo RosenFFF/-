@@ -8,6 +8,7 @@ import type { Language, ChatMessage } from "../api/types";
 import { languages } from "../api/languages";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { CitationSource } from "../components/Provenance";
+import { FlowTrail } from "../components/FlowTrail";
 
 export function AskPage() {
   const [query] = useSearchParams();
@@ -128,6 +129,7 @@ function AskContent() {
 
   return (
     <div className="stack ask-page">
+      <FlowTrail />
       <div className="page-head">
         <h1 className="page-title">{t("ask.title")}</h1>
         <label>
@@ -164,6 +166,16 @@ function AskContent() {
         </div>
       ) : null}
       <div className="panel chat-history" aria-live="polite">
+        {!historyLoaded && reviewId ? (
+          <p className="muted" role="status">
+            {t("ask.historyLoading")}
+          </p>
+        ) : null}
+        {historyLoaded && messages.length === 0 && reviewId ? (
+          <p className="muted" role="status">
+            {t("ask.historyEmpty")}
+          </p>
+        ) : null}
         {messages.map((m) => (
           <div
             key={m.id}

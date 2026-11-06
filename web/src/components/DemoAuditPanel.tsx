@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ApiError } from "../api/http";
 import { demoAuditApi } from "../api/demo";
 import { errorText, retryAfterSeconds } from "../api/errors";
 import type { Verify } from "../api/types";
 import { api } from "../api";
+import { remainingSeconds, useClock } from "../hooks/useClock";
 
 type Props = {
   busy: boolean;
@@ -35,26 +36,15 @@ export function DemoAuditPanel({
   const [demoLogId, setDemoLogId] = useState(initialLogId);
   const [demoMsg, setDemoMsg] = useState<string | null>(null);
   const [rateError, setRateError] = useState<unknown>(null);
-  const [left, setLeft] = useState(0);
-
-  useEffect(() => {
-    if (!rateError) {
-      setLeft(0);
-      return;
-    }
-    setLeft(retryAfterSeconds(rateError) ?? 1);
-  }, [rateError]);
-
-  useEffect(() => {
-    if (left <= 0) return;
-    const id = window.setTimeout(() => setLeft((v) => v - 1), 1000);
-    return () => window.clearTimeout(id);
-  }, [left]);
+  const [deadline, setDeadline] = useState<number | null>(null);
+  const now = useClock(deadline !== null);
+  const left = remainingSeconds(deadline, now);
 
   async function run(kind: "tamper" | "restore") {
     onBusy(true);
     onError(null);
     setRateError(null);
+    setDeadline(null);
     setDemoMsg(null);
     try {
       if (kind === "tamper") {
@@ -69,7 +59,9 @@ export function DemoAuditPanel({
     } catch (e) {
       const status = statusOf(e) || (e instanceof ApiError ? e.problem.status : 0);
       if (status === 429) {
+        const wait = retryAfterSeconds(e) ?? 1;
         setRateError(e);
+        setDeadline(Date.now() + wait * 1000);
         onError(e);
         setDemoMsg("RATE_LIMITED status=429");
       } else if (status === 404) {
@@ -97,7 +89,7 @@ export function DemoAuditPanel({
           <strong>{t("audit.rateLimitedTitle")}</strong>
           <div>{errorText(rateError)}</div>
           <div className="audit-countdown tabular-nums" aria-live="polite">
-            {t("audit.countdown", { seconds: Math.max(left, 0) })}
+            {t("audit.countdown", { seconds: left })}
           </div>
         </div>
       ) : null}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorText, retryAfterSeconds } from "../api/errors";
+import { remainingSeconds, useClock } from "../hooks/useClock";
 
 function is429(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
@@ -8,7 +9,10 @@ function is429(error: unknown): boolean {
   return problem?.status === 429;
 }
 
-/** Shows 429 with a live countdown. Never auto-retries. */
+/**
+ * 429 banner with live countdown. Parent should remount with a new key when the
+ * underlying rate-limit error changes so the deadline re-initializes cleanly.
+ */
 export function RateLimitNotice({
   error,
   onExpire,
@@ -17,24 +21,19 @@ export function RateLimitNotice({
   onExpire?: () => void;
 }) {
   const { t } = useTranslation();
-  const initial = retryAfterSeconds(error) ?? 0;
-  const [left, setLeft] = useState(initial);
-  const hadCountdown = useRef(initial > 0);
+  const seconds = retryAfterSeconds(error) ?? 0;
+  const [deadline] = useState(() =>
+    seconds > 0 ? Date.now() + seconds * 1000 : null,
+  );
+  const now = useClock(Boolean(deadline));
+  const left = remainingSeconds(deadline, now);
+  const expiredRef = useRef(false);
 
   useEffect(() => {
-    setLeft(initial);
-    if (initial > 0) hadCountdown.current = true;
-  }, [initial, error]);
-
-  useEffect(() => {
-    if (left <= 0) {
-      // Only notify expiry after a real countdown finished — never clear on mount when Retry-After was missing.
-      if (hadCountdown.current) onExpire?.();
-      return;
-    }
-    const id = window.setTimeout(() => setLeft((v) => v - 1), 1000);
-    return () => window.clearTimeout(id);
-  }, [left, onExpire]);
+    if (!deadline || left > 0 || expiredRef.current) return;
+    expiredRef.current = true;
+    onExpire?.();
+  }, [deadline, left, onExpire]);
 
   if (!is429(error)) return null;
 

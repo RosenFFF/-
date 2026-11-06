@@ -213,5 +213,17 @@
   "audit.filterResult": "Result filter",
   "injection.prompt": "Prompt injection",
   "injection.scope": "Scope abuse",
-  "injection.output": "Output filter"
+  "injection.output": "Output filter",
+  "flow.label": "Review flow",
+  "flow.upload": "Upload",
+  "flow.extract": "Extract",
+  "flow.report": "Review",
+  "flow.ask": "Ask",
+  "flow.audit": "Audit",
+  "ask.historyLoading": "Loading chat history…",
+  "ask.historyEmpty": "No questions yet. Send one below; unavailable models surface as 503.",
+  "ask.modelUnavailableHint": "When no live model is available, the UI will not invent a streamed answer.",
+  "upload.fileChosen": "File selected",
+  "common.skipToContent": "Skip to main content",
+  "env.standInNote": "When the fixture uses stand-ins, screenshot sidecars label SQLite/fakeredis; not a live DB acceptance."
 }
