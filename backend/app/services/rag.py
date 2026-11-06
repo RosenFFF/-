@@ -35,6 +35,31 @@ class RuleIndex:
         # Recognition shows the configured index; review shows the actual supplied citations.
         return provenance(list(self.rules.values()) if citations is None else citations, self.retrieval_mode)
 
+    def detail(self, rule_id: str) -> dict | None:
+        """Public rule card: same provenance fields as citations, never raw seed-only shape."""
+        r = self.rules.get(rule_id)
+        if r is None:
+            return None
+        kind = source_kind_of_rule(r)
+        return {
+            "id": r["id"],
+            "source": r["source"],
+            "jurisdiction": r["jurisdiction"],
+            "article": r["article"],
+            "title": r["title"],
+            "text": r["text"],
+            "url": r.get("url"),
+            "effective_date": r.get("effective_date"),
+            "corpus": "public_verified" if is_public(r) else "synthetic",
+            "verified_at": r.get("verified_at"),
+            "verification_note": r.get("verification_note"),
+            "source_kind": kind,
+            "source_kind_label": SOURCE_KIND_LABELS[kind],
+            "version_date": r.get("verified_at") or r.get("effective_date"),
+            "excerpt_kind": "summary",
+            "applicability": "unverified",
+        }
+
     def citation(self, rule_id: str, score: float = 1.0) -> dict:
         r = self.rules[rule_id]
         return {
@@ -53,7 +78,6 @@ class RuleIndex:
             "version_date": r.get("verified_at") or r.get("effective_date"),
             "excerpt_kind": "summary",  # 公开条目为摘要，非法规原文
             "applicability": "unverified",  # 不构成完整适用性证据
-
         }
 
     def search(self, query: str, top_k: int = 20, top_n: int = 5) -> tuple[list[dict], list[dict]]:

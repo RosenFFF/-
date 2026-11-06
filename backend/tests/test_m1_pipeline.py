@@ -67,6 +67,10 @@ async def test_fake_llm_upload_real_ocr_recognition_to_grounded_report(fake_api)
         for citation in finding["citations"]:
             rule = (await c.get("/api/v1/rules/" + citation["rule_id"])).json()
             assert citation["article"] == rule["article"] and citation["excerpt"] == rule["text"]
+            assert rule["source_kind"] == citation["source_kind"]
+            assert rule["source_kind_label"] == citation["source_kind_label"]
+            assert rule["version_date"] == citation.get("version_date")
+            assert rule["excerpt_kind"] == "summary" and rule["applicability"] == "unverified"
     listed = (await c.get("/api/v1/reviews")).json()
     assert listed["total"] == 1 and listed["items"][0]["id"] == review_id
     health = (await c.get("/api/v1/system/models")).json()

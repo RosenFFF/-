@@ -151,3 +151,20 @@ def test_source_kind_is_stable_frontend_badge_field():
     flags = provenance([], "lightweight_hash")
     assert flags["source_kind"] == "synthetic"
     assert flags["source_kind_label"] == SOURCE_KIND_LABELS["synthetic"] == "合成规则 · 非真实合规结论"
+
+
+async def test_rule_detail_exposes_unified_provenance(api):
+    c = await api.login("reviewer")
+    synthetic = (await c.get("/api/v1/rules/SYN-REQUIRED")).json()
+    assert synthetic["source_kind"] == "synthetic"
+    assert synthetic["source_kind_label"] == "合成规则 · 非真实合规结论"
+    assert synthetic["excerpt_kind"] == "summary"
+    assert synthetic["applicability"] == "unverified"
+    assert "version_date" in synthetic
+    public = (await c.get("/api/v1/rules/PUB-CN-ORIGIN")).json()
+    assert public["source_kind"] == "public"
+    assert public["url"].startswith("https://")
+    assert public["version_date"] == public["verified_at"]
+    assert public["corpus"] == "public_verified"
+    missing = await c.get("/api/v1/rules/NO-SUCH-RULE")
+    assert missing.status_code == 404

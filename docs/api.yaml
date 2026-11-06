@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 丝路智审 API
-  version: 0.3.1
+  version: 0.3.2
   description: |
     跨境贸易单证 AI 合规审查平台后端接口契约（M0 草案）。
 
@@ -504,7 +504,7 @@ paths:
       - { name: rule_id, in: path, required: true, schema: { type: string, maxLength: 64 } }
     get:
       tags: [rules]
-      summary: 规则条款原文（点击引用时展示）
+      summary: 规则详情（点击引用时展示；含 source_kind/version_date，公开条目为摘要）
       responses:
         '200':
           description: OK
@@ -1021,19 +1021,35 @@ components:
 
     Rule:
       type: object
-      required: [id, source, jurisdiction, article, title, text]
+      required: [id, source, jurisdiction, article, title, text, corpus, source_kind, source_kind_label, excerpt_kind, applicability]
       properties:
         id: { type: string }
         source: { type: string }
         jurisdiction: { type: string }
         article: { type: string }
         title: { type: string }
-        text: { type: string }
+        text: { type: string, description: '条目正文；公开规则为摘要，非法规原文全文' }
         url: { type: [string, 'null'], format: uri }
         effective_date: { type: [string, 'null'], format: date }
         corpus: { type: string, enum: [synthetic, public_verified], description: '无标记的旧规则保守按 synthetic' }
         verified_at: { type: [string, 'null'], format: date }
-        verification_note: { type: string }
+        verification_note: { type: [string, 'null'] }
+        source_kind:
+          type: string
+          enum: [synthetic, public]
+          description: 与引用 citations[].source_kind 同语义
+        source_kind_label:
+          type: string
+          description: 可直接展示；synthetic 固定为「合成规则 · 非真实合规结论」
+        version_date: { type: [string, 'null'], format: date, description: '优先 verified_at，否则 effective_date' }
+        excerpt_kind:
+          type: string
+          enum: [summary, verbatim]
+          description: summary=摘要，不得当作法规原文
+        applicability:
+          type: string
+          enum: [unverified]
+          description: 固定 unverified：公开出处不等于本票适用或合规已通过
 
     ModelTrace:
       type: object
