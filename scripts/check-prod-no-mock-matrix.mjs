@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const web = join(root, "web");
 const check = join(root, "scripts", "check-prod-no-mock.sh");
+const checkDemo = join(root, "scripts", "check-prod-no-demo.sh");
 
 const cases = [
   ["VITE_USE_MOCK unset", {}],
@@ -41,6 +42,7 @@ try {
     }
     try {
       execFileSync("bash", [check, outDir], { stdio: "inherit" });
+      execFileSync("bash", [checkDemo, outDir], { stdio: "inherit" });
       console.log(`prod-no-mock-matrix: OK (${label})`);
     } catch {
       console.error(`prod-no-mock-matrix: FAIL (${label})`);

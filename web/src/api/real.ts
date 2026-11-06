@@ -4,6 +4,17 @@ import type { Api, ChatEvent, Language } from "./types";
 
 const id = encodeURIComponent;
 
+function queryString(params: Record<string, string | number | undefined | null>): string {
+  const sp = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === "") continue;
+    sp.set(key, String(value));
+  }
+  const q = sp.toString();
+  return q ? `?${q}` : "";
+}
+
+
 const TERMINAL = new Set(["done", "error"]);
 
 /** SSE framing survives split UTF-8/chunks, CRLF, comments and multiple data lines. */
@@ -207,10 +218,22 @@ export const realApi: Api = {
     json(`/reviews/${id(reviewId)}/messages`, { signal }),
   ask: (reviewId, content, language, signal, lastEventId) =>
     askStream(reviewId, content, language, { signal, lastEventId }),
-  audit: (reviewId) =>
-    json(reviewId ? `/reviews/${id(reviewId)}/audit` : "/audit/logs"),
+  audit: (reviewId, query = {}, signal) =>
+    json(
+      (reviewId ? `/reviews/${id(reviewId)}/audit` : "/audit/logs") +
+        queryString({
+          page: query.page,
+          page_size: query.page_size,
+          action: query.action,
+          result: query.result,
+          actor_id: query.actor_id,
+          since: query.since,
+          until: query.until,
+        }),
+      { signal },
+    ),
   auditStats: (window = "24h", signal) =>
     json(`/audit/stats?window=${id(window)}`, { signal }),
-  verifyAudit: () => json("/audit/verify"),
+  verifyAudit: (signal) => json("/audit/verify", { signal }),
   models: (signal) => json("/system/models", { signal }),
 };

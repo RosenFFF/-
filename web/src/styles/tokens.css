@@ -798,3 +798,11 @@ a[href] {
 .audit-marker--missing {
   color: var(--ink-muted);
 }
+
+.audit-rate-limit { display: grid; gap: 6px; }
+.audit-countdown { font-size: 0.875rem; font-weight: 600; color: var(--risk-med); }
+.audit-demo { display: grid; gap: 12px; padding: 16px; }
+.audit-marker--ok {
+  border-color: color-mix(in srgb, var(--risk-pass) 35%, var(--line));
+  color: var(--risk-pass);
+}

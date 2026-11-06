@@ -1,4 +1,4 @@
-/** Public wire types from docs/api.yaml v0.3.0. No browser-readable auth tokens. */
+/** Public wire types from docs/api.yaml v0.4.0. No browser-readable auth tokens. */
 export type Role = "admin" | "reviewer" | "auditor";
 export type Language = "zh-CN" | "en" | "ru" | "vi" | "pt" | "ar";
 export type BBox = [number, number, number, number];
@@ -9,6 +9,8 @@ export type Problem = {
   status: number;
   code: string;
   request_id?: string;
+  /** Seconds from Retry-After when status is 429. */
+  retry_after?: number;
 };
 export type CurrentUser = {
   id: string;
@@ -177,21 +179,48 @@ export type Rule = SourceMetadata & {
   title: string;
   text: string;
 };
+export type AuditResult = "success" | "denied" | "blocked" | "failed";
+export type InjectionCategory = "prompt" | "scope" | "output";
+export type RateLimitScope = "user" | "ip" | "route";
+export type AuditDetail = {
+  source_kind: "synthetic" | "public";
+  source_kind_label: string;
+  degrade_status: string | null;
+  llm_verified: boolean;
+  fallback_reason: string | null;
+  injection_category: InjectionCategory | null;
+  pii_fields: string[] | null;
+  rate_limit_scope: RateLimitScope | null;
+  actor_role: string | null;
+  resource_type: string | null;
+  resource_id: string | null;
+  ip: string | null;
+  [key: string]: unknown;
+};
 export type AuditLog = {
   id: string;
   ts: string;
-  actor_id?: string | null;
-  actor_username?: string | null;
-  actor_role?: Role | null;
+  actor_id: string | null;
+  actor_username: string | null;
+  actor_role: string | null;
   action: string;
-  resource_type?: string | null;
-  resource_id?: string | null;
-  result: string;
-  ip?: string | null;
+  resource_type: string | null;
+  resource_id: string | null;
+  result: AuditResult;
+  ip: string | null;
   request_id: string;
-  detail?: Record<string, unknown>;
-  prev_hash?: string | null;
+  detail: AuditDetail;
+  prev_hash: string | null;
   hash: string;
+};
+export type AuditLogQuery = {
+  page?: number;
+  page_size?: number;
+  action?: string;
+  result?: AuditResult;
+  actor_id?: string;
+  since?: string;
+  until?: string;
 };
 export type ModelChain = {
   degrade_level: string;
@@ -207,35 +236,55 @@ export type ModelChain = {
 export type Verify = {
   valid: boolean;
   checked: number;
-  head_hash: string;
-  first_broken_id?: string | null;
+  head_hash: string | null;
+  first_broken_id: string | null;
 };
 export type AuditWindow = "1h" | "24h" | "7d";
 export type SecurityTotals = {
-  requests?: number;
-  logins_failed?: number;
-  access_denied?: number;
-  rate_limited?: number;
-  injections_blocked?: number;
-  pii_masked?: number;
-  model_calls?: number;
-  model_fallbacks?: number;
-  tokens_used?: number;
+  requests: number;
+  logins_failed: number;
+  access_denied: number;
+  rate_limited: number;
+  injections_blocked: number;
+  pii_masked: number;
+  model_calls: number;
+  model_fallbacks: number;
+  tokens_used: number;
+  outputs_blocked: number;
+  csrf_failed: number;
+  auth_locked: number;
+  model_errors: number;
 };
 export type SecurityTimelineBucket = {
   bucket_start: string;
+  logins_failed?: number;
+  pii_masked?: number;
+  model_fallbacks?: number;
+  csrf_failed?: number;
+  auth_locked?: number;
+  model_errors?: number;
   access_denied?: number;
   injections_blocked?: number;
   rate_limited?: number;
   model_calls?: number;
 };
 export type SecurityStats = {
-  window: string;
+  window: AuditWindow | string;
+  window_start: string;
+  window_end: string;
+  generated_at: string;
+  degrade_status: string | null;
+  llm_verified: boolean;
+  source_kind: "synthetic" | "public";
+  source_kind_label: string;
   totals: SecurityTotals;
-  timeline?: SecurityTimelineBucket[];
-  top_denied_actors?: { actor_username?: string; count?: number }[];
-  audit_chain_valid?: boolean;
+  timeline: SecurityTimelineBucket[];
+  top_denied_actors: { actor_username: string | null; count: number }[];
+  audit_chain_valid: boolean;
 };
+export type DemoAuditTarget = { log_id: string };
+export type DemoTamperResult = { tampered_id: string };
+export type DemoRestoreResult = { restored_id: string };
 export interface Api {
   login(username: string, password: string): Promise<SessionResponse>;
   me(signal?: AbortSignal): Promise<CurrentUser>;
@@ -261,8 +310,8 @@ export interface Api {
     signal?: AbortSignal,
     lastEventId?: string,
   ): AsyncIterable<ChatEvent>;
-  audit(reviewId?: string): Promise<Page<AuditLog>>;
+  audit(reviewId?: string, query?: AuditLogQuery, signal?: AbortSignal): Promise<Page<AuditLog>>;
   auditStats(window?: AuditWindow, signal?: AbortSignal): Promise<SecurityStats>;
-  verifyAudit(): Promise<Verify>;
+  verifyAudit(signal?: AbortSignal): Promise<Verify>;
   models(signal?: AbortSignal): Promise<ModelChain>;
 }

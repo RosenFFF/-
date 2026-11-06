@@ -3,15 +3,17 @@ import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
 import { ApiError } from "../api/http";
+import { errorText } from "../api/errors";
 import type {
   AuditLog,
+  AuditResult,
   AuditWindow,
   SecurityStats,
   SecurityTotals,
   Verify,
 } from "../api/types";
-import { errorText } from "../api/errors";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { RateLimitNotice } from "../components/RateLimitNotice";
 
 const WINDOWS: AuditWindow[] = ["1h", "24h", "7d"];
 
@@ -21,9 +23,13 @@ const METRIC_KEYS: (keyof SecurityTotals)[] = [
   "access_denied",
   "rate_limited",
   "injections_blocked",
+  "outputs_blocked",
   "pii_masked",
+  "csrf_failed",
+  "auth_locked",
   "model_calls",
   "model_fallbacks",
+  "model_errors",
   "tokens_used",
 ];
 
@@ -33,27 +39,11 @@ function formatTs(iso: string): string {
   })} (America/Tijuana)`;
 }
 
-function detailText(
-  detail: Record<string, unknown> | undefined,
-  key: string,
-): string | null {
-  const value = detail?.[key];
-  return typeof value === "string" && value.trim() ? value.trim() : null;
-}
-
-function detailBool(
-  detail: Record<string, unknown> | undefined,
-  key: string,
-): boolean | null {
-  const value = detail?.[key];
-  return typeof value === "boolean" ? value : null;
-}
-
 function Marker({
   kind,
   children,
 }: {
-  kind: "source" | "fallback" | "missing" | "degrade";
+  kind: "source" | "fallback" | "missing" | "degrade" | "ok";
   children: string;
 }) {
   return (
@@ -63,8 +53,16 @@ function Marker({
   );
 }
 
-function StatsErrorText({ error }: { error: unknown }) {
-  return <>{errorText(error)}</>;
+function isRateLimited(error: unknown): boolean {
+  return error instanceof ApiError && error.problem.status === 429;
+}
+
+function isUnavailable(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    (error.problem.status === 503 ||
+      error.problem.code === "RATE_LIMIT_UNAVAILABLE")
+  );
 }
 
 export function AuditPage() {
@@ -73,6 +71,8 @@ export function AuditPage() {
   const windowLabelId = useId();
   const [reviewId, setReviewId] = useState(query.get("review") ?? "");
   const [window, setWindow] = useState<AuditWindow>("24h");
+  const [actionFilter, setActionFilter] = useState("");
+  const [resultFilter, setResultFilter] = useState<AuditResult | "">("");
   const [logs, setLogs] = useState<AuditLog[] | null>(null);
   const [verify, setVerify] = useState<Verify | null>(null);
   const [stats, setStats] = useState<SecurityStats | null>(null);
@@ -80,6 +80,14 @@ export function AuditPage() {
   const [statsBusy, setStatsBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
+  const [rateError, setRateError] = useState<unknown>(null);
+  const [seedDemoLogId, setSeedDemoLogId] = useState("");
+  const [DemoPanel, setDemoPanel] = useState<null | typeof import("../components/DemoAuditPanel").DemoAuditPanel>(null);
+
+  const captureError = useCallback((e: unknown) => {
+    if (isRateLimited(e)) setRateError(e);
+    return e;
+  }, []);
 
   const loadStats = useCallback(
     async (signal?: AbortSignal) => {
@@ -91,12 +99,12 @@ export function AuditPage() {
       } catch (e) {
         if (signal?.aborted) return;
         setStats(null);
-        setStatsError(e);
+        setStatsError(captureError(e));
       } finally {
         if (!signal?.aborted) setStatsBusy(false);
       }
     },
-    [window],
+    [window, captureError],
   );
 
   useEffect(() => {
@@ -105,14 +113,32 @@ export function AuditPage() {
     return () => ctrl.abort();
   }, [loadStats]);
 
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    let cancelled = false;
+    void import("../components/DemoAuditPanel").then((mod) => {
+      if (!cancelled) setDemoPanel(() => mod.DemoAuditPanel);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   async function load(own = false) {
     setBusy(true);
     setError(null);
     setLogs(null);
     try {
-      setLogs((await api.audit(own ? reviewId : undefined)).items);
+      const page = await api.audit(own ? reviewId : undefined, {
+        action: actionFilter || undefined,
+        result: resultFilter || undefined,
+        page_size: 50,
+      });
+      setLogs(page.items);
+      const denied = page.items.find((item) => item.result === "denied");
+      if (denied) setSeedDemoLogId(denied.id);
     } catch (e) {
-      setError(e);
+      setError(captureError(e));
     } finally {
       setBusy(false);
     }
@@ -125,11 +151,12 @@ export function AuditPage() {
     try {
       setVerify(await api.verifyAudit());
     } catch (e) {
-      setError(e);
+      setError(captureError(e));
     } finally {
       setBusy(false);
     }
   }
+
 
   const timelineMax = useMemo(() => {
     const buckets = stats?.timeline ?? [];
@@ -139,15 +166,13 @@ export function AuditPage() {
         (bucket.access_denied ?? 0) +
         (bucket.injections_blocked ?? 0) +
         (bucket.rate_limited ?? 0) +
-        (bucket.model_calls ?? 0);
+        (bucket.model_calls ?? 0) +
+        (bucket.logins_failed ?? 0) +
+        (bucket.pii_masked ?? 0);
       if (sum > max) max = sum;
     }
     return max || 1;
   }, [stats]);
-
-  const statsUnavailable =
-    statsError instanceof ApiError &&
-    (statsError.problem.status === 501 || statsError.problem.status === 503);
 
   const chainState =
     stats?.audit_chain_valid === true
@@ -156,15 +181,6 @@ export function AuditPage() {
         ? "bad"
         : "unknown";
 
-  const statsExtra = stats as
-    | (SecurityStats & {
-        degrade_status?: string | null;
-        llm_verified?: boolean | null;
-        source_kind?: string | null;
-        source_kind_label?: string | null;
-      })
-    | null;
-
   return (
     <div className="stack audit-page">
       <header className="audit-header">
@@ -172,10 +188,9 @@ export function AuditPage() {
           <h1 className="page-title">{t("audit.title")}</h1>
           <p className="audit-subtitle">{t("audit.subtitle")}</p>
         </div>
-        <p className="audit-backend-note">
-          {t("audit.backendPending")}
-        </p>
       </header>
+
+      <RateLimitNotice error={rateError} onExpire={() => setRateError(null)} />
 
       <section
         className="panel audit-stats"
@@ -201,7 +216,7 @@ export function AuditPage() {
                   window === value ? "btn btn-chip is-active" : "btn btn-chip"
                 }
                 aria-pressed={window === value}
-                disabled={statsBusy}
+                disabled={statsBusy || Boolean(rateError)}
                 onClick={() => setWindow(value)}
               >
                 {t(`audit.window.${value}`)}
@@ -210,7 +225,7 @@ export function AuditPage() {
             <button
               type="button"
               className="btn btn-secondary"
-              disabled={statsBusy}
+              disabled={statsBusy || Boolean(rateError)}
               onClick={() => void loadStats()}
             >
               {t("audit.loadStats")}
@@ -224,14 +239,15 @@ export function AuditPage() {
           </p>
         ) : null}
 
-        {statsError ? (
+        {statsError && !isRateLimited(statsError) ? (
           <div
-            className={statsUnavailable ? "banner error-notice" : "banner error-notice"}
-            role={statsUnavailable ? "alert" : "status"}
+            className="banner error-notice"
+            role={isUnavailable(statsError) ? "alert" : "status"}
           >
-            {statsUnavailable ? t("audit.statsUnavailable") + " · " : ""}
-            {/* reuse ErrorNotice text path */}
-            <StatsErrorText error={statsError} />
+            {isUnavailable(statsError)
+              ? t("audit.serviceUnavailable") + " · "
+              : ""}
+            {errorText(statsError)}
           </div>
         ) : null}
 
@@ -248,24 +264,28 @@ export function AuditPage() {
                     ? t("audit.chainBad")
                     : t("audit.chainUnknown")}
               </span>
-              <span className="audit-window-value mono">{stats.window}</span>
-              {statsExtra?.degrade_status?.trim() ? (
-                <Marker kind="degrade">{statsExtra.degrade_status.trim()}</Marker>
-              ) : null}
-              {typeof statsExtra?.llm_verified === "boolean" ? (
-                statsExtra.llm_verified ? null : (
-                  <Marker kind="fallback">{t("audit.fallbackMarker")}</Marker>
-                )
+              <span className="audit-window-value mono">
+                {t("audit.windowRange")}: {formatTs(stats.window_start)} →{" "}
+                {formatTs(stats.window_end)}
+              </span>
+              <span className="audit-window-value mono">
+                {t("audit.generatedAt")}: {formatTs(stats.generated_at)}
+              </span>
+              {stats.degrade_status?.trim() ? (
+                <Marker kind="degrade">{stats.degrade_status.trim()}</Marker>
               ) : (
                 <Marker kind="missing">{t("report.statusMissing")}</Marker>
               )}
-              {statsExtra?.source_kind_label?.trim() ? (
-                <Marker kind="source">
-                  {statsExtra.source_kind_label.trim()}
-                </Marker>
-              ) : statsExtra?.source_kind ? (
+              {stats.llm_verified ? (
+                <Marker kind="ok">{t("report.llmVerified.true")}</Marker>
+              ) : (
+                <Marker kind="fallback">{t("audit.llmUnverified")}</Marker>
+              )}
+              {stats.source_kind_label?.trim() ? (
+                <Marker kind="source">{stats.source_kind_label.trim()}</Marker>
+              ) : (
                 <Marker kind="missing">{t("source.missing")}</Marker>
-              ) : null}
+              )}
             </div>
 
             <ul className="audit-metrics">
@@ -283,9 +303,7 @@ export function AuditPage() {
 
             <div className="audit-split">
               <section className="audit-timeline">
-                <h3 className="audit-section-title">
-                  {t("audit.timeline")}
-                </h3>
+                <h3 className="audit-section-title">{t("audit.timeline")}</h3>
                 {stats.timeline?.length ? (
                   <ul className="audit-bars">
                     {stats.timeline.map((bucket) => {
@@ -293,7 +311,9 @@ export function AuditPage() {
                         (bucket.access_denied ?? 0) +
                         (bucket.injections_blocked ?? 0) +
                         (bucket.rate_limited ?? 0) +
-                        (bucket.model_calls ?? 0);
+                        (bucket.model_calls ?? 0) +
+                        (bucket.logins_failed ?? 0) +
+                        (bucket.pii_masked ?? 0);
                       const pct = Math.round((sum / timelineMax) * 100);
                       return (
                         <li key={bucket.bucket_start} className="audit-bar-row">
@@ -325,9 +345,7 @@ export function AuditPage() {
               </section>
 
               <section className="audit-top">
-                <h3 className="audit-section-title">
-                  {t("audit.topDenied")}
-                </h3>
+                <h3 className="audit-section-title">{t("audit.topDenied")}</h3>
                 {stats.top_denied_actors?.length ? (
                   <ul className="audit-top-list">
                     {stats.top_denied_actors.map((actor, index) => (
@@ -336,7 +354,7 @@ export function AuditPage() {
                         className="audit-top-item"
                       >
                         <span>{actor.actor_username ?? "—"}</span>
-                        <span className="tabular-nums">{actor.count ?? 0}</span>
+                        <span className="tabular-nums">{actor.count}</span>
                       </li>
                     ))}
                   </ul>
@@ -366,32 +384,57 @@ export function AuditPage() {
             aria-label={t("audit.reviewId")}
             placeholder={t("audit.reviewId")}
           />
+          <input
+            className="input"
+            value={actionFilter}
+            onChange={(e) => setActionFilter(e.target.value)}
+            aria-label={t("audit.filterAction")}
+            placeholder={t("audit.filterAction")}
+          />
+          <select
+            className="input"
+            value={resultFilter}
+            onChange={(e) =>
+              setResultFilter((e.target.value || "") as AuditResult | "")
+            }
+            aria-label={t("audit.filterResult")}
+          >
+            <option value="">{t("audit.filterResult")}</option>
+            <option value="success">success</option>
+            <option value="denied">denied</option>
+            <option value="blocked">blocked</option>
+            <option value="failed">failed</option>
+          </select>
           <button
             className="btn btn-secondary"
-            disabled={busy || !reviewId}
+            disabled={busy || !reviewId || Boolean(rateError)}
             onClick={() => void load(true)}
           >
             {t("audit.own")}
           </button>
           <button
             className="btn btn-secondary"
-            disabled={busy}
+            disabled={busy || Boolean(rateError)}
             onClick={() => void load()}
           >
             {t("audit.global")}
           </button>
-          <button className="btn" disabled={busy} onClick={() => void check()}>
+          <button
+            className="btn"
+            disabled={busy || Boolean(rateError)}
+            onClick={() => void check()}
+          >
             {t("audit.verify")}
           </button>
         </div>
-        <ErrorNotice error={error} />
+        {error && !isRateLimited(error) ? <ErrorNotice error={error} /> : null}
         {verify ? (
           <div className="banner">
             {verify.valid
               ? t("audit.verified")
               : `${t("audit.broken")}: ${verify.first_broken_id}`}{" "}
             · {verify.checked}
-            <div className="mono">{verify.head_hash}</div>
+            <div className="mono">{verify.head_hash ?? "—"}</div>
           </div>
         ) : null}
         {logs ? (
@@ -406,19 +449,17 @@ export function AuditPage() {
                     <th>{t("audit.resource")}</th>
                     <th>{t("common.status")}</th>
                     <th>{t("audit.provenanceMarker")}</th>
+                    <th>{t("audit.injection")}</th>
+                    <th>{t("audit.piiFields")}</th>
                     <th>{t("common.requestId")}</th>
                     <th>{t("audit.hash")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {logs.map((log) => {
-                    const sourceLabel = detailText(
-                      log.detail,
-                      "source_kind_label",
-                    );
-                    const sourceKind = detailText(log.detail, "source_kind");
-                    const degrade = detailText(log.detail, "degrade_status");
-                    const llmVerified = detailBool(log.detail, "llm_verified");
+                    const detail = log.detail;
+                    const inj = detail?.injection_category;
+                    const pii = detail?.pii_fields;
                     return (
                       <tr key={log.id}>
                         <td>{formatTs(log.ts)}</td>
@@ -440,26 +481,46 @@ export function AuditPage() {
                         <td>{log.result}</td>
                         <td>
                           <div className="audit-markers">
-                            {sourceLabel ? (
-                              <Marker kind="source">{sourceLabel}</Marker>
-                            ) : sourceKind ? (
-                              <Marker kind="missing">
-                                {t("source.missing")}
+                            {detail?.source_kind_label ? (
+                              <Marker kind="source">
+                                {detail.source_kind_label}
                               </Marker>
                             ) : (
                               <Marker kind="missing">
-                                {t("report.statusMissing")}
+                                {t("source.missing")}
                               </Marker>
                             )}
-                            {degrade ? (
-                              <Marker kind="degrade">{degrade}</Marker>
+                            {detail?.degrade_status ? (
+                              <Marker kind="degrade">
+                                {detail.degrade_status}
+                              </Marker>
                             ) : null}
-                            {llmVerified === false ? (
+                            {detail?.llm_verified === true ? (
+                              <Marker kind="ok">
+                                {t("report.llmVerified.true")}
+                              </Marker>
+                            ) : (
                               <Marker kind="fallback">
-                                {t("audit.fallbackMarker")}
+                                {t("audit.llmUnverified")}
+                              </Marker>
+                            )}
+                            {detail?.fallback_reason ? (
+                              <Marker kind="degrade">
+                                {`${t("audit.fallbackReason")}: ${detail.fallback_reason}`}
+                              </Marker>
+                            ) : null}
+                            {detail?.rate_limit_scope ? (
+                              <Marker kind="source">
+                                {`${t("audit.rateLimitScope")}: ${detail.rate_limit_scope}`}
                               </Marker>
                             ) : null}
                           </div>
+                        </td>
+                        <td>
+                          {inj ? t(`injection.${inj}`) : "—"}
+                        </td>
+                        <td className="mono">
+                          {pii?.length ? pii.join(", ") : "—"}
                         </td>
                         <td className="mono">{log.request_id}</td>
                         <td className="mono">{log.hash}</td>
@@ -476,6 +537,21 @@ export function AuditPage() {
           </div>
         ) : null}
       </section>
+
+      {DemoPanel ? (
+        <DemoPanel
+          busy={busy}
+          rateBlocked={Boolean(rateError)}
+          onBusy={setBusy}
+          onError={(e) => {
+            if (e) captureError(e);
+            setError(e);
+          }}
+          onVerify={setVerify}
+          onStatsRefresh={() => loadStats()}
+          initialLogId={seedDemoLogId}
+        />
+      ) : null}
     </div>
   );
 }

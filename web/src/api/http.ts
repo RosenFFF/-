@@ -85,15 +85,30 @@ export async function http(
       /* Proxies may return HTML; never show it. */
     }
     if (response.status === 401 && path !== "/auth/login") expireSession();
+    const retryHeader =
+      response.headers.get("Retry-After") ??
+      response.headers.get("retry-after");
+    const retryParsed = retryHeader ? Number.parseInt(retryHeader, 10) : NaN;
+    let retry_after =
+      Number.isFinite(retryParsed) && retryParsed > 0 ? retryParsed : undefined;
+    // 429 without Retry-After still surfaces a short countdown so the UI never auto-hammers.
+    if (response.status === 429 && retry_after === undefined) retry_after = 1;
+    const code =
+      response.status === 501
+        ? "NOT_IMPLEMENTED"
+        : response.status === 429
+          ? (problem.code ?? "RATE_LIMITED")
+          : response.status === 503 && problem.code === "RATE_LIMIT_UNAVAILABLE"
+            ? "RATE_LIMIT_UNAVAILABLE"
+            : (problem.code ??
+              (response.status === 404 ? "NOT_FOUND" : "INTERNAL_ERROR"));
+    // Never auto-retry 429/503 — callers show Retry-After countdown or unavailable state.
     throw new ApiError({
       status: response.status,
-      code:
-        response.status === 501
-          ? "NOT_IMPLEMENTED"
-          : (problem.code ??
-            (response.status === 404 ? "NOT_FOUND" : "INTERNAL_ERROR")),
+      code,
       request_id:
         problem.request_id || response.headers.get("X-Request-ID") || undefined,
+      retry_after,
     });
   }
   return response;
