@@ -1,0 +1,54 @@
+[project]
+name = "silkroad-audit-backend"
+version = "0.1.0"
+description = "丝路智审后端：单证 OCR、合规审查与安全中间件"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.6",
+  "sqlalchemy[asyncio]>=2.0.36",
+  "asyncpg>=0.30",
+  "aiosqlite>=0.20",
+  "redis>=5.2",
+  "arq>=0.26",
+  "argon2-cffi>=23.1",
+  "pyjwt>=2.10",
+  "cryptography>=44",
+  "python-multipart>=0.0.18",
+  "structlog>=24.4",
+  "pypdfium2>=4.30",
+  "pillow>=11",
+  "rapidocr-onnxruntime>=1.4",
+  "numpy>=1.26",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "httpx>=0.28",
+  "fakeredis>=2.26",
+  "ruff>=0.8",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "S", "UP"]
+ignore = ["S101", "B008"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.File", "fastapi.Form", "fastapi.Cookie"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106", "S108"]
