@@ -118,7 +118,13 @@ def filters(
         raise AppError(422, "VALIDATION_FAILED", "时间须包含时区")
     if since and until and since >= until:
         raise AppError(422, "VALIDATION_FAILED", "since 必须早于 until")
-    return AuditFilters(action, result, actor_id, since, until)
+    return AuditFilters(
+        action,
+        result,
+        actor_id,
+        since.astimezone(UTC) if since else None,
+        until.astimezone(UTC) if until else None,
+    )
 
 
 def to_dict(row: AuditLog) -> dict:

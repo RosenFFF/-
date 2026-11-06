@@ -1,7 +1,7 @@
 """Cross-user/org denial evidence, no real-model claims."""
 
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import select
@@ -104,6 +104,9 @@ async def test_audit_time_action_result_actor_filters_pagination_and_validation(
     }
     first = (await admin.get("/api/v1/audit/logs", params=params)).json()
     second = (await admin.get("/api/v1/audit/logs", params={**params, "page": 2})).json()
+    local = timezone(timedelta(hours=-8))
+    offset_params = {**params, "since": start.astimezone(local).isoformat(), "until": end.astimezone(local).isoformat()}
+    assert (await admin.get("/api/v1/audit/logs", params=offset_params)).json()["total"] == 2
     assert first["total"] == second["total"] == 2
     assert first["items"][0]["id"] != second["items"][0]["id"]
     assert first["items"][0]["ts"] >= second["items"][0]["ts"]
