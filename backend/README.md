@@ -192,7 +192,7 @@ RUN_OLLAMA_E2E=1 OLLAMA_BASE_URL=http://127.0.0.1:11434 OLLAMA_MODEL=qwen2.5:1.5
 - 宿主机先运行 `uv run --env-file ../.env alembic upgrade head`，再启动 API/worker。Alembic URL 只从 DATABASE_URL 或程序注入获取，不写入 ini，不输出带密码 URL。`ENV=test` 自动执行同一版本化迁移，所以普通 SQLite pytest 覆盖真实迁移路径。
 - **已有 M0/M1 create_all 数据库**：先备份数据库与密文存储，停止写入；在副本上运行 `uv run --env-file ../.env python -m app.cli adopt-legacy-schema`。该命令比较 Alembic 支持的 schema 差异并额外校验每张表的主键；无差异且无已有版本才 stamp 到 head（不能替代人工审查数据库特有对象），不改业务表、不删数据；缺表/列/索引或已有版本会拒绝，需人工审查增量迁移。禁止不检查直接 stamp/删表重建生产库。验证备份可恢复后再在维护窗口执行。
 - 新增模型/列后应创建新的静态 revision；不得改写 0001 或仅靠 metadata 更新。`alembic check` 检查 metadata 漂移。
-- `tests/test_m2_migrations.py` 覆盖 SQLite 升级、重复升级、schema 零差异、降级再升级、旧库安全接管及 Postgres 离线 DDL。可对**全新一次性空库**通过环境注入 `TEST_POSTGRES_URL` 与 `TEST_POSTGRES_DISPOSABLE=1` 跑 Postgres 迁移往返（不在命令或报告中写密码）；数据库名须以 `st143_m2_test_` 开头，且仅允许本地/Unix socket；测试会 downgrade 删除该库业务表，绝不可指向共享/生产库。本盒缺 Postgres server 二进制；安装索引被网络500阻断，未进行活库 Postgres 验证，不以离线 DDL 冒充。
+- `tests/test_m2_migrations.py` 保留 SQLite 迁移往返、旧库接管及 PostgreSQL 离线 DDL。PG 活库往返已移到 `tests/test_m2_postgres_live.py`，与其余活库测试统一使用随机独立 schema；不再 downgrade 整个目标数据库。严格 opt-in、运行边界和本次环境阻塞见下节。
 
 回归证据：`test_m2_security.py`、`test_m2_limits.py`、`test_m2_audit_isolation.py`、`test_m2_migrations.py`、`test_m2_openapi.py`；完整范围和数字见 `reports/progress/backend-m2-security.md`。
 
@@ -213,3 +213,43 @@ RUN_OLLAMA_E2E=1 OLLAMA_BASE_URL=http://127.0.0.1:11434 OLLAMA_MODEL=qwen2.5:1.5
 - `fallback_reason` 可为 provider_fallback / model_error / unsafe_output；未发生或未知为 null。模型类行也保持 `llm_verified=false`；测试替身行明确标「测试替身/演示来源」。未核验不能自动推断为 public，也不会仅从 fallback 轨迹生成「真实主链路可用」标记。
 
 DEMO_MODE 的篡改/恢复步骤与 fixture 说明见 `docs/backend-m2-demo.md`。reviewer 对 `/audit/logs`、`/audit/stats` 均为403并审计，admin/auditor 可读。本 API 已真实实现落库聚合，不用501/503假装占位；内部错误仍按统一 Problem 返回，不返回伪造成功。
+
+
+### PostgreSQL 活库验收入口（环境阻塞，未验收）
+
+**本次没有运行成功的 PostgreSQL 活库测试，也未实现 DB RLS。** 详见
+`../reports/progress/backend-m2-postgres-live.md`。客户端版本不代表服务器已启动。
+
+在具备真实本地 PostgreSQL 的隔离环境中：
+
+1. 准备专用一次性数据库，名称须以 `st143_m2_test_` 开头；验收角色须为
+   `NOSUPERUSER NOBYPASSRLS`，且能在该库 `CREATE SCHEMA`。不要使用生产/共享数据库。
+2. 仅在本地未入库 env 文件中配置 `TEST_POSTGRES_URL`（优先）或 `DATABASE_URL`，
+   PostgreSQL asyncpg URL；密码不进命令行、报告或聊天。只允许本地 loopback / Unix socket。
+3. 在 backend 目录运行：
+
+   ```bash
+   TEST_POSTGRES_DISPOSABLE=1 uv run --env-file /path/to/local-test.env \
+     pytest -q -rs tests/test_m2_postgres_live.py --junitxml=/tmp/st143-pg-live.xml
+   ```
+
+测试为每例创建随机私有 schema，通过连接的 `search_path` 隔离，结束只删除该 schema；
+迁移和 API 使用真实 SQLAlchemy/asyncpg/PostgreSQL，不替换数据库。缺 URL 才 skip；
+配置不安全、缺 opt-in、连接失败或角色有 SUPERUSER/BYPASSRLS 时必须 error/fail，不能假绿。
+`tests/test_m2_postgres_target.py` 的 12 项是离线目标保护测试，**不是 PG 活库证据**。
+
+活库模块 10 项：迁移到 `0001_m2_initial`、重复升级、metadata 零漂移、保留数据、
+降级重升；同组织他用户与外组织 admin 的文档/报告/追问/续传/案件审计拒绝；
+审计租户/NULL 事件隔离、过滤和分页；reviewer 403 与 admin/auditor 数据访问；
+隔离 DEMO 的跨组织篡改/恢复拒绝。
+
+其中 `test_postgres_current_rls_absent_raw_sql_bypasses_application_scope` 是**否定基线**：
+查询 `pg_class` 确认 11 张表 RLS 未启用，设置外租户 GUC 后故意去掉应用 WHERE，
+检查仍能用应用数据库角色直接读取其他租户文档、报告和审计。该例通过代表
+「应用层过滤可被直接 SQL 绕过 / DB RLS 缺失」，绝不是 RLS 验收通过；本次也未运行。
+将来落地 RLS 必须替换该基线，补 SELECT/INSERT/UPDATE/DELETE、未设置上下文、
+提交/回滚和连接池复用的 fail-closed 验证，并保证 worker/审计共享链不被破坏。
+
+基础设施/模型边界：这些 PG API 用例仍使用 fakeredis、快速 OCR fixture 与 FakeLLM；
+只验证实际 PG 上的迁移和应用授权，不验证真实 Redis、OCR/LLM 主链路或生产部署。
+真实模型验收继续单独阻塞。

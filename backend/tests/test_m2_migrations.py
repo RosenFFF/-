@@ -1,29 +1,20 @@
-import os
 from io import StringIO
 
 import pytest
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
 from sqlalchemy import inspect, text
-from sqlalchemy.engine import make_url
 
 from alembic import command
 from app.db.base import Base, Database
 from app.db.models import Tenant
 
 
-@pytest.mark.parametrize("dialect", ["sqlite", "postgresql"])
-async def test_initial_migration_schema_parity_idempotence_and_roundtrip(tmp_path, dialect):
-    url = f"sqlite+aiosqlite:///{tmp_path}/roundtrip.db" if dialect == "sqlite" else os.environ.get("TEST_POSTGRES_URL")
-    if not url:
-        pytest.skip("explicit disposable TEST_POSTGRES_URL not provided")
-    if dialect == "postgresql":
-        if os.environ.get("TEST_POSTGRES_DISPOSABLE") != "1":
-            pytest.skip("TEST_POSTGRES_DISPOSABLE=1 required; never target shared databases")
-        target = make_url(url)
-        assert (target.database or "").startswith("st143_m2_test_"), "disposable DB name prefix required"
-        assert target.host in (None, "", "127.0.0.1", "localhost", "::1"), "only local disposable DB permitted"
-        assert not target.query.get("host") or str(target.query["host"]).startswith("/"), "Unix socket host required"
+async def test_initial_migration_schema_parity_idempotence_and_roundtrip(tmp_path):
+    await assert_migration_roundtrip(f"sqlite+aiosqlite:///{tmp_path}/roundtrip.db")
+
+
+async def assert_migration_roundtrip(url):
     db = Database(url)
     try:
         with pytest.raises(RuntimeError, match="migration required"):

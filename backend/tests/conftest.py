@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import os
+import uuid
 from collections.abc import AsyncIterator
 
 import fakeredis.aioredis
@@ -92,3 +93,60 @@ async def make_api(tmp_path):
 @pytest.fixture
 async def api(make_api) -> AsyncIterator[Api]:
     yield await make_api()
+
+
+@pytest.fixture
+async def postgres_test_url(monkeypatch):
+    """Real PG, random private schema, and fail-closed explicit disposable opt-in.
+
+    The same configured role owns/migrates this schema and is used by the app.
+    No database is dropped, no shared/public schema is cleared, no URL is logged.
+    """
+    from sqlalchemy import text
+    from sqlalchemy.ext.asyncio import create_async_engine
+    from sqlalchemy.pool import NullPool
+
+    from app.db import base
+
+    from .postgres import UnsafePostgresTarget, disposable_postgres_url
+
+    try:
+        url = disposable_postgres_url()
+    except UnsafePostgresTarget as exc:
+        pytest.fail(str(exc), pytrace=False)
+    if url is None:
+        pytest.skip("live PostgreSQL unavailable: inject a disposable local TEST_POSTGRES_URL or DATABASE_URL")
+    schema = "st143_m2_test_" + uuid.uuid4().hex
+    admin = create_async_engine(url, poolclass=NullPool)
+    created = False
+    try:
+        try:
+            async with admin.begin() as conn:
+                role = (
+                    await conn.execute(text("SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname=current_user"))
+                ).one()
+                if role.rolsuper or role.rolbypassrls:
+                    pytest.fail("use a non-superuser NOBYPASSRLS acceptance role", pytrace=False)
+                # Identifier is generated here from uuid hex, never a request/env value.
+                await conn.execute(text(f'CREATE SCHEMA "{schema}"'))
+                created = True
+        except Exception:
+            pytest.fail(
+                "local disposable PostgreSQL unavailable or CREATE SCHEMA denied (connection withheld)", pytrace=False
+            )
+
+        def schema_engine(target, **kwargs):
+            # Connection option only; this is not a DB/transport/query substitute.
+            connect_args = kwargs.setdefault("connect_args", {})
+            connect_args.setdefault("server_settings", {})["search_path"] = schema
+            return create_async_engine(target, **kwargs)
+
+        monkeypatch.setattr(base, "create_async_engine", schema_engine)
+        yield url
+    finally:
+        try:
+            if created:
+                async with admin.begin() as conn:
+                    await conn.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
+        finally:
+            await admin.dispose()
