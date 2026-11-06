@@ -256,7 +256,7 @@ export const mockApi: Api = {
     messages.push(reply);
     yield { event: "done", data: reply };
   },
-  async audit(reviewId) {
+  async audit(reviewId, _query) {
     if (!reviewId && current?.role === "reviewer")
       throw new ApiError({ code: "PERMISSION_DENIED", status: 403 });
     return page([]);
@@ -264,7 +264,41 @@ export const mockApi: Api = {
   async verifyAudit() {
     if (current?.role === "reviewer")
       throw new ApiError({ code: "PERMISSION_DENIED", status: 403 });
-    return { valid: true, checked: 0, head_hash: "MOCK" };
+    return { valid: true, checked: 0, head_hash: "MOCK", first_broken_id: null };
+  },
+  async auditStats(window = "24h") {
+    if (current?.role === "reviewer")
+      throw new ApiError({ code: "PERMISSION_DENIED", status: 403 });
+    const now = new Date();
+    const start = new Date(now.getTime() - 24 * 3600 * 1000);
+    return {
+      window,
+      window_start: start.toISOString(),
+      window_end: now.toISOString(),
+      generated_at: now.toISOString(),
+      degrade_status: "规则引擎回退，未完成真实 LLM 验证",
+      llm_verified: false,
+      source_kind: "synthetic",
+      source_kind_label: "来源未核验 · 非真实模型验收",
+      totals: {
+        requests: 0,
+        logins_failed: 0,
+        access_denied: 0,
+        rate_limited: 0,
+        injections_blocked: 0,
+        pii_masked: 0,
+        model_calls: 0,
+        model_fallbacks: 0,
+        tokens_used: 0,
+        outputs_blocked: 0,
+        csrf_failed: 0,
+        auth_locked: 0,
+        model_errors: 0,
+      },
+      timeline: [],
+      top_denied_actors: [],
+      audit_chain_valid: true,
+    };
   },
   async models() {
     return {
