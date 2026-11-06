@@ -84,12 +84,17 @@ export type Recognition = {
   models: ModelTrace[];
   aigc?: Aigc;
 };
-export type Citation = {
+// Optional forward-compatible provenance fields; absent metadata is never inferred.
+export type SourceMetadata = {
+  source_kind?: "synthetic" | "public" | null;
+  url?: string | null;
+  article?: string | null;
+  version_date?: string | null;
+};
+export type Citation = SourceMetadata & {
   rule_id: string;
   source: string;
-  article: string;
   excerpt: string;
-  url?: string | null;
 };
 export type Finding = {
   id: string;
@@ -116,6 +121,14 @@ export type Review = {
   summary?: string | null;
   progress?: { step: string; percent: number };
   degrade_level: "L0" | "L1" | "L2" | "L3";
+  degrade_status?: string;
+  llm_verified?: boolean;
+  security?: {
+    source_kind?: SourceMetadata["source_kind"];
+    rule_corpus?: string;
+    compliance_disclaimer?: string | null;
+    retrieval_mode?: "bge" | "lightweight_hash";
+  };
   models?: ModelTrace[];
   aigc?: Aigc;
   error?: Problem | null;
@@ -140,14 +153,12 @@ export type ChatEvent =
   | { event: "citation"; data: Citation }
   | { event: "done"; data: ChatMessage }
   | { event: "error"; data: Problem };
-export type Rule = {
+export type Rule = SourceMetadata & {
   id: string;
   source: string;
-  article: string;
   jurisdiction: string;
   title: string;
   text: string;
-  url?: string | null;
 };
 export type AuditLog = {
   id: string;

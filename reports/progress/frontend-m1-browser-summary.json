@@ -2,7 +2,7 @@
   "mode": "explicit-development-mock-only",
   "axeVersion": "4.13.0",
   "browser": "Chromium 158.0.8127.18",
-  "totalTabStops": 228,
+  "totalTabStops": 314,
   "results": [
     {
       "page": "login",
@@ -68,6 +68,32 @@
       "tabStops": 21,
       "focusContrastMin": 6.798092572683761,
       "screenshot": "/workspace/competition/screenshots/m1/report-390.png"
+    },
+    {
+      "page": "report-public",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 22,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/report-public-390.png"
+    },
+    {
+      "page": "report-missing-source",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 21,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/report-missing-source-390.png"
     },
     {
       "page": "ask",
@@ -185,6 +211,32 @@
       "tabStops": 21,
       "focusContrastMin": 6.798092572683761,
       "screenshot": "/workspace/competition/screenshots/m1/report-1440.png"
+    },
+    {
+      "page": "report-public",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 22,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/report-public-1440.png"
+    },
+    {
+      "page": "report-missing-source",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 21,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/report-missing-source-1440.png"
     },
     {
       "page": "ask",

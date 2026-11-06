@@ -7,6 +7,7 @@ import { wait } from "../api/poll";
 import type { Language, ChatMessage } from "../api/types";
 import { languages } from "../api/languages";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { CitationSource } from "../components/Provenance";
 export function AskPage() {
   const [query] = useSearchParams();
   return <AskContent key={query.get("review") ?? ""} />;
@@ -162,9 +163,12 @@ function AskContent() {
           <div key={m.id} className={`chat-message ${m.role}`}>
             <div>{m.blocked ? t("ask.jailbreakBlocked") : m.content}</div>
             {m.citations?.map((c, i) => (
-              <blockquote key={i} className="serif citation">
-                {c.source} · {c.article}: {c.excerpt}
-              </blockquote>
+              <div key={i} className="chat-citation">
+                <CitationSource value={c} />
+                <blockquote className="serif citation">
+                  {c.source} · {c.article}: {c.excerpt}
+                </blockquote>
+              </div>
             ))}
             {m.aigc ? <p className="muted">{m.aigc.explicit_text}</p> : null}
           </div>

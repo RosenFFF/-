@@ -2,6 +2,8 @@
 
 基线 `d3c0b09652aa6825c43c8e9e8070c954a4a3339b`，分支 `feat/frontend-m1-api`。仅修改 `st143-frontend`，不动主 worktree、不推远程。
 
+后续视觉及来源标注补充见 frontend-m1-visual-a11y.md、frontend-m1-provenance.md；以下测试数量为首轮记录。
+
 ## 范围与测试
 
 - v0.3.0 同源 client/共享 wire types；Cookie/CSRF/合并刷新、无浏览器 token 存储；三语错误及请求编号。

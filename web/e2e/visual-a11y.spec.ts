@@ -3,6 +3,7 @@ import { AxeBuilder } from "@axe-core/playwright";
 import { mkdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
+import type { Api } from "../src/api/types.js";
 
 const output =
   process.env.M1_SCREENSHOT_DIR ??
@@ -310,7 +311,83 @@ test("mock review journey: screenshots, axe, overflow and real keyboard operatio
     .getByRole("button", { name: "MOCK 开发规则 · RULE-AMT-01" })
     .click();
   await expect(page.locator(".rule-text")).toBeVisible();
+  await expect(page.locator(".report-verification")).toContainText(
+    "规则引擎回退，未完成真实 LLM 验证",
+  );
+  await expect(page.locator(".citation-source").first()).toContainText(
+    "合成规则 · 非真实合规结论",
+  );
+  await expect(page.locator(".citation-source").first()).toContainText(
+    "来源信息缺失",
+  );
   await snapshot("report");
+  // Explicit browser-only mock fixtures: verify PUBLIC + L3 is not relabelled synthetic.
+  async function citationFixture(scenario: "public" | "missing") {
+    await page.evaluate(async (mode) => {
+      const path = "/src/mock/api.ts";
+      const { mockApi } = (await import(/* @vite-ignore */ path)) as {
+        mockApi: Api;
+      };
+      const state = window as unknown as { m1RestoreReview?: () => void };
+      state.m1RestoreReview?.();
+      const original = mockApi.review;
+      state.m1RestoreReview = () => {
+        mockApi.review = original;
+      };
+      mockApi.review = async (...args: Parameters<Api["review"]>) => {
+        const report = await original(...args);
+        return {
+          ...report,
+          security: mode === "public" ? { source_kind: "public" } : undefined,
+          findings: report.findings.map((finding) => ({
+            ...finding,
+            citations: finding.citations.map((c) => ({
+              ...c,
+              source_kind: mode === "public" ? "public" : undefined,
+              url:
+                mode === "public"
+                  ? "https://example.org/development-only/public-summary"
+                  : undefined,
+              article: mode === "public" ? "MOCK § 3.2" : undefined,
+              version_date: mode === "public" ? "2026-11-05" : undefined,
+            })),
+          })),
+        };
+      };
+    }, scenario);
+    await page.getByRole("button", { name: "重试", exact: true }).click();
+  }
+  await citationFixture("public");
+  await expect(page.locator(".source-kind")).toHaveText("公开摘要");
+  await expect(page.locator(".citation-source")).toContainText(
+    "公开摘要，非法规原文，不代表已通过合规验证",
+  );
+  await expect(page.locator(".citation-source a")).toHaveAttribute(
+    "href",
+    "https://example.org/development-only/public-summary",
+  );
+  await expect(page.locator(".citation-source")).toContainText("MOCK § 3.2");
+  await expect(page.locator(".citation-source")).toContainText("2026-11-05");
+  await expect(page.locator(".report-verification")).toContainText(
+    "规则引擎回退，未完成真实 LLM 验证",
+  );
+  await expect(page.locator(".citation-source")).not.toContainText("合成规则");
+  await snapshot("report-public");
+  await citationFixture("missing");
+  await expect(page.locator(".source-kind")).toHaveText("来源信息缺失");
+  await expect(page.locator(".citation-source a")).toHaveCount(0);
+  await expect(page.locator(".citation-source")).not.toContainText("合成规则");
+  await expect(page.locator(".report-rule-source")).toContainText(
+    "来源信息缺失",
+  );
+  await snapshot("report-missing-source");
+  await page.evaluate(() => {
+    (window as unknown as { m1RestoreReview?: () => void }).m1RestoreReview?.();
+  });
+  await page.getByRole("button", { name: "重试", exact: true }).click();
+  await expect(page.locator(".source-kind")).toHaveText(
+    "合成规则 · 非真实合规结论",
+  );
   await page.getByRole("link", { name: "继续追问", exact: true }).click();
   const question = page.getByRole("textbox", {
     name: "例如：如何修改才能合规？",

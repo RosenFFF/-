@@ -7,6 +7,11 @@ import { poll } from "../api/poll";
 import type { Language, Finding, Review, Rule } from "../api/types";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { languages } from "../api/languages";
+import {
+  CitationSource,
+  ReportRuleSource,
+  ReportVerification,
+} from "../components/Provenance";
 
 export function ReportPage() {
   const { id = "" } = useParams();
@@ -168,6 +173,7 @@ function ReportResult({
           {report?.progress?.percent ?? 0}%
         </div>
       ) : null}
+      {report ? <ReportVerification report={report} /> : null}
       {report?.status === "completed" ? (
         <Link
           className="btn"
@@ -178,11 +184,7 @@ function ReportResult({
       ) : null}
       {report?.status === "completed" ? (
         <>
-          {report.degrade_level !== "L0" ? (
-            <div className="banner">
-              {t("report.degraded")} · {report.degrade_level}
-            </div>
-          ) : null}
+          <ReportRuleSource report={report} />
           {report.aigc ? (
             <div className="banner aigc-notice">
               {report.aigc.explicit_text}
@@ -243,6 +245,7 @@ function ReportResult({
                   >
                     {c.source} · {c.article}
                   </button>
+                  <CitationSource value={c} />
                   <blockquote className="serif citation">
                     {c.excerpt}
                   </blockquote>
@@ -255,6 +258,7 @@ function ReportResult({
                   <div>
                     {rule.source} · {rule.article}
                   </div>
+                  <CitationSource value={rule} />
                   <p className="serif">{rule.text}</p>
                 </article>
               ) : null}

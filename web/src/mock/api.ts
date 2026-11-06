@@ -81,6 +81,8 @@ let review: Review = {
   created_at: stamp(),
   language: "zh-CN",
   degrade_level: "L3",
+  llm_verified: false,
+  security: { source_kind: "synthetic", rule_corpus: "synthetic" },
   summary: "MOCK · 开发用合规报告，不是真实审查。",
   findings: FINDINGS.map((finding) => ({
     id: finding.id,
@@ -97,6 +99,7 @@ let review: Review = {
       {
         rule_id: finding.rule_id,
         source: "MOCK 开发规则",
+        source_kind: "synthetic",
         article: finding.rule_id,
         excerpt: finding.citation,
       },
@@ -187,6 +190,9 @@ export const mockApi: Api = {
     return {
       id,
       source: "MOCK 开发规则",
+      source_kind: citation?.source_kind,
+      url: citation?.url,
+      version_date: citation?.version_date,
       jurisdiction: "MOCK",
       article: id,
       title: id,
