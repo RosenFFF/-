@@ -195,7 +195,9 @@ function AskContent() {
               <div key={`${c.rule_id}-${i}`} className="chat-citation">
                 <CitationSource value={c} />
                 <blockquote className="serif citation">
-                  {c.source} · {c.article}: {c.excerpt}
+                  <span className="citation-body">
+                    {c.source} · {c.article}: {c.excerpt}
+                  </span>
                 </blockquote>
               </div>
             ))}

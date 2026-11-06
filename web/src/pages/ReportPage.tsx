@@ -249,7 +249,7 @@ function ReportResult({
                   </button>
                   <CitationSource value={c} />
                   <blockquote className="serif citation">
-                    {c.excerpt}
+                    <span className="citation-body">{c.excerpt}</span>
                   </blockquote>
                 </div>
               ))}

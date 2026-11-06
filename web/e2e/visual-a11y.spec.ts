@@ -21,6 +21,300 @@ const ENVIRONMENT = {
   note: "MOCK adapter only; not a live backend acceptance run.",
 } as const;
 const docId = "00000000-0000-4000-8000-000000000001";
+
+
+type ContrastCheck = {
+  selector: string;
+  html: string;
+  fg: string;
+  bg: string;
+  fontSizePx: number;
+  fontWeight: number;
+  ratio: number;
+  aaNormal: boolean;
+  aaLarge: boolean;
+  threshold: number;
+  axeAfterUnobscure: "pass" | "violation" | "incomplete" | "missing";
+  messageKey?: string;
+  verified: boolean;
+};
+
+function parseRgb(color: string): [number, number, number] | null {
+  const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!m) return null;
+  return [Number(m[1]), Number(m[2]), Number(m[3])];
+}
+
+function relativeLuminance([r, g, b]: [number, number, number]): number {
+  const channel = (v: number) => {
+    const c = v / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+}
+
+function contrastRatio(fg: string, bg: string): number | null {
+  const a = parseRgb(fg);
+  const b = parseRgb(bg);
+  if (!a || !b) return null;
+  const L1 = relativeLuminance(a);
+  const L2 = relativeLuminance(b);
+  const lighter = Math.max(L1, L2);
+  const darker = Math.min(L1, L2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+async function neutralizeOverlays(page: Page) {
+  await page.evaluate(() => {
+    const banner = document.querySelector(".mock-banner") as HTMLElement | null;
+    if (banner) {
+      banner.dataset.e2ePrevPosition = banner.style.position || "";
+      banner.dataset.e2ePrevZ = banner.style.zIndex || "";
+      banner.style.position = "relative";
+      banner.style.zIndex = "0";
+    }
+    const skip = document.querySelector(".skip-link") as HTMLElement | null;
+    if (skip) {
+      skip.dataset.e2ePrevVisibility = skip.style.visibility || "";
+      skip.style.visibility = "hidden";
+      skip.style.pointerEvents = "none";
+    }
+  });
+}
+
+async function restoreOverlays(page: Page) {
+  await page.evaluate(() => {
+    const banner = document.querySelector(".mock-banner") as HTMLElement | null;
+    if (banner) {
+      banner.style.position = banner.dataset.e2ePrevPosition ?? "";
+      banner.style.zIndex = banner.dataset.e2ePrevZ ?? "";
+    }
+    const skip = document.querySelector(".skip-link") as HTMLElement | null;
+    if (skip) {
+      skip.style.visibility = skip.dataset.e2ePrevVisibility ?? "";
+      skip.style.pointerEvents = "";
+    }
+  });
+}
+
+async function readComputedContrast(
+  page: Page,
+  selector: string,
+): Promise<{
+  html: string;
+  fg: string;
+  bg: string;
+  fontSizePx: number;
+  fontWeight: number;
+} | null> {
+  const loc = page.locator(selector).first();
+  if (!(await loc.count())) return null;
+  await loc.scrollIntoViewIfNeeded();
+  await page.evaluate((sel) => {
+    document
+      .querySelectorAll("[data-e2e-contrast-probe]")
+      .forEach((n) => n.removeAttribute("data-e2e-contrast-probe"));
+    const node = document.querySelector(sel) as HTMLElement | null;
+    if (!node) return;
+    node.setAttribute("data-e2e-contrast-probe", "1");
+    const rect = node.getBoundingClientRect();
+    const y = rect.top + window.scrollY - window.innerHeight / 2 + rect.height / 2;
+    window.scrollTo(0, Math.max(0, y));
+  }, selector);
+  return loc.evaluate((node) => {
+    const style = getComputedStyle(node);
+    let bg = style.backgroundColor;
+    let el: Element | null = node;
+    while (
+      el &&
+      (bg === "rgba(0, 0, 0, 0)" || bg === "transparent")
+    ) {
+      el = el.parentElement;
+      if (!el) break;
+      bg = getComputedStyle(el).backgroundColor;
+    }
+    return {
+      html: (node as HTMLElement).outerHTML.slice(0, 180),
+      fg: style.color,
+      bg,
+      fontSizePx: parseFloat(style.fontSize) || 0,
+      fontWeight: parseInt(style.fontWeight, 10) || 400,
+    };
+  });
+}
+
+/** Retest incomplete color-contrast unobscured; record WCAG AA manual ratios. */
+async function verifyIncompleteContrast(
+  page: Page,
+  incomplete: { id: string; nodes?: { html?: string; target?: unknown; any?: { id?: string; data?: { messageKey?: string } }[] }[] }[],
+): Promise<ContrastCheck[]> {
+  const contrastNodes = incomplete.filter((rule) => rule.id === "color-contrast");
+  if (!contrastNodes.length) return [];
+  await neutralizeOverlays(page);
+  const results: ContrastCheck[] = [];
+  for (const rule of contrastNodes) {
+    for (const node of rule.nodes ?? []) {
+      const target = Array.isArray(node.target) ? String(node.target[0] ?? "") : "";
+      const html = node.html ?? "";
+      let selector: string | null = null;
+      if (target.includes("source-disclaimer") || html.includes("source-disclaimer")) {
+        selector = ".source-disclaimer";
+      } else if (target.includes("citation-body") || html.includes("citation-body")) {
+        selector = ".citation-body";
+      } else if (target.includes("blockquote") || html.includes("blockquote")) {
+        selector = "blockquote.citation";
+      } else if (target) {
+        selector = target;
+      }
+      if (!selector) {
+        results.push({
+          selector: target || "(unknown)",
+          html: node.html ?? "",
+          fg: "",
+          bg: "",
+          fontSizePx: 0,
+          fontWeight: 0,
+          ratio: 0,
+          aaNormal: false,
+          aaLarge: false,
+          threshold: 4.5,
+          axeAfterUnobscure: "missing",
+          messageKey: node.any?.[0]?.data?.messageKey,
+          verified: false,
+        });
+        continue;
+      }
+      const computed = await readComputedContrast(page, selector);
+      let axeAfter: ContrastCheck["axeAfterUnobscure"] = "missing";
+      let messageKey = node.any?.[0]?.data?.messageKey;
+      try {
+        const probeSel = "[data-e2e-contrast-probe='1']";
+        let re = await new AxeBuilder({ page }).include(probeSel).analyze();
+        let viol = re.violations.find((v) => v.id === "color-contrast");
+        let inc = re.incomplete.find((v) => v.id === "color-contrast");
+        // If still undetermined in layout, isolate a paint-accurate clone on a solid canvas.
+        if (!viol && inc) {
+          await page.evaluate((sel) => {
+            document.getElementById("e2e-contrast-isolate")?.remove();
+            const src = document.querySelector(sel) as HTMLElement | null;
+            if (!src) return;
+            const style = getComputedStyle(src);
+            let bg = style.backgroundColor;
+            let el: Element | null = src;
+            while (
+              el &&
+              (bg === "rgba(0, 0, 0, 0)" || bg === "transparent")
+            ) {
+              el = el.parentElement;
+              if (!el) break;
+              bg = getComputedStyle(el).backgroundColor;
+            }
+            const toHex = (c: string) => {
+              const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+              if (!m) return "#eef0f3";
+              return (
+                "#" +
+                [m[1], m[2], m[3]]
+                  .map((v) => Number(v).toString(16).padStart(2, "0"))
+                  .join("")
+              );
+            };
+            const fgHex = toHex(style.color);
+            const bgHex = toHex(bg);
+            const text = src.textContent ?? "";
+            const fontSize = style.fontSize;
+            const fontWeight = style.fontWeight;
+            const lineHeight = style.lineHeight;
+            const banner = document.querySelector(".mock-banner") as HTMLElement | null;
+            if (banner) banner.style.display = "none";
+            const root = document.getElementById("root");
+            if (root) {
+              root.dataset.e2ePrevVisibility = root.style.visibility || "";
+              root.style.visibility = "hidden";
+            }
+            const host = document.createElement("div");
+            host.id = "e2e-contrast-isolate";
+            host.setAttribute("data-axe", "isolate");
+            host.style.cssText =
+              "position:fixed;left:260px;top:100px;z-index:2147483647;padding:24px;background:#ffffff;max-width:520px;visibility:visible;";
+            const probe = document.createElement("p");
+            probe.textContent = text;
+            probe.style.margin = "0";
+            probe.style.padding = "12px";
+            probe.style.display = "block";
+            probe.style.color = fgHex;
+            probe.style.backgroundColor = bgHex;
+            probe.style.fontSize = fontSize;
+            probe.style.fontWeight = fontWeight;
+            probe.style.lineHeight = lineHeight;
+            probe.style.fontFamily = "sans-serif";
+            host.appendChild(probe);
+            document.body.appendChild(host);
+          }, selector);
+          re = await new AxeBuilder({ page })
+            .include("#e2e-contrast-isolate")
+            .analyze();
+          viol = re.violations.find((v) => v.id === "color-contrast");
+          inc = re.incomplete.find((v) => v.id === "color-contrast");
+          await page.evaluate(() => {
+            document.getElementById("e2e-contrast-isolate")?.remove();
+            const banner = document.querySelector(".mock-banner") as HTMLElement | null;
+            if (banner) banner.style.display = "";
+            const root = document.getElementById("root");
+            if (root) {
+              root.style.visibility = root.dataset.e2ePrevVisibility ?? "";
+              delete root.dataset.e2ePrevVisibility;
+            }
+          });
+        }
+        if (viol) {
+          axeAfter = "violation";
+          messageKey = viol.nodes?.[0]?.any?.[0]?.data?.messageKey ?? messageKey;
+        } else if (inc) {
+          axeAfter = "incomplete";
+          messageKey = inc.nodes?.[0]?.any?.[0]?.data?.messageKey ?? messageKey;
+        } else {
+          axeAfter = "pass";
+        }
+      } catch {
+        axeAfter = "missing";
+      }
+      const ratio =
+        computed && computed.fg && computed.bg
+          ? contrastRatio(computed.fg, computed.bg)
+          : null;
+      const fontSizePx = computed?.fontSizePx ?? 0;
+      const fontWeight = computed?.fontWeight ?? 400;
+      const isLarge =
+        fontSizePx >= 24 || (fontSizePx >= 18.66 && fontWeight >= 700);
+      const threshold = isLarge ? 3 : 4.5;
+      const aaNormal = ratio !== null && ratio >= 4.5;
+      const aaLarge = ratio !== null && ratio >= 3;
+      const meets = ratio !== null && ratio >= threshold;
+      // Incomplete may pass only when manual AA is recorded and meets threshold,
+      // or when the unobscured retest becomes a definite axe pass.
+      const verified = axeAfter === "pass" || (meets && axeAfter !== "violation");
+      results.push({
+        selector,
+        html: computed?.html ?? node.html ?? "",
+        fg: computed?.fg ?? "",
+        bg: computed?.bg ?? "",
+        fontSizePx,
+        fontWeight,
+        ratio: ratio ?? 0,
+        aaNormal,
+        aaLarge,
+        threshold,
+        axeAfterUnobscure: axeAfter,
+        messageKey,
+        verified,
+      });
+    }
+  }
+  await restoreOverlays(page);
+  return results;
+}
+
 const tabbables = "a[href],button,input,select,textarea,[tabindex]";
 
 async function startTabOrder(page: Page) {
@@ -211,7 +505,10 @@ test("mock review journey: screenshots, axe, overflow and real keyboard operatio
     // The dev banner must remain in the viewport after keyboard scrolling too.
     await expect(page.locator(".mock-banner")).toBeInViewport();
     const overflow = await overflowAudit(page);
+    await neutralizeOverlays(page);
     const axe = await new AxeBuilder({ page }).analyze();
+    const contrastChecks = await verifyIncompleteContrast(page, axe.incomplete);
+    await restoreOverlays(page);
     await page.evaluate(() => {
       (document.activeElement as HTMLElement)?.blur();
       window.scrollTo(0, 0);
@@ -229,6 +526,7 @@ test("mock review journey: screenshots, axe, overflow and real keyboard operatio
       screenshot,
       overflow,
       keyboard,
+      contrastChecks,
       axe: {
         violations: axe.violations,
         incomplete: axe.incomplete,
@@ -461,13 +759,17 @@ test("mock review journey: screenshots, axe, overflow and real keyboard operatio
     resolve(output, `summary-${size}.json`),
     JSON.stringify(summary, null, 2),
   );
+  const allContrast: ContrastCheck[] = [];
   const failures = reports.flatMap((raw) => {
     const report = raw as {
       name: string;
       overflow: Awaited<ReturnType<typeof overflowAudit>>;
       keyboard: Awaited<ReturnType<typeof tabAudit>>;
-      axe: { violations: { id: string }[]; incomplete: { id: string; nodes?: { any?: { id: string; data?: { messageKey?: string } }[] }[] }[] };
+      contrastChecks?: ContrastCheck[];
+      axe: { violations: { id: string }[]; incomplete: { id: string }[] };
     };
+    const checks = report.contrastChecks ?? [];
+    allContrast.push(...checks.map((c) => ({ ...c, selector: `${report.name}:${c.selector}` })));
     return [
       ...(report.overflow.horizontalOverflow
         ? [`${report.name}: document overflow`]
@@ -476,28 +778,39 @@ test("mock review journey: screenshots, axe, overflow and real keyboard operatio
         (el) => `${report.name}: uncontained ${el.tag}.${el.className}`,
       ),
       ...report.axe.violations.map((rule) => `${report.name}: axe ${rule.id}`),
-      ...report.axe.incomplete
-        .filter((rule) => {
-          // Keep undetermined contrast (partial overlap / no bg) in the sidecar,
-          // but only hard-fail incomplete rules with a real measurable failure.
-          if (rule.id !== "color-contrast") return true;
-          return (rule.nodes ?? []).some((node) =>
-            (node.any ?? []).some(
-              (check) =>
-                check.id === "color-contrast" &&
-                check.data?.messageKey !== "elmPartiallyObscuring" &&
-                check.data?.messageKey !== "bgImage" &&
-                check.data?.messageKey !== "bgGradient",
-            ),
-          );
-        })
-        .map((rule) => `${report.name}: axe incomplete ${rule.id}`),
+      // Incomplete color-contrast is a failure unless manually verified with recorded AA ratios.
+      ...report.axe.incomplete.flatMap((rule) => {
+        if (rule.id !== "color-contrast") {
+          return [`${report.name}: axe incomplete ${rule.id}`];
+        }
+        const unverified = checks.filter((c) => !c.verified);
+        if (!checks.length) {
+          return [`${report.name}: axe incomplete color-contrast (no manual verification)`];
+        }
+        return unverified.map(
+          (c) =>
+            `${report.name}: contrast ${c.selector} ratio=${c.ratio.toFixed(2)} (need ≥${c.threshold}, axe=${c.axeAfterUnobscure})`,
+        );
+      }),
       ...(!report.keyboard.orderMatches ? [`${report.name}: Tab order`] : []),
       ...report.keyboard.failures.map(
         (node) => `${report.name}: keyboard focus ${node.tag}#${node.id}`,
       ),
     ];
   });
+  await writeFile(
+    resolve(output, `contrast-verification-${size}.json`),
+    JSON.stringify(
+      {
+        environment: ENVIRONMENT,
+        viewport: size,
+        checks: allContrast,
+        note: "Manual WCAG AA from computed fg/bg. Incomplete axe color-contrast may pass only when verified here.",
+      },
+      null,
+      2,
+    ),
+  );
   expect(pageErrors).toEqual([]);
   expect(realApiRequests).toEqual([]);
   expect(failures, JSON.stringify(failures, null, 2)).toEqual([]);
