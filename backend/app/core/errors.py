@@ -72,5 +72,53 @@ def install_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
-        log.exception("unhandled_error", path=request.url.path)
+        log.error("unhandled_error", path=request.url.path)  # No private exception/response text.
         return problem(request, 500, "INTERNAL_ERROR", "服务内部错误")
+
+
+RATE_RESPONSES = {
+    429: {
+        "description": "RATE_LIMITED: configurable Redis sliding-window limit exceeded",
+        "headers": {"Retry-After": {"schema": {"type": "integer", "minimum": 1}, "description": "Seconds"}},
+        "content": {
+            "application/problem+json": {
+                "schema": {
+                    "type": "object",
+                    "required": ["type", "title", "status", "code", "request_id"],
+                    "properties": {
+                        "status": {"type": "integer", "const": 429},
+                        "code": {"type": "string", "const": "RATE_LIMITED"},
+                        "type": {"type": "string"},
+                        "title": {"type": "string"},
+                        "request_id": {"type": "string"},
+                    },
+                }
+            }
+        },
+    },
+    503: {
+        "description": "RATE_LIMIT_UNAVAILABLE (fail closed), or MODEL_UNAVAILABLE on LLM paths",
+        "content": {"application/problem+json": {"schema": {"type": "object"}}},
+    },
+}
+
+
+VALIDATION_RESPONSE = {
+    "description": "VALIDATION_FAILED: RFC 9457 problem+json",
+    "content": {
+        "application/problem+json": {
+            "schema": {
+                "type": "object",
+                "required": ["type", "title", "status", "code", "request_id"],
+                "properties": {
+                    "type": {"type": "string"},
+                    "title": {"type": "string"},
+                    "status": {"type": "integer"},
+                    "code": {"type": "string"},
+                    "request_id": {"type": "string"},
+                    "errors": {"type": "array", "items": {"type": "object"}},
+                },
+            }
+        }
+    },
+}

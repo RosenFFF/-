@@ -18,6 +18,7 @@ from sqlalchemy import select, text
 
 from app.db.base import Database
 from app.db.models import AuditLog, uid
+from app.security.output import sanitize_public
 
 _ADVISORY_KEY = 7_143_001
 _lock = asyncio.Lock()
@@ -93,7 +94,7 @@ class AuditService:
                 ts=datetime.now(UTC),
                 tenant_id=actor.tenant_id,
                 actor_id=actor.id,
-                actor_username=actor.username,
+                actor_username=sanitize_public(actor.username, pii=True),
                 actor_role=actor.role,
                 action=action,
                 resource_type=resource_type,
@@ -101,20 +102,24 @@ class AuditService:
                 result=result,
                 ip=mask_ip(ip),
                 request_id=request_id,
-                detail=detail or {},
+                detail=sanitize_public(detail or {}, pii=True),
                 prev_hash=prev,
             )
             row.hash = compute_hash(row)
             s.add(row)
         return row.id
 
-    async def verify(self) -> dict[str, Any]:
+    async def verify(self, tenant_id: str | None = None) -> dict[str, Any]:
         checked, prev, head = 0, None, None
         async with self.db.sessionmaker() as s:
             rows = await s.stream_scalars(select(AuditLog).order_by(AuditLog.seq))
             async for row in rows:
-                if row.prev_hash != prev or compute_hash(row) != row.hash:
-                    return {"valid": False, "checked": checked, "head_hash": head, "first_broken_id": row.id}
-                checked += 1
-                prev = head = row.hash
+                visible = tenant_id is None or row.tenant_id == tenant_id
+                if visible:
+                    if row.prev_hash != prev or compute_hash(row) != row.hash:
+                        return {"valid": False, "checked": checked, "head_hash": head, "first_broken_id": row.id}
+                    checked += 1
+                    head = row.hash
+                # Shared physical chain, but a tenant never learns foreign counts/IDs/failures.
+                prev = row.hash
         return {"valid": True, "checked": checked, "head_hash": head, "first_broken_id": None}

@@ -97,6 +97,7 @@ async def refresh(
     s: AsyncSession = Depends(session),
     refresh_token: str | None = Cookie(default=None, alias=REFRESH_COOKIE),
 ) -> SessionOut:
+    await enforce_rate(c, f"auth:{c.ip}", c.settings.rl_auth_per_min)
     if not refresh_token:
         raise AppError(401, "AUTH_TOKEN_EXPIRED", "请重新登录")
     rt = (
@@ -136,6 +137,7 @@ async def logout(
     s: AsyncSession = Depends(session),
     refresh_token: str | None = Cookie(default=None, alias=REFRESH_COOKIE),
 ) -> Response:
+    await enforce_rate(c, f"auth:{c.ip}", c.settings.rl_auth_per_min)
     if refresh_token:
         rt = (
             await s.execute(select(RefreshToken).where(RefreshToken.token_hash == hash_refresh(refresh_token)))

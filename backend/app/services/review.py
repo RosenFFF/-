@@ -11,7 +11,8 @@ from app.ai.types import Reasoning, security_flags
 from app.audit.service import Actor
 from app.core.errors import AppError
 from app.db.models import Document, DocumentFields, Review, ReviewDocument, now, uid
-from app.security.injection import inspect
+from app.security.injection import inspect_data
+from app.security.output import sanitize_public, unsafe_output
 from app.security.redact import mask
 from app.services.document_access import get_document
 from app.services.fields import aigc, open_fields
@@ -52,6 +53,8 @@ def review_out(row: Review) -> dict:
         if row.error_code
         else None
     )
+    result["summary"] = sanitize_public(result["summary"], pii=True)
+    result["findings"] = sanitize_public(result["findings"], pii=True)
     return result
 
 
@@ -131,7 +134,7 @@ async def process_review(db, store, audit, ai, review_id: str, request_id: str =
                 "origin_country": row.origin_country,
             }
             raw = json.dumps(payload, ensure_ascii=False)
-            guard = inspect(raw)
+            guard = inspect_data([payload, citations])
             flags = {
                 **security_flags(),
                 **row.security,
@@ -150,7 +153,8 @@ async def process_review(db, store, audit, ai, review_id: str, request_id: str =
                     request_id=request_id,
                     detail={"patterns": guard.patterns},
                 )
-            masked = mask(guard.text)
+            citations = sanitize_public(citations, pii=True)
+            masked = mask("[BLOCKED INPUT]" if guard.detected else raw)
             flags["pii_masked_count"] += sum(masked.counts.values())
             flags["pii_types"] = sorted(set(flags["pii_types"]) | set(masked.counts))
             if masked.counts:
@@ -187,6 +191,18 @@ async def process_review(db, store, audit, ai, review_id: str, request_id: str =
                     Reasoning,
                     task="compliance_reasoning",
                 )
+            if result and result.value is not None and unsafe_output(result.value.model_dump()):
+                flags["output_checks_passed"] = False
+                await audit.record(
+                    "security.output_blocked",
+                    "blocked",
+                    actor=actor,
+                    resource_type="review",
+                    resource_id=row.id,
+                    request_id=request_id,
+                    detail={"task": "compliance_reasoning"},
+                )
+                result.value, result.degrade_level = None, "L3"
             row.degrade_level = result.degrade_level if result else "L3"
             if result:
                 row.models = [*row.models, *result.traces]
@@ -207,7 +223,7 @@ async def process_review(db, store, audit, ai, review_id: str, request_id: str =
                 )
             row.summary = CORPUS_LABELS[flags["rule_corpus"]] + "。" + COMPLIANCE_DISCLAIMER + "\n" + row.summary
             row.security = flags
-            row.findings = findings
+            row.findings = sanitize_public(findings)
             row.risk_level = risk_level(findings)
             row.aigc_meta = aigc(row.id, row.models)
             row.status, row.completed_at = "completed", now()

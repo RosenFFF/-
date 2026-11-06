@@ -7,6 +7,8 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY app ./app
 COPY data ./data
+COPY alembic.ini ./
+COPY alembic ./alembic
 
 FROM python:3.12-slim
 # RapidOCR 依赖的 OpenCV 运行库

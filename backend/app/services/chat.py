@@ -21,17 +21,12 @@ from sqlalchemy import select
 from app.ai.types import ModelUnavailable
 from app.core.errors import AppError
 from app.db.models import ChatMessage, Review, now, uid
-from app.security.injection import inspect
+from app.security.injection import inspect, inspect_data, out_of_scope
+from app.security.output import sanitize_public, unsafe_output
 from app.security.redact import mask
 from app.services.fields import aigc
 
 _CITATION = re.compile(r"\[([A-Za-z0-9][A-Za-z0-9_.:-]{0,63})\]")
-_SCOPE = re.compile(
-    r"(?:other|another)\s+(?:users?|tenants?|reviews?|accounts?)|"
-    r"(?:其他|别的|别人的|其它).{0,8}(?:用户|租户|审查|账号|报告)|"
-    r"(?:bypass|绕过).{0,20}(?:auth|permission|权限|鉴权)",
-    re.I,
-)
 UNAVAILABLE = "无可用 LLM，未完成真实/可用 LLM 验证；追问不会使用规则引擎伪造回答"
 
 
@@ -42,7 +37,7 @@ def message_out(row: ChatMessage) -> dict:
     return {
         "id": row.id,
         "role": row.role,
-        "content": row.content,
+        "content": sanitize_public(row.content, pii=True),
         "created_at": stamp.isoformat(),
         "blocked": row.blocked,
         "block_reason": row.block_reason,
@@ -175,14 +170,14 @@ class ChatStreams:
             ex=max(self.settings.chat_replay_ttl_s, int(self.settings.chat_generation_timeout_s) + 30),
         )
         guard = inspect(content)
-        reason = "prompt_injection" if guard.detected else ("out_of_scope" if _SCOPE.search(guard.text) else None)
+        reason = "prompt_injection" if guard.detected else ("out_of_scope" if out_of_scope(guard.text) else None)
         # A report may itself originate in untrusted documents; never ignore its guard.
         context = {
             "summary": review.summary or "",
             "findings": review.findings[:20],
             "destination_country": review.destination_country,
         }
-        if inspect(json.dumps(context, ensure_ascii=False)).detected:
+        if inspect_data(context).detected:
             reason = "prompt_injection"
         masked = mask(guard.text if not reason else "[BLOCKED INPUT]")
         async with self.db.sessionmaker() as s:
@@ -287,6 +282,16 @@ class ChatStreams:
     async def generate(self, stream_id, meta, context, recent, content, language, reason, user):
         citations, models = [], []
         if reason:
+            if reason == "prompt_injection":
+                await self.audit.record(
+                    "security.injection_detected",
+                    "blocked",
+                    actor=user.actor,
+                    resource_type="review",
+                    resource_id=meta["review_id"],
+                    request_id=meta["request_id"],
+                    detail={"task": "chat"},
+                )
             text = "该请求已被安全策略拦截；请仅针对当前审查报告提问。"
             await self.audit.record(
                 "chat.blocked",
@@ -306,6 +311,11 @@ class ChatStreams:
                     ensure_ascii=False,
                 )
             )
+            if inspect_data(
+                {"report": context, "history": recent, "question": content, "allowed_rules": citations}
+            ).detected or out_of_scope(inspect(payload.text).text):
+                await self.generate(stream_id, meta, context, recent, content, language, "prompt_injection", user)
+                return
             if payload.counts:
                 await self.audit.record(
                     "security.pii_masked",
@@ -342,7 +352,7 @@ class ChatStreams:
             if not complete or not text.strip() or not any(t["status"] != "failed" for t in llm_traces):
                 raise ModelUnavailable(llm_traces)
             # Full-buffer check prevents PII/injection split over token boundaries from leaking via SSE.
-            if inspect(text).detected or mask(text).counts:
+            if unsafe_output(text):
                 await self.audit.record(
                     "security.output_blocked",
                     "blocked",

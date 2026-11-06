@@ -21,8 +21,9 @@ class RateLimiter:
             p.zadd(k, {f"{now}:{secrets.token_hex(4)}": now})
             p.zcard(k)
             p.zrange(k, 0, 0, withscores=True)
+            p.zremrangebyrank(k, limit, -1)  # Denied attempts never grow the bucket without bound.
             p.expire(k, window_s)
-            _, _, count, oldest, _ = await p.execute()
+            _, _, count, oldest, _, _ = await p.execute()
         if count > limit:
             retry = int(window_s - (now - oldest[0][1])) + 1 if oldest else window_s
             return False, max(retry, 1)

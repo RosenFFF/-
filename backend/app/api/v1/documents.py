@@ -60,7 +60,7 @@ async def upload(
     c: Ctx = Depends(ctx),
     s: AsyncSession = Depends(session),
 ) -> DocumentOut:
-    await enforce_rate(c, f"upload:{user.id}", c.settings.rl_upload_per_min, user.actor)
+    await enforce_rate(c, f"upload:{user.tenant_id}:{user.id}", c.settings.rl_upload_per_min, user.actor)
     data = await _read_limited(file, c.settings.max_upload_bytes)
     try:
         info = files.inspect(data, c.settings.max_pages)

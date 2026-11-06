@@ -9,6 +9,7 @@ from typing import Any
 import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.routing import APIRoute
 from redis.asyncio import Redis
 from sqlalchemy import func, select
 
@@ -16,7 +17,7 @@ from app.ai.runtime import AIRuntime
 from app.api.v1 import audit, auth, demo, documents, reviews, rules, system, users
 from app.audit.service import AuditService
 from app.core.config import Settings, get_settings
-from app.core.errors import install_handlers, problem
+from app.core.errors import RATE_RESPONSES, VALIDATION_RESPONSE, install_handlers, problem
 from app.core.logging import setup_logging
 from app.db.base import Database
 from app.db.models import Tenant, User
@@ -69,7 +70,10 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         db = Database(settings.database_url)
-        await db.create_all()
+        if settings.env == "test":
+            await db.migrate()  # Tests exercise the same versioned schema, never create_all.
+        else:
+            await db.check_migrated()
         await bootstrap(db, settings)
         r = redis or Redis.from_url(settings.redis_url)
         app.state.settings, app.state.db, app.state.redis = settings, db, r
@@ -92,7 +96,7 @@ def create_app(
     docs = settings.env != "prod"
     app = FastAPI(
         title="丝路智审 API",
-        version="0.3.3",
+        version="0.4.0",
         lifespan=lifespan,
         docs_url="/api/docs" if docs else None,
         redoc_url=None,
@@ -135,10 +139,17 @@ def create_app(
         return resp
 
     prefix = "/api/v1"
-    for r in (system.router, auth.router, users.router, documents.router, reviews.router, rules.router, audit.router):
-        app.include_router(r, prefix=prefix)
-    if settings.demo_mode:
-        app.include_router(demo.router, prefix=prefix)
+    routers = [system.router, auth.router, users.router, documents.router, reviews.router, rules.router, audit.router]
+    if settings.demo_mode and settings.env != "prod":
+        routers.append(demo.router)
+    for router in routers:
+        for route in router.routes:
+            if isinstance(route, APIRoute):
+                route.responses.setdefault(422, VALIDATION_RESPONSE)
+                if route.methods & {"POST", "PUT", "PATCH", "DELETE"}:
+                    for status, response in RATE_RESPONSES.items():
+                        route.responses.setdefault(status, response)
+        app.include_router(router, prefix=prefix)
     return app
 
 

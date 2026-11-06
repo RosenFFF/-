@@ -31,9 +31,10 @@ class Settings(BaseSettings):
     login_lock_s: int = 900
 
     # 限流（每分钟）
-    rl_login_per_min: int = 10
-    rl_upload_per_min: int = 20
-    rl_default_per_min: int = 300
+    rl_login_per_min: int = Field(default=10, ge=1, le=100000)
+    rl_upload_per_min: int = Field(default=20, ge=1, le=100000)
+    rl_auth_per_min: int = Field(default=30, ge=1, le=100000)
+    rl_default_per_min: int = Field(default=300, ge=1, le=100000)
 
     # 数据加密：主密钥（KEK）32 字节 base64，key id 便于轮换
     data_kek: str
@@ -70,7 +71,7 @@ class Settings(BaseSettings):
     embedding_model: str = "BAAI/bge-m3"
     reranker_model: str = "BAAI/bge-reranker-v2-m3"
     rules_dir: Path = Path(__file__).resolve().parents[2] / "data" / "rules"
-    rl_review_per_min: int = 10
+    rl_review_per_min: int = Field(default=10, ge=1, le=100000)
     rl_chat_per_min: int = Field(default=20, ge=1)
     chat_replay_ttl_s: int = Field(default=900, ge=60, le=3600)
     chat_generation_timeout_s: float = Field(default=90, gt=0, le=300)

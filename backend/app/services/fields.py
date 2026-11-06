@@ -12,6 +12,7 @@ from app.audit.service import Actor
 from app.core import crypto
 from app.db.models import Document, DocumentFields
 from app.security.injection import inspect
+from app.security.output import sanitize_public, unsafe_output
 from app.security.redact import mask, public_value
 from app.services.provenance import degrade_fields
 
@@ -70,7 +71,7 @@ def open_fields(store, doc: Document, envelope: dict) -> list[dict]:
 def display_fields(fields: list[dict]) -> list[dict]:
     result = []
     for field in fields:
-        value, masked = public_value(field["value"])
+        value, masked = public_value(sanitize_public(field["value"]))
         if field["key"] in {"phone", "email", "bank_account", "address"} and field["value"]:
             value, masked = "[已脱敏]", True
         result.append({**field, "value": value, "masked": masked})
@@ -162,6 +163,18 @@ async def extract(doc: Document, blocks: list[dict], ai, audit, request_id: str)
         Extraction,
         task="field_extraction",
     )
+    if result.value is not None and unsafe_output(result.value.model_dump()):
+        flags["output_checks_passed"] = False
+        await audit.record(
+            "security.output_blocked",
+            "blocked",
+            actor=actor,
+            resource_type="document",
+            resource_id=doc.id,
+            request_id=request_id,
+            detail={"task": "field_extraction"},
+        )
+        result.value, result.degrade_level = None, "L3"
     output = result.value or heuristic(masked.text)
     source = "llm" if result.value is not None else "rule"
     fields, seen = [], set()
@@ -187,7 +200,7 @@ def recognition_out(doc: Document, pages: list, row: DocumentFields, store) -> d
         "ocr": {
             "engine": pages[0].engine if pages else "rapidocr-ppocrv4",
             "duration_ms": sum(p.duration_ms for p in pages),
-            "blocks": [b for p in pages for b in p.blocks],
+            "blocks": sanitize_public([b for p in pages for b in p.blocks]),
         },
         "fields": display_fields(open_fields(store, doc, row.fields)),
         "models": row.models,

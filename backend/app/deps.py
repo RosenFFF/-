@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from redis.exceptions import RedisError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -82,7 +83,10 @@ async def current_user(
     # 令牌签发后被停用或改了角色：以数据库为准
     if user is None or user.disabled:
         raise AppError(401, "AUTH_TOKEN_EXPIRED", "账号不可用")
-    return CurrentUser(user.id, user.tenant_id, user.username, user.role)
+    current = CurrentUser(user.id, user.tenant_id, user.username, user.role)
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        await enforce_rate(c, f"write:{current.tenant_id}:{current.id}", c.settings.rl_default_per_min, current.actor)
+    return current
 
 
 def require(perm: Perm) -> Callable:
@@ -103,7 +107,10 @@ def require(perm: Perm) -> Callable:
 
 
 async def enforce_rate(c: Ctx, key: str, limit: int, actor: Actor | None = None) -> None:
-    ok, retry = await c.limiter.hit(key, limit)
+    try:
+        ok, retry = await c.limiter.hit(key, limit)
+    except RedisError:
+        raise AppError(503, "RATE_LIMIT_UNAVAILABLE", "限流服务暂不可用，请稍后再试") from None
     if not ok:
         await c.audit.record(
             "rate_limit.hit",

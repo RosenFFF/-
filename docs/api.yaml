@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
   title: 丝路智审 API
-  version: 0.3.3
+  version: 0.4.0
   description: |
-    跨境贸易单证 AI 合规审查平台后端接口契约（M0 草案）。
+    跨境贸易单证 AI 合规审查平台后端接口契约（M2，真实模型验收另行阻塞）。
 
     约定：
     - 基础路径 `/api/v1`；请求与响应均为 JSON（UTF-8），文件上传为 multipart。
@@ -17,6 +17,8 @@ info:
     - 错误统一为 RFC 9457 `application/problem+json`，见 `Problem`。
     - 分页：`page`（从 1 开始）+ `page_size`（默认 20，最大 100）。
     - 时间为 ISO 8601 UTC；ID 为 UUID。
+    - 写接口由 Redis 滑动窗口限流：登录按 IP，refresh/logout 按 IP；鉴权写入还有租户+用户总桶，上传/报告/追问（含 SSE 恢复）各有独立桶。超限 429 RATE_LIMITED + Retry-After；存储不可用 503 RATE_LIMIT_UNAVAILABLE，拒绝写入。
+    - 输入注入检测、完整模型输出校验和 API 读取过滤是启发式纵深防护，不保证抵御任意混淆攻击；拒绝的报告输出只留显式 L3 规则回退，追问只返回 MODEL_UNAVAILABLE。
     - AI 生成内容都带 `aigc` 字段（GB 45438-2025 显式与隐式标识）。
 servers:
   - url: /api/v1
@@ -96,6 +98,11 @@ paths:
                 username: { type: string, minLength: 3, maxLength: 64 }
                 password: { type: string, minLength: 8, maxLength: 128, format: password }
       responses:
+        '503':
+          description: 限流存储不可用（RATE_LIMIT_UNAVAILABLE，拒绝写入）；模型路径也可能 MODEL_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
         '200':
           description: 登录成功；通过 Set-Cookie 下发 access_token、refresh_token、csrf_token，响应体不含令牌
           headers:
@@ -120,6 +127,12 @@ paths:
       parameters:
         - { $ref: '#/components/parameters/CsrfHeader' }
       responses:
+        '503':
+          description: 限流存储不可用（RATE_LIMIT_UNAVAILABLE，拒绝写入）；模型路径也可能 MODEL_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
         '200':
           description: OK，重新下发三个 Cookie
           headers:
@@ -138,6 +151,12 @@ paths:
       parameters:
         - { $ref: '#/components/parameters/CsrfHeader' }
       responses:
+        '503':
+          description: 限流存储不可用（RATE_LIMIT_UNAVAILABLE，拒绝写入）；模型路径也可能 MODEL_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
         '204': { description: '已登出' }
   /auth/me:
     get:
@@ -189,6 +208,12 @@ paths:
                 password: { type: string, minLength: 12, maxLength: 128, format: password }
                 role: { $ref: '#/components/schemas/Role' }
       responses:
+        '503':
+          description: 限流存储不可用（RATE_LIMIT_UNAVAILABLE，拒绝写入）；模型路径也可能 MODEL_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
         '201':
           description: 已创建
           content:
@@ -214,6 +239,12 @@ paths:
                 role: { $ref: '#/components/schemas/Role' }
                 disabled: { type: boolean }
       responses:
+        '503':
+          description: 限流存储不可用（RATE_LIMIT_UNAVAILABLE，拒绝写入）；模型路径也可能 MODEL_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
         '200':
           description: OK
           content:
@@ -243,6 +274,11 @@ paths:
               file:
                 contentType: application/pdf, image/png, image/jpeg
       responses:
+        '503':
+          description: 限流存储不可用（RATE_LIMIT_UNAVAILABLE，拒绝写入）；模型路径也可能 MODEL_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
         '202':
           description: 已接收，处理中
           content:
@@ -292,6 +328,12 @@ paths:
       tags: [documents]
       summary: 删除单证（同时删除密文、识别结果和派生数据）
       responses:
+        '503':
+          description: 限流存储不可用（RATE_LIMIT_UNAVAILABLE，拒绝写入）；模型路径也可能 MODEL_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
         '204': { description: '已删除' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -350,6 +392,12 @@ paths:
                       key: { type: string, maxLength: 64 }
                       value: { type: [string, 'null'], maxLength: 2000 }
       responses:
+        '503':
+          description: 限流存储不可用（RATE_LIMIT_UNAVAILABLE，拒绝写入）；模型路径也可能 MODEL_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
         '200':
           description: OK
           content:
@@ -382,6 +430,11 @@ paths:
                 destination_country: { $ref: '#/components/schemas/CountryCode' }
                 language: { $ref: '#/components/schemas/Language' }
       responses:
+        '503':
+          description: 限流存储不可用（RATE_LIMIT_UNAVAILABLE，拒绝写入）；模型路径也可能 MODEL_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
         '202':
           description: 已入队
           content:
@@ -540,90 +593,253 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /reviews/{review_id}/audit:
-    parameters:
-      - $ref: '#/components/parameters/ReviewId'
     get:
-      tags: [audit]
-      summary: 单个案件的操作轨迹（reviewer 只能看自己有权限的案件；admin、auditor 可看任意案件）
-      description: 返回与该审查及其单证相关的审计记录（上传、识别、字段修正、审查、追问、拦截、模型调用）。
+      tags:
+      - reviews
+      summary: 案件审计轨迹（同租户且有案件读取权限）
+      operationId: case_audit_api_v1_reviews__review_id__audit_get
+      security:
+      - accessCookie: []
+      - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
+      - name: review_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F-]{36}$
+          title: Review Id
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: action
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 48
+          - type: 'null'
+          title: Action
+      - name: result
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(success|denied|blocked|failed)$
+          - type: 'null'
+          title: Result
+      - name: actor_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 36
+          - type: 'null'
+          title: Actor Id
+      - name: since
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Since
+      - name: until
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Until
       responses:
         '200':
-          description: OK
+          description: Successful Response
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/PageMeta'
-                  - type: object
-                    required: [items]
-                    properties:
-                      items:
-                        type: array
-                        items: { $ref: '#/components/schemas/AuditLog' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-
+                $ref: '#/components/schemas/AuditPage'
+        '422':
+          description: 参数校验失败（RFC 9457）
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      description: 按 seq 倒序分页，page_size ≤ 100；action/result/actor_id 精确匹配，since 含边界、until 不含。时间必须带时区且 since < until，否则 422。detail
+        在写入和读取时脱敏；旧记录读取过滤不重写哈希。
   /audit/logs:
     get:
-      tags: [audit]
-      summary: 全局审计日志（仅安全管理员：admin, auditor；reviewer 调用返回 403 并记一条 access.denied）
+      tags:
+      - audit
+      summary: 本租户审计日志（admin/auditor；不返回无租户平台事件）
+      operationId: logs_api_v1_audit_logs_get
+      security:
+      - accessCookie: []
+      - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - { name: action, in: query, schema: { $ref: '#/components/schemas/AuditAction' } }
-        - { name: result, in: query, schema: { type: string, enum: [success, denied, blocked, failed] } }
-        - { name: actor_id, in: query, schema: { type: string, format: uuid } }
-        - { name: since, in: query, schema: { type: string, format: date-time } }
-        - { name: until, in: query, schema: { type: string, format: date-time } }
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: action
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 48
+          - type: 'null'
+          title: Action
+      - name: result
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(success|denied|blocked|failed)$
+          - type: 'null'
+          title: Result
+      - name: actor_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 36
+          - type: 'null'
+          title: Actor Id
+      - name: since
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Since
+      - name: until
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Until
       responses:
         '200':
-          description: OK
+          description: Successful Response
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/PageMeta'
-                  - type: object
-                    required: [items]
-                    properties:
-                      items:
-                        type: array
-                        items: { $ref: '#/components/schemas/AuditLog' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+                $ref: '#/components/schemas/AuditPage'
+        '422':
+          description: 参数校验失败（RFC 9457）
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      description: 按 seq 倒序分页，page_size ≤ 100；action/result/actor_id 精确匹配，since 含边界、until 不含。时间必须带时区且 since < until，否则 422。detail
+        在写入和读取时脱敏；旧记录读取过滤不重写哈希。
   /audit/stats:
     get:
-      tags: [audit]
-      summary: 全局安全看板统计（仅 admin, auditor）
+      tags:
+      - audit
+      summary: 本租户安全看板（admin/auditor）
+      operationId: stats_api_v1_audit_stats_get
+      security:
+      - accessCookie: []
+      - bearerAuth: []
       parameters:
-        - { name: window, in: query, schema: { type: string, enum: [1h, 24h, 7d], default: 24h } }
+      - name: window
+        in: query
+        required: false
+        schema:
+          enum:
+          - 1h
+          - 24h
+          - 7d
+          type: string
+          default: 24h
+          title: Window
       responses:
         '200':
-          description: OK
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/SecurityStats' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-  /audit/verify:
-    get:
-      tags: [audit]
-      summary: 校验审计日志哈希链完整性（admin, auditor）
-      responses:
-        '200':
-          description: OK
+          description: Successful Response
           content:
             application/json:
               schema:
-                type: object
-                required: [valid, checked, head_hash]
-                properties:
-                  valid: { type: boolean }
-                  checked: { type: integer, description: '校验的记录数' }
-                  head_hash: { type: string }
-                  first_broken_id: { type: [string, 'null'], format: uuid }
-        '403': { $ref: '#/components/responses/Forbidden' }
+                $ref: '#/components/schemas/SecurityStats'
+        '422':
+          description: 参数校验失败（RFC 9457）
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      description: 从真实已落库审计事件计算，不是 mock；requests 为事件数而非 HTTP 请求数。pii_masked 为类型计数之和，tokens_used 来自模型轨迹；时间桶为 UTC，1h/24h/7d 分别按5分钟/1小时/1天聚合。窗口外、其他租户和无租户事件不计入。
+  /audit/verify:
+    get:
+      tags:
+      - audit
+      summary: 本租户记录完整性校验，不披露其他租户记录/错误
+      operationId: verify_api_v1_audit_verify_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditVerify'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - accessCookie: []
+      - bearerAuth: []
 
   /demo/audit/tamper:
     post:
@@ -638,6 +854,12 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/DemoAuditTarget' }
       responses:
+        '503':
+          description: 限流存储不可用（RATE_LIMIT_UNAVAILABLE，拒绝写入）；模型路径也可能 MODEL_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
         '200':
           description: 已篡改
           content:
@@ -660,6 +882,12 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/DemoAuditTarget' }
       responses:
+        '503':
+          description: 限流存储不可用（RATE_LIMIT_UNAVAILABLE，拒绝写入）；模型路径也可能 MODEL_UNAVAILABLE
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
         '200':
           description: 已恢复
           content:
@@ -752,6 +980,7 @@ components:
             - VERSION_CONFLICT
             - ALREADY_EXISTS
             - RATE_LIMITED
+            - RATE_LIMIT_UNAVAILABLE
             - QUOTA_EXCEEDED
             - MODEL_UNAVAILABLE
             - INTERNAL_ERROR
@@ -1220,57 +1449,255 @@ components:
         - demo.audit_tamper
         - demo.audit_restore
     AuditLog:
-      type: object
-      required: [id, ts, action, result, request_id, hash]
       properties:
-        id: { type: string, format: uuid }
-        ts: { type: string, format: date-time }
-        actor_id: { type: [string, 'null'], format: uuid }
-        actor_username: { type: [string, 'null'] }
-        actor_role: { oneOf: [ { $ref: '#/components/schemas/Role' }, { type: 'null' } ] }
-        action: { $ref: '#/components/schemas/AuditAction' }
-        resource_type: { type: [string, 'null'] }
-        resource_id: { type: [string, 'null'] }
-        result: { type: string, enum: [success, denied, blocked, failed] }
-        ip: { type: [string, 'null'], description: '末段打码' }
-        request_id: { type: string }
-        detail: { type: object, additionalProperties: true, description: '不含敏感原文' }
-        prev_hash: { type: [string, 'null'] }
-        hash: { type: string }
-    SecurityStats:
-      type: object
-      required: [window, totals]
-      properties:
-        window: { type: string }
-        totals:
+        id:
+          type: string
+          title: Id
+        ts:
+          type: string
+          format: date-time
+          title: Ts
+        actor_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actor Id
+        actor_username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actor Username
+        actor_role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actor Role
+        action:
+          type: string
+          title: Action
+        resource_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Resource Type
+        resource_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Resource Id
+        result:
+          type: string
+          enum:
+          - success
+          - denied
+          - blocked
+          - failed
+          title: Result
+        ip:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ip
+        request_id:
+          type: string
+          title: Request Id
+        detail:
+          additionalProperties: true
           type: object
-          properties:
-            requests: { type: integer }
-            logins_failed: { type: integer }
-            access_denied: { type: integer }
-            rate_limited: { type: integer }
-            injections_blocked: { type: integer }
-            pii_masked: { type: integer }
-            model_calls: { type: integer }
-            model_fallbacks: { type: integer }
-            tokens_used: { type: integer }
+          title: Detail
+        prev_hash:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Prev Hash
+        hash:
+          type: string
+          title: Hash
+      type: object
+      required:
+      - id
+      - ts
+      - actor_id
+      - actor_username
+      - actor_role
+      - action
+      - resource_type
+      - resource_id
+      - result
+      - ip
+      - request_id
+      - detail
+      - prev_hash
+      - hash
+      title: AuditLogOut
+    AuditPage:
+      properties:
+        page:
+          type: integer
+          title: Page
+        page_size:
+          type: integer
+          title: Page Size
+        total:
+          type: integer
+          title: Total
+        items:
+          items:
+            $ref: '#/components/schemas/AuditLog'
+          type: array
+          title: Items
+      type: object
+      required:
+      - page
+      - page_size
+      - total
+      - items
+      title: AuditPage
+    AuditVerify:
+      properties:
+        valid:
+          type: boolean
+          title: Valid
+        checked:
+          type: integer
+          title: Checked
+        head_hash:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Head Hash
+        first_broken_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: First Broken Id
+      type: object
+      required:
+      - valid
+      - checked
+      - head_hash
+      - first_broken_id
+      title: AuditVerify
+    SecurityTotals:
+      properties:
+        requests:
+          type: integer
+          title: Requests
+          default: 0
+        logins_failed:
+          type: integer
+          title: Logins Failed
+          default: 0
+        access_denied:
+          type: integer
+          title: Access Denied
+          default: 0
+        rate_limited:
+          type: integer
+          title: Rate Limited
+          default: 0
+        injections_blocked:
+          type: integer
+          title: Injections Blocked
+          default: 0
+        pii_masked:
+          type: integer
+          title: Pii Masked
+          default: 0
+        model_calls:
+          type: integer
+          title: Model Calls
+          default: 0
+        model_fallbacks:
+          type: integer
+          title: Model Fallbacks
+          default: 0
+        tokens_used:
+          type: integer
+          title: Tokens Used
+          default: 0
+        outputs_blocked:
+          type: integer
+          title: Outputs Blocked
+          default: 0
+      type: object
+      title: SecurityTotals
+    SecurityBucket:
+      properties:
+        bucket_start:
+          type: string
+          format: date-time
+          title: Bucket Start
+        access_denied:
+          type: integer
+          title: Access Denied
+          default: 0
+        injections_blocked:
+          type: integer
+          title: Injections Blocked
+          default: 0
+        rate_limited:
+          type: integer
+          title: Rate Limited
+          default: 0
+        model_calls:
+          type: integer
+          title: Model Calls
+          default: 0
+      type: object
+      required:
+      - bucket_start
+      title: SecurityBucket
+    DeniedActor:
+      properties:
+        actor_username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actor Username
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - actor_username
+      - count
+      title: DeniedActor
+    SecurityStats:
+      properties:
+        window:
+          type: string
+          enum:
+          - 1h
+          - 24h
+          - 7d
+          title: Window
+        totals:
+          $ref: '#/components/schemas/SecurityTotals'
         timeline:
-          type: array
-          description: 按时间桶聚合，用于看板折线图
           items:
-            type: object
-            required: [bucket_start]
-            properties:
-              bucket_start: { type: string, format: date-time }
-              access_denied: { type: integer }
-              injections_blocked: { type: integer }
-              rate_limited: { type: integer }
-              model_calls: { type: integer }
+            $ref: '#/components/schemas/SecurityBucket'
+          type: array
+          title: Timeline
         top_denied_actors:
-          type: array
           items:
-            type: object
-            properties:
-              actor_username: { type: string }
-              count: { type: integer }
-        audit_chain_valid: { type: boolean }
+            $ref: '#/components/schemas/DeniedActor'
+          type: array
+          title: Top Denied Actors
+        audit_chain_valid:
+          type: boolean
+          title: Audit Chain Valid
+      type: object
+      required:
+      - window
+      - totals
+      - timeline
+      - top_denied_actors
+      - audit_chain_valid
+      title: SecurityStats
+    DemoAuditTarget:
+      type: object
+      additionalProperties: false
+      required: [log_id]
+      properties:
+        log_id: {type: string, minLength: 36, maxLength: 36}

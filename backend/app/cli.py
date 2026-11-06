@@ -23,7 +23,7 @@ async def create_user(username: str, role: str) -> None:
     if len(pw) < 12 or pw != getpass.getpass("再输一次: "):
         raise SystemExit("密码太短或两次不一致")
     db = Database(get_settings().database_url)
-    await db.create_all()
+    await db.check_migrated()
     async with db.sessionmaker() as s:
         t = (await s.execute(select(Tenant).limit(1))).scalar_one_or_none()
         if t is None:
@@ -42,8 +42,20 @@ def main() -> None:
     c = sub.add_parser("create-user")
     c.add_argument("--username", required=True)
     c.add_argument("--role", required=True, choices=[r.value for r in Role])
+    sub.add_parser("adopt-legacy-schema", help="备份后验证完整旧 schema，匹配才 stamp；不修改业务表")
     a = p.parse_args()
-    asyncio.run(create_user(a.username, a.role))
+    if a.cmd == "adopt-legacy-schema":
+
+        async def adopt():
+            db = Database(get_settings().database_url)
+            try:
+                await db.adopt_legacy_schema()
+            finally:
+                await db.dispose()
+
+        asyncio.run(adopt())
+    else:
+        asyncio.run(create_user(a.username, a.role))
 
 
 if __name__ == "__main__":

@@ -23,7 +23,9 @@ docker compose exec api python -m app.cli create-user --username reviewer1 --rol
 ```bash
 cd backend
 uv sync
-uv run ruff check app tests
+# 宿主机先配置 DATABASE_URL（sqlite+aiosqlite:///... 或 postgresql+asyncpg://...）等环境；不在命令行写密码。
+uv run --env-file ../.env alembic upgrade head
+uv run ruff check app tests alembic
 uv run pytest -q          # SQLite + fakeredis + 真实 RapidOCR，不需要 Docker
 ```
 
@@ -84,11 +86,11 @@ uv run pytest -q          # SQLite + fakeredis + 真实 RapidOCR，不需要 Doc
 
 `public_verified` 仅表示**公开出处可追溯**，不是法律意见、现行性保证或适用性判断。WCO 是体系说明，不是目的国申报规则；美国发票规则不得套到其他目的国。确定性检查仍为合成测试规则，并总附 SYN-REVIEW，所以当前正常报告预期为 mixed 或 synthetic，绝不能宣称真实清关结论。
 
-仍未实现：已有报告二次翻译，显式返回 501；新建审查可要求 LLM 生成指定语言，但规则引擎固定中文解释，L3 不伪装多语种生成。保留 M0 `create_all`，新增表可自动建，Alembic/RLS、跨进程全局熔断和每日 token 配额不在本次交付内。正则脱敏/注入检测只是防护一层，不保证任意姓名或混淆攻击全覆盖。
+仍未实现：已有报告二次翻译，显式返回 501；新建审查可要求 LLM 生成指定语言，但规则引擎固定中文解释，L3 不伪装多语种生成。M2 已以 Alembic 替换 create_all；PostgreSQL RLS、跨进程全局熔断和每日 token 配额仍未实现。正则脱敏/注入检测只是防护一层，不保证任意姓名或混淆攻击全覆盖。
 
 ### 追问历史与 SSE（M1b，契约 0.3.3）
 
-- `GET /api/v1/reviews/{id}/messages` 返回 `{items: ChatMessage[]}`，按创建时间升序；消息与审查相同租户/owner 权限。用户和助手消息都存 `chat_messages`（M0 `create_all`），仅存脱敏文本，不存映射；注入/越权意图拦截消息带 `blocked=true` 和原因并审计，**不调用 LLM**。
+- `GET /api/v1/reviews/{id}/messages` 返回 `{items: ChatMessage[]}`，按创建时间升序；消息与审查相同租户/owner 权限。用户和助手消息都存 `chat_messages`（Alembic 初始迁移），仅存脱敏文本，不存映射；注入/越权意图拦截消息带 `blocked=true` 和原因并审计，**不调用 LLM**。
 - `POST /api/v1/reviews/{id}/messages` 请求 `{"content":"解释此风险项","language":"zh-CN"}`；须 `chat_write`、Cookie CSRF/Origin 与已完成报告；默认每用户每分钟 20 次。结合脱敏 summary/findings、最近 12 条历史和 RAG，引用来自当前召回的真实规则 ID，所有 provenance 原样取 `RuleIndex.citation()`。
 - JSON 模式成功返回完整 ChatMessage。**没有可用模型、超时、截断或输出/引用验证不通过：HTTP 503 `MODEL_UNAVAILABLE`，不造规则回退助手正文。** 用户问题保留在历史，失败没有助手成功消息。
 - `Accept: text/event-stream` 用 fetch POST：事件 `delta` (`{"text"}`) → `citation` → `done`（完整已存消息）；失败只发 `error`（Problem，status=503、MODEL_UNAVAILABLE）并终止，HTTP 状态仍 200，**前端不能只凭 HTTP 200 判成功**。拦截输入仅 `done`（blocked=true），没有生成 delta。每事件带 `id: <stream UUID>:<序号>`，注释心跳不占 ID。
@@ -105,8 +107,8 @@ uv run pytest -q          # SQLite + fakeredis + 真实 RapidOCR，不需要 Doc
 # backend 目录
 uv lock
 uv export --frozen --no-dev --no-emit-project -o requirements.txt
-uv run ruff check app tests
-uv run ruff format --check app tests
+uv run ruff check app tests alembic
+uv run ruff format --check app tests alembic
 uv run pytest -q
 # 仓库根
 scripts/security-scan.sh
@@ -139,7 +141,7 @@ HEAVY_MODELS_ENABLED=false
 COOKIE_SECURE=true
 ```
 
-宿主机 API 使用 127.0.0.1；Compose 内则用服务名 `http://ollama:11434`。其余 DB、Redis、KEK/JWT、管理员配置照 `.env.example`，从 backend 启动时显式加载根目录 `.env`（如 `uv run uvicorn app.main:app --env-file ../.env`）。浏览器仍经 HTTPS 同源代理并携带会话绑定 CSRF/Origin。
+宿主机 API 使用 127.0.0.1；Compose 内则用服务名 `http://ollama:11434`。其余 DB、Redis、KEK/JWT、管理员配置照 `.env.example`，从 backend 启动时显式加载根目录 `.env`（如 `uv run uvicorn app.main:app_factory --factory --env-file ../.env`）。浏览器仍经 HTTPS 同源代理并携带会话绑定 CSRF/Origin。
 
 可在没有 Postgres/Redis 的开发盒运行条件真实链路（SQLite + fakeredis 仅替代基础设施，**不替代 OCR/LLM**）：
 
@@ -150,3 +152,48 @@ RUN_OLLAMA_E2E=1 OLLAMA_BASE_URL=http://127.0.0.1:11434 OLLAMA_MODEL=qwen2.5:1.5
 ```
 
 该测试生成一张无个人信息的测试发票图片，实际通过 HTTPS ASGI 上传 API → 真实 RapidOCR → 真实 Ollama 字段抽取 → 本地召回/重排 → 真实 Ollama 推理 → reviews API。断言两次模型调用成功且 L2，失败不自动切 Fake；普通 pytest 默认跳过此需本机服务的慢测。输出文件只保留延迟、计数和模型轨迹，不含 Cookie/密钥/单证原文。它验证工程链路，不是法律准确率评测，也不等于 Docker/浏览器生产联调通过。
+
+
+## M2 安全与审计（契约 0.4.0）
+
+**本交付不含真实模型验收。** 以下回归中的 FakeLLM/httpx transport 都是测试替身，不证明真实答案链路可用。
+
+### 纵深过滤
+
+- 输入检测增加 HTML 实体、全角/零宽归一化、伪造角色标签、关闭鉴权/审计等指令。OCR、手工字段、报告上下文、聊天历史及召回规则均不作为可信指令。
+- 抽取/报告服务在供应方 JSON 校验之外再次检查嵌套文本，拦截敏感 PII、凭证格式、系统提示泄露/越权指令；被拒绝的报告明确 L3（保留确定性发现），不能混成真实模型成功。`security.output_blocked` 只记任务名，不记录正文。
+- 追问完整缓冲后再校验；跨 token 的凭证/PII/注入/越权残留只产生 MODEL_UNAVAILABLE，不透传 delta 或伪造 done。输入拦截仍沿用 blocked=true 契约。
+- 密钥/密码/Bearer/JWT/私钥格式在出域脱敏前剥离且不加入可还原映射。报告/历史/识别 JSON 和审计有读取防护，保护旧记录；合法语料文案和引用来源不做无意义归一化改写。授权原件图片仍为原始文件，不是 DLP 清洗后的图片。
+- 正则仅为启发式防护，非完整 DLP/语义注入防御，可能误报/漏报；没有运行生成内容、工具调用或 SQL 的模型权限。
+
+### 限流
+
+所有已鉴权写请求先进入租户+用户总桶（`RL_DEFAULT_PER_MIN=300`）；上传、报告创建、追问（JSON/SSE/续传）还有独立租户+用户桶，默认分别 20/10/20 次每分钟。登录（包括失败）按真实连接 IP 默认 10 次，refresh/logout 共用 IP 桶默认 30 次；不信任客户端 X-Forwarded-For 改变 IP。反向代理须只信任实际代理网段，生产不可宽泛信任转发头。
+
+- 可配置：`RL_LOGIN_PER_MIN` / `RL_UPLOAD_PER_MIN` / `RL_REVIEW_PER_MIN` / `RL_CHAT_PER_MIN` / `RL_AUTH_PER_MIN` / `RL_DEFAULT_PER_MIN`，正整数，不能以 0 悄悄禁用。
+- 超限：429 `RATE_LIMITED`，`application/problem+json` + `Retry-After`（秒）+ request_id，审计 `rate_limit.hit`；SSE 限流发生于建立流之前，返回普通 HTTP 429。
+- Redis 不可用：503 `RATE_LIMIT_UNAVAILABLE`，拒绝写入而非无上限放行。滑动窗口使用 Redis 事务，拒绝的请求不扩张有序集合，最多保存桶额度个成员。
+- 不替代边缘层上传连接数/体积/匿名流量限制；请求体校验在接口限流之前完成，网关应另加连接与请求体配额。
+
+### 审计 API
+
+- `GET /audit/logs` 仅 admin/auditor，严格本租户；不再把 tenant_id=null 的平台/未知登录事件分享给所有组织。`action/result/actor_id` 精确匹配，`since` 含、`until` 不含；ISO 时间必须有时区且 since < until；page 从1开始，page_size 1–100，按 seq 倒序。拒绝访问的 reviewer 返回403并记审计。
+- `GET /reviews/{id}/audit` 同租户、同案件读取权限；reviewer 只看本人案件，含关联单证轨迹；支持同一过滤/分页契约，越权404。
+- `GET /audit/stats?window=1h|24h|7d`：只统计本租户已落库事件，含 totals、零值补齐的 UTC timeline、top_denied_actors、audit_chain_valid。requests=审计事件数（非 HTTP 请求数）；pii_masked=各类数量之和，tokens_used=tokens_in+tokens_out，model_fallbacks 包含回退调用，新增 outputs_blocked。不是实时 HTTP 监控或模型验收。
+- `GET /audit/verify`：验证物理共享链中本租户记录的内容和相邻链接，仅返回本租户 checked/head/first_broken_id；不暴露外租户计数、ID 或断链。平台全链审计可通过内部 AuditService.verify() 完成，不对租户开放。没有外部签名锚点时，不能证明已删尾部未被整体重算。
+- 审计 detail 写入前去密钥/PII/指令，读取旧记录也过滤；读取过滤不会修改历史记录或重写 hash，读出的已过滤 detail 不用于客户端重算原始哈希。平台无租户事件需另行受控平台运维查看；本接口不暴露。
+- 统计按时间窗流式扫描审计行，内存有界；验证链为 O(N)，大规模部署应异步缓存/独立校验任务并加索引/分区，目前不是海量审计后端。
+
+### Alembic 与已有数据库
+
+初始版本 `0001_m2_initial` 静态冻结全部 11 张业务表、索引、外键（含 document_fields/review_documents/chat_messages），不导入运行时模型生成 DDL。JSON 在 SQLite 用 JSON，在 Postgres 用 JSONB；audit seq 在 SQLite 为 INTEGER，在 Postgres 为 BIGSERIAL。
+
+- Compose 新增一次性 `migrate` 服务，先 `alembic upgrade head` 成功再启动 API；API、worker、create-user 只检查 revision，不执行 create_all/并发 DDL。容器已复制迁移目录。
+- 宿主机先运行 `uv run --env-file ../.env alembic upgrade head`，再启动 API/worker。Alembic URL 只从 DATABASE_URL 或程序注入获取，不写入 ini，不输出带密码 URL。`ENV=test` 自动执行同一版本化迁移，所以普通 SQLite pytest 覆盖真实迁移路径。
+- **已有 M0/M1 create_all 数据库**：先备份数据库与密文存储，停止写入；在副本上运行 `uv run --env-file ../.env python -m app.cli adopt-legacy-schema`。该命令比较 Alembic 支持的 schema 差异并额外校验每张表的主键；无差异且无已有版本才 stamp 到 head（不能替代人工审查数据库特有对象），不改业务表、不删数据；缺表/列/索引或已有版本会拒绝，需人工审查增量迁移。禁止不检查直接 stamp/删表重建生产库。验证备份可恢复后再在维护窗口执行。
+- 新增模型/列后应创建新的静态 revision；不得改写 0001 或仅靠 metadata 更新。`alembic check` 检查 metadata 漂移。
+- `tests/test_m2_migrations.py` 覆盖 SQLite 升级、重复升级、schema 零差异、降级再升级、旧库安全接管及 Postgres 离线 DDL。可对**全新一次性空库**通过环境注入 `TEST_POSTGRES_URL` 与 `TEST_POSTGRES_DISPOSABLE=1` 跑 Postgres 迁移往返（不在命令或报告中写密码）；数据库名须以 `st143_m2_test_` 开头，且仅允许本地/Unix socket；测试会 downgrade 删除该库业务表，绝不可指向共享/生产库。本盒缺 Postgres server 二进制；安装索引被网络500阻断，未进行活库 Postgres 验证，不以离线 DDL 冒充。
+
+回归证据：`test_m2_security.py`、`test_m2_limits.py`、`test_m2_audit_isolation.py`、`test_m2_migrations.py`、`test_m2_openapi.py`；完整范围和数字见 `reports/progress/backend-m2-security.md`。
+
+生产 env=prod 强制不注册 demo 路由，即使 DEMO_MODE 被误设为 true。
