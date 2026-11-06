@@ -75,7 +75,7 @@ async def test_fake_llm_upload_real_ocr_recognition_to_grounded_report(fake_api)
     assert listed["total"] == 1 and listed["items"][0]["id"] == review_id
     health = (await c.get("/api/v1/system/models")).json()
     assert health["degrade_level"] == "L0" and all(m["healthy"] for m in health["models"])
-    async with fake_api.app.state.db.sessionmaker() as s:
+    async with fake_api.app.state.db.maintenance_sessionmaker() as s:
         row = await s.get(DocumentFields, doc_id)
         assert "SR-2026-001" not in json.dumps(row.fields)
         doc = await s.get(Document, doc_id)
@@ -142,7 +142,7 @@ async def test_fields_manual_version_lock_snapshot_and_audit(fake_api, quick_ocr
     assert manual["source"] == "manual" and not manual["locations"]
     assert (await c.patch(path, json=patch)).json()["code"] == "VERSION_CONFLICT"
     assert (await c.patch(path, json={"version": 2, "fields": [{"key": "invalid", "value": "x"}]})).status_code == 422
-    async with fake_api.app.state.db.sessionmaker() as s:
+    async with fake_api.app.state.db.maintenance_sessionmaker() as s:
         doc = await s.get(Document, doc_id)
         snapshot = await s.get(ReviewDocument, (review_id, doc_id))
         raw = open_fields(fake_api.app.state.store, doc, snapshot.fields_snapshot)
@@ -167,7 +167,7 @@ async def test_review_object_authorization_and_rbac(fake_api, quick_ocr):
             f"/api/v1/documents/{doc_id}/fields", json={"version": 1, "fields": [{"key": "hs_code", "value": "123456"}]}
         )
     ).status_code == 403
-    async with fake_api.app.state.db.sessionmaker() as s:
+    async with fake_api.app.state.db.maintenance_sessionmaker() as s:
         tenant = Tenant(name="synthetic-other-tenant")
         s.add(tenant)
         await s.flush()
@@ -191,7 +191,7 @@ async def test_review_object_authorization_and_rbac(fake_api, quick_ocr):
 async def test_review_input_validation_and_not_ready(fake_api, quick_ocr):
     c = await fake_api.login("reviewer")
     doc = (await _upload(c, invoice_image())).json()
-    async with fake_api.app.state.db.sessionmaker() as s:
+    async with fake_api.app.state.db.maintenance_sessionmaker() as s:
         await s.execute(update(Document).where(Document.id == doc["id"]).values(status="extracting"))
         await s.commit()
     r = await c.post("/api/v1/reviews", json={"document_ids": [doc["id"]], "destination_country": "VN"})
@@ -222,7 +222,7 @@ async def test_injected_ocr_blocks_llm_and_audits(fake_api, monkeypatch):
     rec = (await c.get(f"/api/v1/documents/{d['id']}/recognition")).json()
     assert rec["security"]["injection_detected"] and not rec["fields"]
     assert rec["degrade_level"] == "L3" and not fake_api.app.state.ai.llm.messages
-    async with fake_api.app.state.db.sessionmaker() as s:
+    async with fake_api.app.state.db.maintenance_sessionmaker() as s:
         log = (await s.execute(select(AuditLog).where(AuditLog.action == "security.injection_detected"))).scalar_one()
         assert log.tenant_id and "ignore" not in json.dumps(log.detail)
 
@@ -236,7 +236,7 @@ async def test_pii_masked_before_llm_mapping_not_persisted(fake_api, monkeypatch
     assert "invoice@example.invalid" not in sent and "13800000000" not in sent and "42 Synthetic Road" not in sent
     rec = (await c.get(f"/api/v1/documents/{doc_id}/recognition")).json()
     assert rec["security"]["pii_masked_count"] == 3
-    async with fake_api.app.state.db.sessionmaker() as s:
+    async with fake_api.app.state.db.maintenance_sessionmaker() as s:
         logs = (await s.execute(select(AuditLog).where(AuditLog.action == "security.pii_masked"))).scalars().all()
         assert logs and "invoice@example.invalid" not in json.dumps([x.detail for x in logs])
         assert "mapping" not in json.dumps((await s.get(DocumentFields, doc_id)).fields)
@@ -246,7 +246,7 @@ async def test_delete_document_removes_review_snapshots(fake_api, quick_ocr):
     c = await fake_api.login("reviewer")
     doc_id, review_id, _ = await _report(fake_api, c)
     assert (await c.delete(f"/api/v1/documents/{doc_id}")).status_code == 204
-    async with fake_api.app.state.db.sessionmaker() as s:
+    async with fake_api.app.state.db.maintenance_sessionmaker() as s:
         assert await s.get(Review, review_id) is None
         assert await s.get(DocumentFields, doc_id) is None
         assert await s.get(ReviewDocument, (review_id, doc_id)) is None
@@ -283,7 +283,7 @@ async def test_sensitive_placeholders_restored_only_in_encrypted_fields(fake_api
     rec = (await c.get(f"/api/v1/documents/{doc_id}/recognition")).json()
     assert rec["fields"][0]["masked"] and rec["fields"][0]["value"] == "[已脱敏]"
     assert "invoice@example.invalid" not in json.dumps(fake_api.app.state.ai.llm.messages)
-    async with fake_api.app.state.db.sessionmaker() as s:
+    async with fake_api.app.state.db.maintenance_sessionmaker() as s:
         row, doc = await s.get(DocumentFields, doc_id), await s.get(Document, doc_id)
         assert "invoice@example.invalid" not in json.dumps(row.fields)
         assert open_fields(fake_api.app.state.store, doc, row.fields)[0]["value"] == "invoice@example.invalid"
@@ -340,7 +340,7 @@ async def test_delete_document_cleans_derived_chat_and_replay(fake_api, quick_oc
     assert await fake_api.app.state.redis.exists(service.key(stream_id, "meta"))
     assert (await c.delete(f"/api/v1/documents/{doc_id}")).status_code == 204
     assert (await c.get(f"/api/v1/reviews/{review_id}/messages")).status_code == 404
-    async with fake_api.app.state.db.sessionmaker() as s:
+    async with fake_api.app.state.db.maintenance_sessionmaker() as s:
         assert not (await s.execute(select(ChatMessage).where(ChatMessage.review_id == review_id))).scalars().all()
     for part in ("meta", "events", "terminal"):
         assert not await fake_api.app.state.redis.exists(service.key(stream_id, part))

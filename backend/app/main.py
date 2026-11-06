@@ -9,20 +9,23 @@ from typing import Any
 import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.routing import APIRoute
 from redis.asyncio import Redis
 from sqlalchemy import func, select
 
 from app.ai.runtime import AIRuntime
 from app.api.v1 import audit, auth, demo, documents, reviews, rules, system, users
-from app.audit.service import AuditService
+from app.audit.service import Actor, AuditService
 from app.core.config import Settings, get_settings
-from app.core.errors import install_handlers, problem
+from app.core.errors import RATE_RESPONSES, VALIDATION_RESPONSE, AppError, install_handlers, problem
 from app.core.logging import setup_logging
 from app.db.base import Database
 from app.db.models import Tenant, User
-from app.security.cookies import CSRF_HEADER, csrf_ok
+from app.db.tenant import TenantScope
+from app.security.cookies import ACCESS_COOKIE, CSRF_HEADER, csrf_ok
 from app.security.passwords import hash_password
 from app.security.ratelimit import RateLimiter
+from app.security.tokens import decode_access
 from app.services.chat import ChatStreams
 from app.services.storage import EncryptedStore
 
@@ -39,7 +42,7 @@ SECURITY_HEADERS = {
 
 
 async def bootstrap(db: Database, settings: Settings) -> None:
-    async with db.sessionmaker() as s:
+    async with db.maintenance_sessionmaker() as s:
         if (await s.execute(select(func.count()).select_from(User))).scalar_one() > 0:
             return
         if not (settings.bootstrap_admin_username and settings.bootstrap_admin_password):
@@ -60,6 +63,22 @@ async def bootstrap(db: Database, settings: Settings) -> None:
         log.info("bootstrap_admin_created")
 
 
+async def csrf_actor(request: Request) -> Actor | None:
+    """Read-only attribution; never turns a rejected CSRF request into authenticated work."""
+    token = request.cookies.get(ACCESS_COOKIE)
+    if not token:
+        return None
+    try:
+        claims = decode_access(request.app.state.settings, token)
+    except AppError:
+        return None
+    async with request.app.state.db.tenant_session(TenantScope(claims["tid"], claims["sub"], claims["role"])) as s:
+        user = await s.get(User, claims["sub"])
+        if user is not None and not user.disabled and user.tenant_id == claims["tid"] and user.role == claims["role"]:
+            return Actor(user.id, user.username, user.role, user.tenant_id)
+    return None
+
+
 def create_app(
     settings: Settings | None = None, *, redis: Any = None, arq_pool: Any = None, llm: Any = None
 ) -> FastAPI:
@@ -69,7 +88,15 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         db = Database(settings.database_url)
-        await db.create_all()
+        if settings.env == "test":
+            await db.migrate()  # Tests exercise the same versioned schema, never create_all.
+        else:
+            await db.check_migrated()
+        try:
+            await db.check_runtime_access()
+        except Exception:
+            await db.dispose()
+            raise
         await bootstrap(db, settings)
         r = redis or Redis.from_url(settings.redis_url)
         app.state.settings, app.state.db, app.state.redis = settings, db, r
@@ -92,7 +119,7 @@ def create_app(
     docs = settings.env != "prod"
     app = FastAPI(
         title="丝路智审 API",
-        version="0.3.3",
+        version="0.4.0",
         lifespan=lifespan,
         docs_url="/api/docs" if docs else None,
         redoc_url=None,
@@ -119,6 +146,7 @@ def create_app(
             await request.app.state.audit.record(
                 "access.denied",
                 "denied",
+                actor=await csrf_actor(request),
                 ip=request.client.host if request.client else None,
                 request_id=rid,
                 detail={"reason": "csrf", "method": request.method, "path": request.url.path},
@@ -135,10 +163,17 @@ def create_app(
         return resp
 
     prefix = "/api/v1"
-    for r in (system.router, auth.router, users.router, documents.router, reviews.router, rules.router, audit.router):
-        app.include_router(r, prefix=prefix)
-    if settings.demo_mode:
-        app.include_router(demo.router, prefix=prefix)
+    routers = [system.router, auth.router, users.router, documents.router, reviews.router, rules.router, audit.router]
+    if settings.demo_mode and settings.env != "prod":
+        routers.append(demo.router)
+    for router in routers:
+        for route in router.routes:
+            if isinstance(route, APIRoute):
+                route.responses.setdefault(422, VALIDATION_RESPONSE)
+                if route.methods & {"POST", "PUT", "PATCH", "DELETE"}:
+                    for status, response in RATE_RESPONSES.items():
+                        route.responses.setdefault(status, response)
+        app.include_router(router, prefix=prefix)
     return app
 
 

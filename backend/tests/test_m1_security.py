@@ -78,7 +78,7 @@ async def test_missing_or_cross_origin_rejected_and_audited(api, origin):
         c.headers["Origin"] = origin
     r = await c.post("/api/v1/auth/logout")
     assert r.status_code == 403 and r.json()["code"] == "CSRF_FAILED"
-    async with api.app.state.db.sessionmaker() as s:
+    async with api.app.state.db.maintenance_sessionmaker() as s:
         logs = (await s.execute(select(AuditLog).where(AuditLog.action == "access.denied"))).scalars().all()
     assert any(x.detail.get("reason") == "csrf" for x in logs)
 

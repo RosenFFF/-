@@ -23,7 +23,7 @@ async def chat_api(api):
 
 
 async def seed_review(api, *, username="reviewer", status="completed", **kw):
-    async with api.app.state.db.sessionmaker() as s:
+    async with api.app.state.db.maintenance_sessionmaker() as s:
         user = (await s.execute(select(User).where(User.username == username))).scalar_one()
         row = Review(
             id=uid(),
@@ -87,7 +87,7 @@ async def test_empty_and_persisted_history_json_grounded_provenance(chat_api):
     items = (await c.get(path(rid))).json()["items"]
     assert [m["role"] for m in items] == ["user", "assistant"]
     assert items[-1] == msg and items[0]["created_at"] <= items[1]["created_at"]
-    async with chat_api.app.state.db.sessionmaker() as s:
+    async with chat_api.app.state.db.maintenance_sessionmaker() as s:
         records = (await s.execute(select(ChatMessage).where(ChatMessage.review_id == rid))).scalars().all()
         assert len(records) == 2 and all(row.tenant_id for row in records)
         logs = (await s.execute(select(AuditLog).where(AuditLog.resource_id == rid))).scalars().all()
@@ -187,7 +187,7 @@ async def test_blocked_is_200_persisted_audited_and_never_calls_llm(chat_api, co
     items = (await c.get(path(rid))).json()["items"]
     assert len(items) == 2 and all(row["blocked"] for row in items)
     assert content not in json.dumps(items)
-    async with chat_api.app.state.db.sessionmaker() as s:
+    async with chat_api.app.state.db.maintenance_sessionmaker() as s:
         logs = (await s.execute(select(AuditLog).where(AuditLog.resource_id == rid))).scalars().all()
         assert any(row.action == "chat.blocked" and row.result == "blocked" for row in logs)
         assert not any(row.action == "model.call" for row in logs)
@@ -234,7 +234,7 @@ async def test_authorization_csrf_origin_and_isolation(chat_api, mode):
     if mode == "anonymous":
         c.cookies.clear()
     if mode == "other_tenant":
-        async with chat_api.app.state.db.sessionmaker() as s:
+        async with chat_api.app.state.db.maintenance_sessionmaker() as s:
             other = (await s.execute(select(User).where(User.username == "reviewer2"))).scalar_one()
             tenant = Tenant(name="isolated")
             s.add(tenant)
@@ -242,7 +242,8 @@ async def test_authorization_csrf_origin_and_isolation(chat_api, mode):
             other.tenant_id, other.role = tenant.id, "admin"
             await s.commit()
     response = await c.post(path(rid), json={"content": "Explain"}, headers={"Accept": "text/event-stream"})
-    expected = 404 if mode in {"other_user", "other_tenant"} else (401 if mode == "anonymous" else 403)
+    # A stale signed tenant/role is rejected before querying the new tenant.
+    expected = 404 if mode == "other_user" else (401 if mode in {"anonymous", "other_tenant"} else 403)
     assert response.status_code == expected, response.text
     if mode in {"other_user", "other_tenant", "anonymous"}:
         assert (await c.get(path(rid))).status_code == expected
@@ -278,7 +279,7 @@ async def test_replay_is_actor_review_body_bound_and_validates_cursor(chat_api):
 async def test_context_history_and_question_masked_before_model_and_in_storage(chat_api):
     rid = await seed_review(chat_api)
     c = await chat_api.login("reviewer")
-    async with chat_api.app.state.db.sessionmaker() as s:
+    async with chat_api.app.state.db.maintenance_sessionmaker() as s:
         row = await s.get(Review, rid)
         row.summary = "Contact review@example.invalid about invoice"
         row.findings = [{"message": "Call +86 13800138000"}]
@@ -416,7 +417,7 @@ async def test_stale_worker_replay_returns_error_without_reinvoking_model(chat_a
 
     rid = await seed_review(chat_api)
     c = await chat_api.login("reviewer")
-    async with chat_api.app.state.db.sessionmaker() as s:
+    async with chat_api.app.state.db.maintenance_sessionmaker() as s:
         user = (await s.execute(select(User).where(User.username == "reviewer"))).scalar_one()
     sid = uid()
     meta = {

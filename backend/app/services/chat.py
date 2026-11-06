@@ -12,6 +12,7 @@ import hashlib
 import json
 import re
 import time
+from dataclasses import asdict
 from datetime import UTC
 from uuid import UUID
 
@@ -21,17 +22,12 @@ from sqlalchemy import select
 from app.ai.types import ModelUnavailable
 from app.core.errors import AppError
 from app.db.models import ChatMessage, Review, now, uid
-from app.security.injection import inspect
+from app.security.injection import inspect, inspect_data, out_of_scope
+from app.security.output import sanitize_public, unsafe_output
 from app.security.redact import mask
 from app.services.fields import aigc
 
 _CITATION = re.compile(r"\[([A-Za-z0-9][A-Za-z0-9_.:-]{0,63})\]")
-_SCOPE = re.compile(
-    r"(?:other|another)\s+(?:users?|tenants?|reviews?|accounts?)|"
-    r"(?:其他|别的|别人的|其它).{0,8}(?:用户|租户|审查|账号|报告)|"
-    r"(?:bypass|绕过).{0,20}(?:auth|permission|权限|鉴权)",
-    re.I,
-)
 UNAVAILABLE = "无可用 LLM，未完成真实/可用 LLM 验证；追问不会使用规则引擎伪造回答"
 
 
@@ -42,7 +38,7 @@ def message_out(row: ChatMessage) -> dict:
     return {
         "id": row.id,
         "role": row.role,
-        "content": row.content,
+        "content": sanitize_public(row.content, pii=True),
         "created_at": stamp.isoformat(),
         "blocked": row.blocked,
         "block_reason": row.block_reason,
@@ -149,6 +145,7 @@ class ChatStreams:
         if meta is None:
             raise AppError(404, "NOT_FOUND", "流不存在或已过期，请读取历史；不要自动重发问题")
         meta = json.loads(meta)
+        await self.authorize(user, review.id)
         if (meta["review_id"], meta["tenant_id"], meta["actor_id"]) != (review.id, user.tenant_id, user.id):
             raise AppError(404, "NOT_FOUND", "流不存在")
         if meta["fingerprint"] != fingerprint(content, language):
@@ -157,7 +154,27 @@ class ChatStreams:
             raise AppError(422, "VALIDATION_FAILED", "Last-Event-ID 超出已产生的事件")
         return stream_id, cursor
 
+    async def authorize(self, user, review_id):
+        try:
+            async with self.db.job_session(asdict(user.scope)) as s:
+                review = await s.get(Review, review_id)
+                if (
+                    review is None
+                    or review.tenant_id != user.tenant_id
+                    or (user.role == "reviewer" and review.owner_id != user.id)
+                ):
+                    raise ValueError
+                return review
+        except ValueError:
+            raise AppError(404, "NOT_FOUND", "流不存在") from None
+
+    @staticmethod
+    def check_meta(meta, user, review_id):
+        if (meta.get("review_id"), meta.get("tenant_id"), meta.get("actor_id")) != (review_id, user.tenant_id, user.id):
+            raise AppError(404, "NOT_FOUND", "流不存在")
+
     async def start(self, review, user, content: str, language: str, request_id: str) -> str:
+        review = await self.authorize(user, review.id)
         if review.status != "completed":
             raise AppError(409, "DOCUMENT_NOT_READY", "审查报告完成后才可追问")
         stream_id = uid()
@@ -175,17 +192,17 @@ class ChatStreams:
             ex=max(self.settings.chat_replay_ttl_s, int(self.settings.chat_generation_timeout_s) + 30),
         )
         guard = inspect(content)
-        reason = "prompt_injection" if guard.detected else ("out_of_scope" if _SCOPE.search(guard.text) else None)
+        reason = "prompt_injection" if guard.detected else ("out_of_scope" if out_of_scope(guard.text) else None)
         # A report may itself originate in untrusted documents; never ignore its guard.
         context = {
             "summary": review.summary or "",
             "findings": review.findings[:20],
             "destination_country": review.destination_country,
         }
-        if inspect(json.dumps(context, ensure_ascii=False)).detected:
+        if inspect_data(context).detected:
             reason = "prompt_injection"
         masked = mask(guard.text if not reason else "[BLOCKED INPUT]")
-        async with self.db.sessionmaker() as s:
+        async with self.db.job_session(asdict(user.scope)) as s:
             previous = (
                 (
                     await s.execute(
@@ -260,6 +277,8 @@ class ChatStreams:
             await self.fail(stream_id, meta, user, exc.traces if isinstance(exc, ModelUnavailable) else [])
 
     async def fail(self, stream_id, meta, user, traces):
+        self.check_meta(meta, user, meta["review_id"])
+        await self.authorize(user, meta["review_id"])
         await self.audit_models(meta, user, traces or [{"task": "chat", "status": "failed"}])
         await self.audit.record(
             "chat.message",
@@ -285,8 +304,20 @@ class ChatStreams:
             )
 
     async def generate(self, stream_id, meta, context, recent, content, language, reason, user):
+        self.check_meta(meta, user, meta["review_id"])
+        await self.authorize(user, meta["review_id"])
         citations, models = [], []
         if reason:
+            if reason == "prompt_injection":
+                await self.audit.record(
+                    "security.injection_detected",
+                    "blocked",
+                    actor=user.actor,
+                    resource_type="review",
+                    resource_id=meta["review_id"],
+                    request_id=meta["request_id"],
+                    detail={"task": "chat"},
+                )
             text = "该请求已被安全策略拦截；请仅针对当前审查报告提问。"
             await self.audit.record(
                 "chat.blocked",
@@ -306,6 +337,11 @@ class ChatStreams:
                     ensure_ascii=False,
                 )
             )
+            if inspect_data(
+                {"report": context, "history": recent, "question": content, "allowed_rules": citations}
+            ).detected or out_of_scope(inspect(payload.text).text):
+                await self.generate(stream_id, meta, context, recent, content, language, "prompt_injection", user)
+                return
             if payload.counts:
                 await self.audit.record(
                     "security.pii_masked",
@@ -342,7 +378,7 @@ class ChatStreams:
             if not complete or not text.strip() or not any(t["status"] != "failed" for t in llm_traces):
                 raise ModelUnavailable(llm_traces)
             # Full-buffer check prevents PII/injection split over token boundaries from leaking via SSE.
-            if inspect(text).detected or mask(text).counts:
+            if unsafe_output(text):
                 await self.audit.record(
                     "security.output_blocked",
                     "blocked",
@@ -375,9 +411,12 @@ class ChatStreams:
             created_at=now(),
         )
         row.aigc_meta = aigc(row.id, models) if not reason else {}
-        if not await self.redis.exists(self.key(stream_id, "meta")):
+        live_meta = await self.redis.get(self.key(stream_id, "meta"))
+        if live_meta is None:
             return
-        async with self.db.sessionmaker() as s:
+        self.check_meta(json.loads(live_meta), user, meta["review_id"])
+        await self.authorize(user, meta["review_id"])
+        async with self.db.job_session(asdict(user.scope)) as s:
             review = await s.get(Review, meta["review_id"])
             if review is None or review.tenant_id != user.tenant_id:
                 return
@@ -399,7 +438,7 @@ class ChatStreams:
                 await self.append(stream_id, "citation", citation)
         await self.append(stream_id, "done", message_out(row))
 
-    async def events(self, stream_id: str, cursor: int = 0):
+    async def events(self, stream_id: str, cursor: int = 0, *, user, review_id: str):
         """Replay persisted events, then follow the *same* producer; never invoke the model."""
         heartbeat = time.monotonic()
         while True:
@@ -407,6 +446,8 @@ class ChatStreams:
             if meta_raw is None:
                 return  # Expiration during a connection; client must GET history.
             meta = json.loads(meta_raw)
+            self.check_meta(meta, user, review_id)
+            await self.authorize(user, review_id)
             # Read terminal BEFORE list, so completion cannot race an empty lrange.
             terminal = await self.redis.exists(self.key(stream_id, "terminal"))
             batch = await self.redis.lrange(self.key(stream_id, "events"), cursor, -1)
@@ -427,8 +468,8 @@ class ChatStreams:
                 heartbeat = time.monotonic()
             await asyncio.sleep(0.05)
 
-    async def result(self, stream_id: str):
-        async for event in self.events(stream_id):
+    async def result(self, stream_id: str, *, user, review_id: str):
+        async for event in self.events(stream_id, user=user, review_id=review_id):
             if event and event["event"] == "done":
                 return event["data"]
             if event and event["event"] == "error":

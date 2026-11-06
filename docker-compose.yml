@@ -10,6 +10,19 @@ x-backend-env: &backend-env
     TASK_MODE: arq
 
 services:
+  migrate:
+    build: ./backend
+    <<: *backend-env
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres: {condition: service_healthy}
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    healthcheck: {disable: true}
+    restart: "no"
+
   api:
     build: ./backend
     <<: *backend-env
@@ -18,6 +31,7 @@ services:
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
     read_only: true
     tmpfs: [/tmp]
     security_opt: ["no-new-privileges:true"]
@@ -30,7 +44,7 @@ services:
     command: ["arq", "app.workers.tasks.WorkerSettings"]
     volumes: [storage:/data/storage]
     depends_on:
-      api: {condition: service_healthy}  # 等 api 建好表再启动，避免并发建表
+      api: {condition: service_healthy}  # 等迁移与 API 就绪，不由 worker 并发建表
     read_only: true
     tmpfs: [/tmp]
     security_opt: ["no-new-privileges:true"]

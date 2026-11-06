@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Path, Query, Request
@@ -10,12 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.types import StrictModel
 from app.core.errors import AppError
-from app.db.models import Review
+from app.db.models import AuditLog, Review
 from app.deps import Ctx, CurrentUser, ctx, enforce_rate, require, session
 from app.security.rbac import Perm, Role
 from app.services.chat import encode_event, history
 from app.services.review import create_review_record, process_review, review_out
 
+from .audit import AuditFilters, AuditPage, filters, paginate
 from .documents import UUID_RE
 from .schemas import Language
 
@@ -59,13 +61,15 @@ async def create_review(
     c: Ctx = Depends(ctx),
     s: AsyncSession = Depends(session),
 ) -> dict:
-    await enforce_rate(c, f"review:{user.id}", c.settings.rl_review_per_min, user.actor)
+    await enforce_rate(c, f"review:{user.tenant_id}:{user.id}", c.settings.rl_review_per_min, user.actor)
     row = await create_review_record(s, user, body, c.audit, c.request_id)
     st = request.app.state
     if c.settings.task_mode == "inline":
-        bg.add_task(process_review, st.db, st.store, st.audit, st.ai, row.id, c.request_id)
+        bg.add_task(
+            process_review, st.db, st.store, st.audit, st.ai, row.id, c.request_id, tenant_context=asdict(user.scope)
+        )
     else:
-        await st.arq.enqueue_job("review_task", row.id, c.request_id)
+        await st.arq.enqueue_job("review_task", row.id, c.request_id, tenant_context=asdict(user.scope))
     return review_out(row)
 
 
@@ -139,7 +143,7 @@ async def post_message(
 ):
     review = await _get(s, user, review_id)
     await s.commit()  # Release the request's read transaction before independent producer writes.
-    await enforce_rate(c, f"chat:{user.id}", c.settings.rl_chat_per_min, user.actor)
+    await enforce_rate(c, f"chat:{user.tenant_id}:{user.id}", c.settings.rl_chat_per_min, user.actor)
     service = request.app.state.chat
     language = body.language or review.language
     streaming = "text/event-stream" in request.headers.get("accept", "")
@@ -152,11 +156,11 @@ async def post_message(
         stream_id = await service.start(review, user, body.content, language, c.request_id)
         cursor = 0
     if not streaming:
-        return await service.result(stream_id)
+        return await service.result(stream_id, user=user, review_id=review.id)
 
     async def stream():
         yield f": stream {stream_id}\n\n"
-        async for event in service.events(stream_id, cursor):
+        async for event in service.events(stream_id, cursor, user=user, review_id=review.id):
             yield encode_event(event) if event else ": keepalive\n\n"
 
     return StreamingResponse(
@@ -168,3 +172,21 @@ async def post_message(
             "X-Chat-Stream-ID": stream_id,
         },
     )
+
+
+@router.get("/{review_id}/audit", response_model=AuditPage)
+async def case_audit(
+    review_id: str = Path(pattern=UUID_RE),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    f: AuditFilters = Depends(filters),
+    user: CurrentUser = Depends(require(Perm.audit_read_own_case)),
+    s: AsyncSession = Depends(session),
+) -> dict:
+    row = await _get(s, user, review_id)
+    q = select(AuditLog).where(
+        AuditLog.tenant_id == user.tenant_id,
+        ((AuditLog.resource_type == "review") & (AuditLog.resource_id == row.id))
+        | ((AuditLog.resource_type == "document") & AuditLog.resource_id.in_(row.document_ids)),
+    )
+    return await paginate(s, f.apply(q), page, page_size)

@@ -1,0 +1,15 @@
+America/Tijuana: 2026-11-05T19:38:15-08:00
+
+$ TEST_POSTGRES_DISPOSABLE=1 TEST_POSTGRES_URL=[local passwordless disposable target] pytest tests/test_m2_postgres_rls.py::test_pg_rls_catalog_all_business_tables_forced_and_restrictive
+E                                                                        [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_pg_rls_catalog_all_business_tables_forced_and_restrictive _
+[Errno 111] Connect call failed ('127.0.0.1', 5432)
+
+During handling of the above exception, another exception occurred:
+local disposable PostgreSQL unavailable or CREATE SCHEMA denied (connection withheld)
+=========================== short test summary info ============================
+ERROR tests/test_m2_postgres_rls.py::test_pg_rls_catalog_all_business_tables_forced_and_restrictive
+1 error in 0.05s
+
+preflight_exit=1

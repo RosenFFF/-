@@ -37,7 +37,7 @@ async def test_auditor_cannot_upload(api):
     c = await api.login("auditor")
     r = await c.post("/api/v1/documents", files={"file": ("a.png", invoice_image(), "image/png")})
     assert r.status_code == 403
-    async with api.app.state.db.sessionmaker() as s:
+    async with api.app.state.db.maintenance_sessionmaker() as s:
         assert (await s.execute(select(AuditLog).where(AuditLog.action == "document.upload"))).first() is None
 
 

@@ -34,6 +34,9 @@ class MaskResult:
 
 
 def mask(text: str) -> MaskResult:
+    from app.security.output import redact_secrets
+
+    text = redact_secrets(text)
     mapping: dict[str, str] = {}
     counts: Counter = Counter()
     seen: dict[tuple[str, str], str] = {}

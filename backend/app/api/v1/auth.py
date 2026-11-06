@@ -9,11 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.audit.service import Actor
 from app.core.errors import AppError
 from app.db.models import RefreshToken, User, uid
+from app.db.tenant import TenantScope, bind_scope
 from app.deps import Ctx, CurrentUser, ctx, current_user, enforce_rate, session
 from app.security.cookies import REFRESH_COOKIE, clear_session, set_session
 from app.security.passwords import verify_password
 from app.security.rbac import perms_of
-from app.security.tokens import hash_refresh, issue_access, new_refresh
+from app.security.tokens import decode_refresh, hash_refresh, issue_access, issue_refresh
 
 from .schemas import CurrentUserOut, LoginIn, SessionOut
 
@@ -38,7 +39,7 @@ def _me(u: User) -> CurrentUserOut:
 
 
 async def _issue(c: Ctx, s: AsyncSession, resp: Response, u: User, family: str | None = None) -> SessionOut:
-    raw, h = new_refresh()
+    raw, h = issue_refresh(c.settings, user_id=u.id, tenant_id=u.tenant_id, role=u.role)
     s.add(
         RefreshToken(
             user_id=u.id,
@@ -56,7 +57,14 @@ async def _issue(c: Ctx, s: AsyncSession, resp: Response, u: User, family: str |
 @router.post("/login", response_model=SessionOut)
 async def login(body: LoginIn, resp: Response, c: Ctx = Depends(ctx), s: AsyncSession = Depends(session)) -> SessionOut:
     await enforce_rate(c, f"login:{c.ip}", c.settings.rl_login_per_min)
-    u = (await s.execute(select(User).where(User.username == body.username))).scalar_one_or_none()
+    candidate = await c.db.login_candidate(body.username)
+    u = None
+    if candidate is not None:
+        s.info["credential_only"] = True
+        bind_scope(s, TenantScope(candidate["tenant_id"], candidate["id"], candidate["role"]))
+        u = (
+            await s.execute(select(User).where(User.id == candidate["id"], User.tenant_id == candidate["tenant_id"]))
+        ).scalar_one_or_none()
     now = datetime.now(UTC)
     actor = Actor(u.id, u.username, u.role, u.tenant_id) if u else Actor(username=body.username[:64])
 
@@ -67,12 +75,15 @@ async def login(body: LoginIn, resp: Response, c: Ctx = Depends(ctx), s: AsyncSe
         )
         raise AppError(423, "AUTH_LOCKED", "登录失败次数过多，账号已临时锁定")
 
-    if u is None or u.disabled or not verify_password(body.password, u.password_hash):
+    password_ok = verify_password(body.password, u.password_hash if u else None)
+    if u is None or u.disabled or not password_ok:
+        account_locked = False
         if u is not None:
             u.failed_logins += 1
             if u.failed_logins >= c.settings.login_max_failures:
                 u.locked_until = now + timedelta(seconds=c.settings.login_lock_s)
                 u.failed_logins = 0
+                account_locked = True
             await s.commit()
         await c.audit.record(
             "auth.login_failed",
@@ -80,10 +91,11 @@ async def login(body: LoginIn, resp: Response, c: Ctx = Depends(ctx), s: AsyncSe
             actor=actor,
             ip=c.ip,
             request_id=c.request_id,
-            detail={"reason": "bad_credentials"},
+            detail={"reason": "bad_credentials", "account_locked": account_locked},
         )
         raise AppError(401, "AUTH_INVALID_CREDENTIALS", "用户名或密码错误")
 
+    s.info["credential_only"] = False
     u.failed_logins, u.locked_until, u.last_login_at = 0, None, now
     out = await _issue(c, s, resp, u)
     await c.audit.record("auth.login", "success", actor=actor, ip=c.ip, request_id=c.request_id)
@@ -97,10 +109,17 @@ async def refresh(
     s: AsyncSession = Depends(session),
     refresh_token: str | None = Cookie(default=None, alias=REFRESH_COOKIE),
 ) -> SessionOut:
+    await enforce_rate(c, f"auth:{c.ip}", c.settings.rl_auth_per_min)
     if not refresh_token:
         raise AppError(401, "AUTH_TOKEN_EXPIRED", "请重新登录")
+    scope = decode_refresh(c.settings, refresh_token)
+    bind_scope(s, scope)
     rt = (
-        await s.execute(select(RefreshToken).where(RefreshToken.token_hash == hash_refresh(refresh_token)))
+        await s.execute(
+            select(RefreshToken).where(
+                RefreshToken.token_hash == hash_refresh(refresh_token), RefreshToken.user_id == scope.user_id
+            )
+        )
     ).scalar_one_or_none()
     now = datetime.now(UTC)
     if rt is None:
@@ -110,7 +129,11 @@ async def refresh(
         # 已轮换过的令牌被再次使用 → 判定为被盗用，作废整条令牌族
         await s.execute(
             update(RefreshToken)
-            .where(RefreshToken.family_id == rt.family_id, RefreshToken.revoked_at.is_(None))
+            .where(
+                RefreshToken.family_id == rt.family_id,
+                RefreshToken.user_id == scope.user_id,
+                RefreshToken.revoked_at.is_(None),
+            )
             .values(revoked_at=now)
         )
         await s.commit()
@@ -123,7 +146,7 @@ async def refresh(
             detail={"family_id": rt.family_id},
         )
         raise AppError(401, "AUTH_TOKEN_EXPIRED", "请重新登录")
-    if _aware(rt.expires_at) <= now or u.disabled:
+    if _aware(rt.expires_at) <= now or u.disabled or u.role != scope.role:
         raise AppError(401, "AUTH_TOKEN_EXPIRED", "请重新登录")
     rt.revoked_at = now
     return await _issue(c, s, resp, u, family=rt.family_id)
@@ -136,18 +159,36 @@ async def logout(
     s: AsyncSession = Depends(session),
     refresh_token: str | None = Cookie(default=None, alias=REFRESH_COOKIE),
 ) -> Response:
+    await enforce_rate(c, f"auth:{c.ip}", c.settings.rl_auth_per_min)
     if refresh_token:
+        scope = decode_refresh(c.settings, refresh_token)
+        bind_scope(s, scope)
         rt = (
-            await s.execute(select(RefreshToken).where(RefreshToken.token_hash == hash_refresh(refresh_token)))
+            await s.execute(
+                select(RefreshToken).where(
+                    RefreshToken.token_hash == hash_refresh(refresh_token), RefreshToken.user_id == scope.user_id
+                )
+            )
         ).scalar_one_or_none()
         if rt is not None:
             await s.execute(
                 update(RefreshToken)
-                .where(RefreshToken.family_id == rt.family_id, RefreshToken.revoked_at.is_(None))
+                .where(
+                    RefreshToken.family_id == rt.family_id,
+                    RefreshToken.user_id == scope.user_id,
+                    RefreshToken.revoked_at.is_(None),
+                )
                 .values(revoked_at=datetime.now(UTC))
             )
             await s.commit()
-            await c.audit.record("auth.logout", "success", actor=Actor(id=rt.user_id), ip=c.ip, request_id=c.request_id)
+            u = await s.get(User, scope.user_id)
+            await c.audit.record(
+                "auth.logout",
+                "success",
+                actor=Actor(u.id, u.username, u.role, u.tenant_id),
+                ip=c.ip,
+                request_id=c.request_id,
+            )
     r = Response(status_code=204)
     clear_session(r, c.settings)
     return r

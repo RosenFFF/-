@@ -18,6 +18,7 @@ from pydantic import BaseModel, ValidationError
 
 from app.ai.types import LLMResult, ModelUnavailable, TextChunk, trace
 from app.core.config import Settings
+from app.security.output import unsafe_output
 
 
 class LLMClient(Protocol):
@@ -117,10 +118,7 @@ class ProviderChain:
                     content = envelope["choices"][0]["message"]["content"]
                     value = schema.model_validate_json(content, strict=True)
                     # Plain PII invented/leaked by the model and instruction-shaped output are rejected.
-                    from app.security.injection import inspect
-                    from app.security.redact import mask
-
-                    if mask(content).counts or inspect(content).detected:
+                    if unsafe_output(value.model_dump()):
                         raise ValueError("unsafe model output")
                 except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError, AttributeError, ValidationError):
                     ms = int((time.perf_counter() - t0) * 1000)
@@ -169,6 +167,8 @@ class ProviderChain:
                 traces = chunk.traces or traces
         except ModelUnavailable as exc:
             return LLMResult(None, exc.traces, "L3")
+        if unsafe_output(text):
+            return LLMResult(None, traces, "L3")
         successful = next(t for t in reversed(traces) if t["status"] != "failed")
         index = next(i for i, p in enumerate(self.providers) if p.name == successful["provider"])
         return LLMResult(text, traces, level(successful["provider"], index))

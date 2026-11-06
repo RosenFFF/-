@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from app.ai.ocr import ocr_engine
 from app.db.models import AuditLog
+from app.db.tenant import TenantScope
 
 
 async def model_health(ai) -> dict:
@@ -33,17 +34,17 @@ async def model_health(ai) -> dict:
     return {"degrade_level": level, "models": items}
 
 
-async def apply_audit_metrics(result: dict, db, tenant_id: str, settings) -> dict:
+async def apply_audit_metrics(result: dict, db, scope: TenantScope, settings) -> dict:
     """API and arq do not share memory: read real worker calls from the audit ledger."""
     since = datetime.now(UTC) - timedelta(hours=24)
-    async with db.sessionmaker() as s:
+    async with db.tenant_session(scope) as s:
         rows = (
             (
                 await s.execute(
                     select(AuditLog)
                     .where(
                         AuditLog.action == "model.call",
-                        AuditLog.tenant_id == tenant_id,
+                        AuditLog.tenant_id == scope.org_id,
                         AuditLog.ts >= since,
                     )
                     .order_by(AuditLog.seq.desc())

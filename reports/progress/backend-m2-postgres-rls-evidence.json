@@ -1,0 +1,140 @@
+{
+  "recorded_at": "2026-11-05T19:42:14-08:00",
+  "timezone": "America/Tijuana",
+  "status": "PARTIAL_BLOCKED_NO_POSTGRESQL_AND_API_INTEGRATION",
+  "branch": "feat/backend-m2-security",
+  "base_commit": "442f8c1c1c3ab2e75730597e7816098daa0198f1",
+  "implementation_commit": "68e0e2ab7bf776ea9b014225bca4515a76f5b8b6",
+  "bundle": {
+    "path": "/workspace/competition/bundles/feat-backend-m2-postgres-rls.bundle",
+    "prerequisite": "442f8c1c1c3ab2e75730597e7816098daa0198f1",
+    "range": "442f8c1..feat/backend-m2-security",
+    "tip": "final branch ref in git bundle list-heads, not self-referential in this JSON"
+  },
+  "postgres_install": {
+    "source": "unchanged official apt sources",
+    "update_exit": 100,
+    "install_executed": false,
+    "server_started": false,
+    "server_version": null,
+    "client_version": "17.11 (Debian 17.11-0+deb13u1)",
+    "error": "HTTP 500 Internal Server Error on Debian trixie, trixie-updates and trixie-security; repository signature errors",
+    "network_or_security_bypass": false,
+    "loopback_configuration_applied": false,
+    "databases_or_roles_created": false
+  },
+  "rls": {
+    "revision": "0002_m2_tenant_rls",
+    "down_revision": "0001_m2_initial",
+    "candidate_ddl_added": true,
+    "tables_enabled_and_forced_in_ddl": 11,
+    "policies_in_ddl": 22,
+    "restrictive_guard": true,
+    "using_and_with_check": true,
+    "sqlite_applicability": "NOT_APPLICABLE_NO_RLS_EMULATION",
+    "context": [
+      "app.current_org_id",
+      "app.current_user_id",
+      "app.current_role"
+    ],
+    "scope": "transaction-local set_config with bound params, reapplied per ORM transaction",
+    "live_verified": false,
+    "application_role_live_verified": false,
+    "pool_reuse_live_verified": false,
+    "production_api_ready": false,
+    "postgres_api_worker_startup": "EXPLICITLY_BLOCKED_BY_CODE"
+  },
+  "pytest": {
+    "full": {
+      "collected": 325,
+      "passed": 244,
+      "skipped": 81,
+      "failed": 0,
+      "errors": 0
+    },
+    "targeted": {
+      "collected": 106,
+      "passed": 26,
+      "skipped": 80,
+      "failed": 0,
+      "errors": 0
+    },
+    "live_postgres": {
+      "executed_bodies": 0,
+      "passed": 0,
+      "skipped": 80,
+      "by_module": {
+        "tests.test_m2_postgres_live": 9,
+        "tests.test_m2_postgres_rls": 71
+      }
+    },
+    "rls_new_live_tests": {
+      "collected": 71,
+      "passed": 0,
+      "skipped": 71
+    },
+    "real_model": {
+      "passed": 0,
+      "skipped": 1,
+      "status": "STILL_BLOCKED"
+    },
+    "explicit_connection_preflight": {
+      "collected": 1,
+      "passed": 0,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 1
+    },
+    "passing_test_boundary": "SQLite application/migration regression, offline policy/role/session checks only; not PostgreSQL/RLS acceptance"
+  },
+  "ruff": {
+    "check": "PASS",
+    "format_check": "PASS",
+    "files": 88
+  },
+  "security_scan": {
+    "source_commit": "68e0e2ab7bf776ea9b014225bca4515a76f5b8b6",
+    "report": "reports/security/2026-11-05.md",
+    "tools_ok": 6,
+    "tools_skipped": 0,
+    "errors": 0,
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  },
+  "remaining_code_gaps": [
+    "pre-auth username and refresh-token minimum-privilege access",
+    "NULL-tenant audit writes and global hash-chain predecessor/verification access",
+    "bootstrap, OCR/review worker and independent SSE producer trusted scope propagation"
+  ],
+  "threat_boundary": "Trusted server sets GUCs. Not a defense against compromised SQL principal, arbitrary SQL/GUC forgery or malicious DBA.",
+  "acceptance": {
+    "M2": "NOT_ACCEPTED",
+    "postgres_migrations": "NOT_EXECUTED",
+    "database_rls": "NOT_ACCEPTED",
+    "real_model": "NOT_VERIFIED"
+  },
+  "evidence_sha256": {
+    "reports/progress/postgres-rls/apt-install.log": "9ae0a0aa052dbc5ee6d96ddfc01bb82c24b21b59e1cb9169bddf6167d138a030",
+    "reports/progress/postgres-rls/full.xml": "d9b4f3e4b5a809379ca22225a250630e01142379e7289836b9b3c0ddb8dc9710",
+    "reports/progress/postgres-rls/pg-preflight.log": "18d69681a61a5e00581e75bed084b3a7560a2c787eef68f166e514ba06b2ef84",
+    "reports/progress/postgres-rls/postgres-rls-downgrade.sql": "0ced3678d2c92bdd80d000bb612fe77b0bbee9c152dcfdf6bb5cb6ccd2337389",
+    "reports/progress/postgres-rls/postgres-rls-upgrade.sql": "a1572c93191bb25e23f97d246353c03a734240557716f07696993d19cc1dde6b",
+    "reports/progress/postgres-rls/preflight.xml": "8df1ec5dcbc6d95de13af486ee72044a5351814cdad86652d8f103f1e0c635a7",
+    "reports/progress/postgres-rls/pytest-full.log": "246817ae98494758562f48194c09ed7156c2da435e9e12b3ee1c6909de6067cd",
+    "reports/progress/postgres-rls/pytest-targeted.log": "5b3ccc26ec974deb77394ea4800682d0c099de39bb188bd370d312c0ea60f151",
+    "reports/progress/postgres-rls/ruff.log": "32db152a4c9b8430dae76865a076401611f2039550f9032b895c00d0bda46730",
+    "reports/progress/postgres-rls/security-scan.log": "1828e23b9e3694c44f4506315ddc41f0df7a8be15644c88b8bae39ffa48462f5",
+    "reports/progress/postgres-rls/server-preflight.log": "3da7871964d847a6cb25967770e5fa36f0904ac004e9d925b36bf1a49c1ed937",
+    "reports/progress/postgres-rls/sqlite-rls-downgrade.sql": "b74353cb62b070a19e54943400e2436d3d1d361f616f479947f1e28f21c83fd7",
+    "reports/progress/postgres-rls/sqlite-rls-upgrade.sql": "2b27e81d5107dfbcf0509f54af774519c3460c51dc8d0340e0b5e9ee2b680de1",
+    "reports/progress/postgres-rls/targeted.xml": "da50fbb4f5f5252a0dbd02132b407aeecd39f871d61657545601857e71ce524c"
+  },
+  "external_actions": {
+    "push": false,
+    "pull_request": false,
+    "cloud_agent": false,
+    "group_message": false
+  }
+}

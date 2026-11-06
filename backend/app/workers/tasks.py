@@ -21,7 +21,12 @@ async def startup(ctx: dict[str, Any]) -> None:
     setup_logging()
     settings = get_settings()
     ctx["db"] = Database(settings.database_url)
-    await ctx["db"].create_all()
+    await ctx["db"].check_migrated()
+    try:
+        await ctx["db"].check_runtime_access()
+    except Exception:
+        await ctx["db"].dispose()
+        raise
     ctx["store"] = EncryptedStore(settings)
     ctx["audit"] = AuditService(ctx["db"])
     ctx["ai"] = AIRuntime(settings)
@@ -32,12 +37,20 @@ async def shutdown(ctx: dict[str, Any]) -> None:
     await ctx["db"].dispose()
 
 
-async def ocr_task(ctx: dict[str, Any], doc_id: str, request_id: str = "") -> None:
-    await process_document(ctx["db"], ctx["store"], ctx["audit"], doc_id, request_id, ai=ctx["ai"])
+async def ocr_task(
+    ctx: dict[str, Any], doc_id: str, request_id: str = "", *, tenant_context: dict | None = None
+) -> None:
+    await process_document(
+        ctx["db"], ctx["store"], ctx["audit"], doc_id, request_id, ai=ctx["ai"], tenant_context=tenant_context
+    )
 
 
-async def review_task(ctx: dict[str, Any], review_id: str, request_id: str = "") -> None:
-    await process_review(ctx["db"], ctx["store"], ctx["audit"], ctx["ai"], review_id, request_id)
+async def review_task(
+    ctx: dict[str, Any], review_id: str, request_id: str = "", *, tenant_context: dict | None = None
+) -> None:
+    await process_review(
+        ctx["db"], ctx["store"], ctx["audit"], ctx["ai"], review_id, request_id, tenant_context=tenant_context
+    )
 
 
 class WorkerSettings:

@@ -20,13 +20,23 @@ log = structlog.get_logger()
 
 
 async def process_document(
-    db: Database, store: EncryptedStore, audit: AuditService, doc_id: str, request_id: str = "", *, ai=None
+    db: Database,
+    store: EncryptedStore,
+    audit: AuditService,
+    doc_id: str,
+    request_id: str = "",
+    *,
+    ai=None,
+    tenant_context: dict | None = None,
 ) -> None:
-    async with db.sessionmaker() as s:
+    async with db.job_session(tenant_context) as s:
+        scope = s.info["tenant_scope"]
         claimed = await s.execute(
             update(Document)
             .where(
                 Document.id == doc_id,
+                Document.tenant_id == scope.org_id,
+                Document.owner_id == scope.user_id,
                 Document.status.in_(("uploaded", "failed")),
             )
             .values(status="ocr_running", progress=5)
@@ -66,7 +76,14 @@ async def process_document(
                 await s.commit()
             doc.pages, doc.status, doc.progress = len(pages), "extracting", 95
             await s.commit()
-            extracted, security, traces, degrade = await extract(doc, all_blocks, ai, audit, request_id)
+            extracted, security, traces, degrade = await extract(
+                doc,
+                all_blocks,
+                ai,
+                audit,
+                request_id,
+                actor=Actor(id=scope.user_id, role=scope.role, tenant_id=scope.org_id),
+            )
             models = [trace("ocr", ocr_engine.name, "ocr", total_ms), *traces]
             await s.execute(delete(DocumentFields).where(DocumentFields.document_id == doc.id))
             s.add(
@@ -87,7 +104,7 @@ async def process_document(
                 await audit.record(
                     "model.call",
                     "failed" if model["status"] == "failed" else "success",
-                    actor=Actor(id=doc.owner_id, tenant_id=doc.tenant_id),
+                    actor=Actor(id=scope.user_id, role=scope.role, tenant_id=scope.org_id),
                     resource_type="document",
                     resource_id=doc.id,
                     request_id=request_id,
@@ -96,7 +113,7 @@ async def process_document(
             await audit.record(
                 "model.call",
                 "success",
-                actor=Actor(id=doc.owner_id, tenant_id=doc.tenant_id),
+                actor=Actor(id=scope.user_id, role=scope.role, tenant_id=scope.org_id),
                 resource_type="document",
                 resource_id=doc.id,
                 request_id=request_id,
@@ -114,6 +131,7 @@ async def process_document(
             await audit.record(
                 "model.call",
                 "failed",
+                actor=Actor(id=scope.user_id, role=scope.role, tenant_id=scope.org_id),
                 resource_type="document",
                 resource_id=doc.id,
                 request_id=request_id,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Path, Query, Request, UploadFile
@@ -60,7 +61,7 @@ async def upload(
     c: Ctx = Depends(ctx),
     s: AsyncSession = Depends(session),
 ) -> DocumentOut:
-    await enforce_rate(c, f"upload:{user.id}", c.settings.rl_upload_per_min, user.actor)
+    await enforce_rate(c, f"upload:{user.tenant_id}:{user.id}", c.settings.rl_upload_per_min, user.actor)
     data = await _read_limited(file, c.settings.max_upload_bytes)
     try:
         info = files.inspect(data, c.settings.max_pages)
@@ -109,9 +110,11 @@ async def upload(
 
     st = request.app.state
     if c.settings.task_mode == "inline":
-        bg.add_task(process_document, st.db, store, st.audit, d.id, c.request_id, ai=st.ai)
+        bg.add_task(
+            process_document, st.db, store, st.audit, d.id, c.request_id, ai=st.ai, tenant_context=asdict(user.scope)
+        )
     else:
-        await st.arq.enqueue_job("ocr_task", d.id, c.request_id)
+        await st.arq.enqueue_job("ocr_task", d.id, c.request_id, tenant_context=asdict(user.scope))
     return _out(d)
 
 
