@@ -138,7 +138,7 @@ paths:
       parameters:
         - { $ref: '#/components/parameters/CsrfHeader' }
       responses:
-        '204': { description: 已登出 }
+        '204': { description: '已登出' }
   /auth/me:
     get:
       tags: [auth]
@@ -292,7 +292,7 @@ paths:
       tags: [documents]
       summary: 删除单证（同时删除密文、识别结果和派生数据）
       responses:
-        '204': { description: 已删除 }
+        '204': { description: '已删除' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
   /documents/{document_id}/pages/{page}/image:
@@ -363,7 +363,7 @@ paths:
     post:
       tags: [reviews]
       summary: 发起合规审查（admin, reviewer）
-      description: 可把同一票货的多份单证一起审（用于交叉核对发票、装箱单、原产地证）。异步执行，轮询 `GET /reviews/{id}`。
+      description: '可把同一票货的多份单证一起审（用于交叉核对发票、装箱单、原产地证）。异步执行，轮询 `GET /reviews/{id}`。'
       requestBody:
         required: true
         content:
@@ -577,7 +577,7 @@ paths:
                 required: [valid, checked, head_hash]
                 properties:
                   valid: { type: boolean }
-                  checked: { type: integer, description: 校验的记录数 }
+                  checked: { type: integer, description: '校验的记录数' }
                   head_hash: { type: string }
                   first_broken_id: { type: [string, 'null'], format: uuid }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -652,7 +652,7 @@ components:
       name: X-CSRF-Token
       in: header
       required: true
-      description: 取自 csrf_token Cookie；所有 Cookie 鉴权的写请求都要带
+      description: 取自 csrf_token Cookie（服务端 HMAC 绑定当前 access/refresh 会话）；Cookie 写请求都须携带，且 Origin（缺失时 Referer）须在 CORS_ORIGINS 白名单，缺失或不匹配返回 CSRF_FAILED
       schema: { type: string }
 
   responses:
@@ -762,7 +762,7 @@ components:
       description: 令牌只在 HttpOnly Cookie 里，响应体不含任何令牌
       required: [expires_in, user]
       properties:
-        expires_in: { type: integer, description: access_token 剩余有效秒数 }
+        expires_in: { type: integer, description: 'access_token 剩余有效秒数' }
         user: { $ref: '#/components/schemas/CurrentUser' }
     User:
       type: object
@@ -794,7 +794,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         doc_type: { $ref: '#/components/schemas/DocType' }
-        filename: { type: string, description: 展示用文件名（已清洗） }
+        filename: { type: string, description: '展示用文件名（已清洗）' }
         mime: { type: string, enum: [application/pdf, image/png, image/jpeg] }
         size_bytes: { type: integer }
         pages: { type: [integer, 'null'] }
@@ -804,7 +804,7 @@ components:
         error: { oneOf: [ { $ref: '#/components/schemas/Problem' }, { type: 'null' } ] }
         owner_id: { type: string, format: uuid }
         created_at: { type: string, format: date-time }
-        expire_at: { type: string, format: date-time, description: 到期自动删除 }
+        expire_at: { type: string, format: date-time, description: '到期自动删除' }
 
     BBox:
       type: array
@@ -825,8 +825,8 @@ components:
       type: object
       required: [key, label, value, source]
       properties:
-        key: { type: string, description: 如 invoice_no, hs_code, total_amount, currency, origin_country, consignee }
-        label: { type: string, description: 本地化展示名 }
+        key: { type: string, description: '如 invoice_no, hs_code, total_amount, currency, origin_country, consignee' }
+        label: { type: string, description: '本地化展示名' }
         value: { type: [string, 'null'] }
         confidence: { type: [number, 'null'], minimum: 0, maximum: 1 }
         source_block_ids:
@@ -842,7 +842,7 @@ components:
             properties:
               page: { type: integer, minimum: 1 }
               bbox: { $ref: '#/components/schemas/BBox' }
-        masked: { type: boolean, description: 是否为敏感字段（展示时已部分打码） }
+        masked: { type: boolean, description: '是否为敏感字段（展示时已部分打码）' }
         source: { type: string, enum: [llm, rule, manual] }
     Recognition:
       type: object
@@ -852,6 +852,7 @@ components:
         version: { type: integer }
         doc_type: { $ref: '#/components/schemas/DocType' }
         language_detected: { type: string }
+        degrade_level: { $ref: '#/components/schemas/DegradeLevel' }
         ocr:
           type: object
           required: [engine, blocks]
@@ -876,12 +877,12 @@ components:
       required: [rule_id, source, article, excerpt]
       properties:
         rule_id: { type: string }
-        source: { type: string, description: 规则出处，如某协定原产地规则 }
+        source: { type: string, description: '规则出处，如某协定原产地规则' }
         jurisdiction: { type: string }
-        article: { type: string, description: 条款号 }
-        excerpt: { type: string, description: 原文摘录 }
+        article: { type: string, description: '条款号' }
+        excerpt: { type: string, description: '原文摘录' }
         url: { type: [string, 'null'], format: uri }
-        score: { type: number, description: 重排相关度 }
+        score: { type: number, description: '重排相关度' }
     Finding:
       type: object
       required: [id, severity, category, title, message, determined_by, citations]
@@ -890,7 +891,7 @@ components:
         severity: { type: string, enum: [info, low, medium, high] }
         category: { type: string, enum: [missing_field, inconsistency, classification, origin, restricted_goods, sanctions, valuation, format, other] }
         title: { type: string }
-        message: { type: string, description: 按请求语言生成的解释 }
+        message: { type: string, description: '按请求语言生成的解释' }
         document_id: { type: [string, 'null'], format: uuid }
         field_keys:
           type: array
@@ -963,7 +964,7 @@ components:
         citations:
           type: array
           items: { $ref: '#/components/schemas/RuleCitation' }
-        blocked: { type: boolean, description: 输入被安全检测拦截 }
+        blocked: { type: boolean, description: '输入被安全检测拦截' }
         block_reason: { type: [string, 'null'], enum: [prompt_injection, jailbreak, out_of_scope, sensitive_data, null] }
         models:
           type: array
@@ -1014,7 +1015,7 @@ components:
       type: object
       description: 本次处理中的安全事件，供报告页和看板展示
       properties:
-        pii_masked_count: { type: integer, description: 出域前脱敏的敏感项数量 }
+        pii_masked_count: { type: integer, description: '出域前脱敏的敏感项数量' }
         pii_types:
           type: array
           items: { type: string, enum: [person_name, phone, email, bank_account, address, id_number] }
@@ -1045,7 +1046,7 @@ components:
               provider: { type: string }
               model: { type: string }
               deployment: { type: string, enum: [local, cloud] }
-              stage: { type: string, description: 在链路中的环节 }
+              stage: { type: string, description: '在链路中的环节' }
               healthy: { type: boolean }
               circuit_open: { type: boolean }
               p95_latency_ms: { type: [integer, 'null'] }
@@ -1106,9 +1107,9 @@ components:
         resource_type: { type: [string, 'null'] }
         resource_id: { type: [string, 'null'] }
         result: { type: string, enum: [success, denied, blocked, failed] }
-        ip: { type: [string, 'null'], description: 末段打码 }
+        ip: { type: [string, 'null'], description: '末段打码' }
         request_id: { type: string }
-        detail: { type: object, additionalProperties: true, description: 不含敏感原文 }
+        detail: { type: object, additionalProperties: true, description: '不含敏感原文' }
         prev_hash: { type: [string, 'null'] }
         hash: { type: string }
     SecurityStats:

@@ -9,13 +9,17 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
-from app.db.models import Document, OcrPage, uid
+from app.db.models import Document, DocumentFields, OcrPage, Review, ReviewDocument, uid
 from app.deps import Ctx, CurrentUser, ctx, enforce_rate, require, session
-from app.security.rbac import Perm, Role
+from app.security.rbac import Perm
 from app.services import files
+from app.services.document_access import get_document as _get
+from app.services.document_access import visible_documents as _visible
+from app.services.field_edit import edit_fields
+from app.services.fields import recognition_out
 from app.services.pipeline import process_document
 
-from .schemas import DocStatus, DocType, DocumentOut
+from .schemas import DocStatus, DocType, DocumentOut, FieldsPatchIn
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 UUID_RE = r"^[0-9a-fA-F-]{36}$"
@@ -33,21 +37,6 @@ def _out(d: Document) -> DocumentOut:
             "request_id": "",
         }
     return out
-
-
-def _visible(user: CurrentUser):
-    """对象级授权：同租户；reviewer 只能看自己上传的，admin/auditor 看全租户。"""
-    q = select(Document).where(Document.tenant_id == user.tenant_id)
-    if user.role == Role.reviewer:
-        q = q.where(Document.owner_id == user.id)
-    return q
-
-
-async def _get(s: AsyncSession, user: CurrentUser, doc_id: str) -> Document:
-    d = (await s.execute(_visible(user).where(Document.id == doc_id))).scalar_one_or_none()
-    if d is None:
-        raise AppError(404, "NOT_FOUND", "单证不存在")  # 不区分"无权"与"不存在"，防止枚举
-    return d
 
 
 async def _read_limited(f: UploadFile, limit: int) -> bytes:
@@ -120,7 +109,7 @@ async def upload(
 
     st = request.app.state
     if c.settings.task_mode == "inline":
-        bg.add_task(process_document, st.db, store, st.audit, d.id, c.request_id)
+        bg.add_task(process_document, st.db, store, st.audit, d.id, c.request_id, ai=st.ai)
     else:
         await st.arq.enqueue_job("ocr_task", d.id, c.request_id)
     return _out(d)
@@ -169,6 +158,12 @@ async def delete_document(
     s: AsyncSession = Depends(session),
 ) -> Response:
     d = await _get(s, user, document_id)
+    review_ids = select(ReviewDocument.review_id).where(ReviewDocument.document_id == d.id)
+    linked = list((await s.execute(review_ids)).scalars())
+    if linked:
+        await s.execute(delete(ReviewDocument).where(ReviewDocument.review_id.in_(linked)))
+        await s.execute(delete(Review).where(Review.id.in_(linked)))
+    await s.execute(delete(DocumentFields).where(DocumentFields.document_id == d.id))
     await s.execute(delete(OcrPage).where(OcrPage.document_id == d.id))
     await s.delete(d)
     await s.commit()
@@ -215,6 +210,7 @@ async def page_image(
 
 @router.get("/{document_id}/recognition")
 async def recognition(
+    request: Request,
     document_id: str = Path(pattern=UUID_RE),
     user: CurrentUser = Depends(require(Perm.document_read)),
     s: AsyncSession = Depends(session),
@@ -223,34 +219,19 @@ async def recognition(
     if d.status != "ready":
         raise AppError(409, "DOCUMENT_NOT_READY", "单证仍在处理中")
     pages = (await s.execute(select(OcrPage).where(OcrPage.document_id == d.id).order_by(OcrPage.page))).scalars().all()
-    blocks = [b for p in pages for b in p.blocks]
-    total_ms = sum(p.duration_ms for p in pages)
-    engine = pages[0].engine if pages else "rapidocr-ppocrv4"
-    return {
-        "document_id": d.id,
-        "version": 1,
-        "doc_type": d.doc_type,
-        "ocr": {"engine": engine, "duration_ms": total_ms, "blocks": blocks},
-        "fields": [],  # M1：LLM 字段抽取后填充（含 locations）
-        "security": {
-            "pii_masked_count": 0,
-            "pii_types": [],
-            "injection_detected": False,
-            "injection_snippets": [],
-            "output_checks_passed": True,
-            "invalid_citations_dropped": 0,
-        },
-        "models": [
-            {
-                "category": "ocr",
-                "provider": "local",
-                "model": engine,
-                "task": "ocr",
-                "prompt_version": None,
-                "tokens_in": None,
-                "tokens_out": None,
-                "latency_ms": total_ms,
-                "status": "ok",
-            }
-        ],
-    }
+    row = await s.get(DocumentFields, d.id)
+    if row is None:
+        raise AppError(409, "DOCUMENT_NOT_READY", "字段尚未完成抽取，请重新处理单证")
+    return recognition_out(d, pages, row, request.app.state.store)
+
+
+@router.patch("/{document_id}/fields")
+async def patch_fields(
+    body: FieldsPatchIn,
+    request: Request,
+    document_id: str = Path(pattern=UUID_RE),
+    user: CurrentUser = Depends(require(Perm.document_edit)),
+    c: Ctx = Depends(ctx),
+    s: AsyncSession = Depends(session),
+) -> dict:
+    return await edit_fields(s, request.app.state.store, c.audit, user, document_id, body, c.request_id)

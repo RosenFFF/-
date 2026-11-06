@@ -1,0 +1,59 @@
+"""Immutable process-local rule index, seeded at API/worker startup. No external text ingestion."""
+
+from __future__ import annotations
+
+import json
+import time
+from pathlib import Path
+
+from app.ai.embedding import cosine
+from app.ai.types import trace
+
+
+class RuleIndex:
+    def __init__(self, directory: Path, embedding, reranker):
+        self.embedding, self.reranker = embedding, reranker
+        self.rules: dict[str, dict] = {}
+        self.chunks: list[dict] = []
+        for path in sorted(directory.glob("*.json")):
+            for rule in json.loads(path.read_text(encoding="utf-8")):
+                if rule["id"] in self.rules:
+                    raise ValueError("duplicate rule id")
+                self.rules[rule["id"]] = rule
+                text = rule["title"] + "\n" + rule["text"]
+                for start in range(0, len(text), 500):
+                    self.chunks.append({"rule_id": rule["id"], "text": text[start : start + 600]})
+        self.vectors = embedding.encode([c["text"] for c in self.chunks])
+        self.healthy = bool(self.rules)
+
+    def citation(self, rule_id: str, score: float = 1.0) -> dict:
+        r = self.rules[rule_id]
+        return {
+            "rule_id": r["id"],
+            "source": r["source"],
+            "jurisdiction": r["jurisdiction"],
+            "article": r["article"],
+            "excerpt": r["text"],
+            "url": r.get("url"),
+            "score": round(score, 5),
+        }
+
+    def search(self, query: str, top_k: int = 20, top_n: int = 5) -> tuple[list[dict], list[dict]]:
+        t0 = time.perf_counter()
+        vector = self.embedding.encode([query])[0]
+        ranked = sorted(range(len(self.chunks)), key=lambda i: cosine(vector, self.vectors[i]), reverse=True)[:top_k]
+        embed_ms = int((time.perf_counter() - t0) * 1000)
+        t0 = time.perf_counter()
+        scores = self.reranker.score(query, [self.chunks[i]["text"] for i in ranked])
+        selected = sorted(zip(ranked, scores, strict=True), key=lambda pair: pair[1], reverse=True)
+        unique = {}
+        for i, score in selected:
+            rid = self.chunks[i]["rule_id"]
+            if rid not in unique:
+                unique[rid] = self.citation(rid, score)
+            if len(unique) >= top_n:
+                break
+        return list(unique.values()), [
+            trace("embedding", self.embedding.name, "rule_retrieval", embed_ms),
+            trace("reranker", self.reranker.name, "rerank", int((time.perf_counter() - t0) * 1000)),
+        ]

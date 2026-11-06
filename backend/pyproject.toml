@@ -2,7 +2,7 @@
 name = "silkroad-audit-backend"
 version = "0.1.0"
 description = "丝路智审后端：单证 OCR、合规审查与安全中间件"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 dependencies = [
   "fastapi>=0.115",
   "uvicorn[standard]>=0.32",
@@ -22,13 +22,16 @@ dependencies = [
   "pillow>=11",
   "rapidocr-onnxruntime>=1.4",
   "numpy>=1.26",
+  "httpx>=0.28",
 ]
+
+[project.optional-dependencies]
+bge = ["sentence-transformers>=3.3"]
 
 [dependency-groups]
 dev = [
   "pytest>=8.3",
   "pytest-asyncio>=0.24",
-  "httpx>=0.28",
   "fakeredis>=2.26",
   "ruff>=0.8",
 ]

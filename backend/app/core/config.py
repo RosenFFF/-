@@ -46,11 +46,38 @@ class Settings(BaseSettings):
     max_pages: int = 10
 
     # CORS
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: list[str] = ["https://localhost:3000"]
 
-    # 模型链路（M1 接入，M0 只展示配置）
+    # 模型链路：密钥无默认，测试不访问外网
     llm_provider_chain: list[str] = ["deepseek", "qwen", "ollama"]
     ocr_engine: str = "rapidocr-ppocrv4"
+    deepseek_api_key: str | None = Field(default=None, repr=False)
+    deepseek_base_url: str = "https://api.deepseek.com"
+    deepseek_model: str = "deepseek-chat"
+    qwen_api_key: str | None = Field(default=None, repr=False)
+    qwen_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    qwen_model: str = "qwen-plus"
+    ollama_base_url: str = "http://ollama:11434"
+    ollama_model: str = "qwen2.5:7b"
+    llm_timeout_s: float = Field(default=25, gt=0, le=120)
+    llm_max_retries: int = Field(default=1, ge=0, le=2)
+    llm_max_input_chars: int = Field(default=60_000, ge=1000, le=200_000)
+    llm_max_tokens: int = Field(default=2048, ge=128, le=8192)
+    llm_circuit_failures: int = Field(default=3, ge=1)
+    llm_circuit_reset_s: int = Field(default=60, ge=1)
+    model_probe_timeout_s: float = Field(default=1, gt=0, le=5)
+    heavy_models_enabled: bool = False
+    embedding_model: str = "BAAI/bge-m3"
+    reranker_model: str = "BAAI/bge-reranker-v2-m3"
+    rules_dir: Path = Path(__file__).resolve().parents[2] / "data" / "rules"
+    rl_review_per_min: int = 10
+
+    @field_validator("llm_provider_chain")
+    @classmethod
+    def _chain(cls, value: list[str]) -> list[str]:
+        if not value or len(set(value)) != len(value) or set(value) - {"deepseek", "qwen", "ollama"}:
+            raise ValueError("LLM_PROVIDER_CHAIN 必须是非空且不重复的提供方白名单")
+        return value
 
     # 首次启动引导管理员（仅在用户表为空时生效）
     bootstrap_admin_username: str | None = None

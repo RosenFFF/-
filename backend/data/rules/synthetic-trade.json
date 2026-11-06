@@ -1,0 +1,8 @@
+[
+  {"id":"SYN-REQUIRED","source":"合成贸易审核规范（非法律意见）","jurisdiction":"SYNTHETIC","article":"S1","title":"必填字段 / required invoice fields","text":"合成发票校验：invoice_no、total_amount、currency、hs_code、origin_country 应完整；缺失信息必须人工补齐。","url":null,"effective_date":null},
+  {"id":"SYN-AMOUNT","source":"合成贸易审核规范（非法律意见）","jurisdiction":"SYNTHETIC","article":"S2","title":"金额一致性 / amount quantity unit_price","text":"合成算术规则：total_amount 应等于 quantity × unit_price，允许误差 0.01。此示例不涵盖税费、运费与折扣。","url":null,"effective_date":null},
+  {"id":"SYN-HS","source":"合成贸易审核规范（非法律意见）","jurisdiction":"SYNTHETIC","article":"S3","title":"HS 编码格式 / classification hs_code","text":"示例只检查 hs_code 纯数字且为 6、8 或 10 位；不确认归类正确性，不代替目的国官方税则。","url":null,"effective_date":null},
+  {"id":"SYN-ORIGIN","source":"合成贸易审核规范（非法律意见）","jurisdiction":"SYNTHETIC","article":"S4","title":"原产地 / origin_country certificate","text":"示例原产地证要求 certificate_no、origin_country 与 consignee；同票单证原产国声明应一致。实际优惠原产地需另核有效协定。","url":null,"effective_date":null},
+  {"id":"SYN-RESTRICTED","source":"合成禁限清单（不代表任何真实制裁名单）","jurisdiction":"SYNTHETIC","article":"S5","title":"禁限商品 / restricted_goods sanctions","text":"仅测试用：商品标记 DEMO-RESTRICTED 或 SYNTHETIC-EMBARGO 时阻断自动放行并人工核查。不得将本清单当作真实禁运判断依据。","url":null,"effective_date":null},
+  {"id":"SYN-REVIEW","source":"合成贸易审核规范（非法律意见）","jurisdiction":"SYNTHETIC","article":"S6","title":"人工复核 / review limitations","text":"所有自动检查和模型解释仅供参考。规则库为合成测试语料，不构成真实法律依据；报告必须人工复核，不得自动作出清关或交易决定。","url":null,"effective_date":null}
+]

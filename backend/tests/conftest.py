@@ -33,6 +33,9 @@ def make_settings(tmp_path, **kw) -> Settings:
         data_kek=base64.b64encode(os.urandom(32)).decode(),
         storage_dir=tmp_path / "storage",
         cookie_secure=True,
+        llm_provider_chain=["deepseek", "qwen"],
+        deepseek_api_key=None,
+        qwen_api_key=None,
     )
     base.update(kw)
     return Settings(**base)
@@ -43,7 +46,11 @@ class Api:
         self.app, self.settings = app, settings
 
     def client(self) -> httpx.AsyncClient:
-        return httpx.AsyncClient(transport=httpx.ASGITransport(app=self.app), base_url="https://testserver")
+        return httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=self.app),
+            base_url="https://testserver",
+            headers={"Origin": self.settings.cors_origins[0]},
+        )
 
     async def login(self, username: str) -> httpx.AsyncClient:
         c = self.client()

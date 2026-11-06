@@ -76,3 +76,18 @@ class Page(BaseModel):
     page: int
     page_size: int
     total: int
+
+
+Language = Literal["zh-CN", "en", "ru", "vi", "pt", "ar"]
+
+
+class FieldEditIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    key: str = Field(min_length=1, max_length=64)
+    value: str | None = Field(max_length=2000)
+
+
+class FieldsPatchIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    version: int = Field(ge=1)
+    fields: list[FieldEditIn] = Field(min_length=1, max_length=40)

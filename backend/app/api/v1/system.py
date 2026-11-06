@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from app.ai.ocr import ocr_engine
 from app.deps import CurrentUser, current_user
+from app.services.model_health import apply_audit_metrics, model_health
 
 router = APIRouter(tags=["system"])
 
@@ -37,73 +37,26 @@ async def readyz(request: Request) -> JSONResponse:
     except Exception:
         checks["redis"] = {"ok": False, "latency_ms": None, "detail": "unreachable"}
 
-    checks["ocr"] = {
-        "ok": True,
-        "latency_ms": None,
-        "detail": "loaded" if ocr_engine.loaded else "lazy (worker 进程预热)",
-    }
-    # M0 尚未接入 LLM：如实报告为 L3（仅规则/识别），M1 接入后按熔断状态计算
-    checks["llm"] = {"ok": False, "latency_ms": None, "detail": "M1 接入"}
-
-    core_ok = checks["database"]["ok"] and checks["redis"]["ok"]
-    status = ("ready" if checks["llm"]["ok"] else "degraded") if core_ok else "not_ready"
-    body = {"status": status, "degrade_level": "L0" if checks["llm"]["ok"] else "L3", "checks": checks}
+    model_status = await model_health(st.ai)
+    for category in ("ocr", "llm", "embedding", "reranker"):
+        selected = [m for m in model_status["models"] if m["category"] == category]
+        ok = any(m["healthy"] for m in selected)
+        checks[category] = {
+            "ok": ok,
+            "latency_ms": None,
+            "detail": ", ".join(m["model"] for m in selected if m["healthy"]) or "unavailable",
+        }
+    core_ok = all(checks[name]["ok"] for name in ("database", "redis", "ocr", "embedding", "reranker"))
+    level = model_status["degrade_level"]
+    status = ("ready" if level == "L0" else "degraded") if core_ok else "not_ready"
+    body = {"status": status, "degrade_level": level, "checks": checks}
     return JSONResponse(body, status_code=200 if core_ok else 503)
 
 
 @router.get("/system/models")
 async def models(request: Request, _: CurrentUser = Depends(current_user)) -> dict:
-    s = request.app.state.settings
-    llm_stage = "字段抽取 / 合规推理 / 多语种解释 / 追问"
-    items = [
-        {
-            "category": "ocr",
-            "provider": "local",
-            "model": s.ocr_engine,
-            "deployment": "local",
-            "stage": "单证识别",
-            "healthy": True,
-            "circuit_open": False,
-            "p95_latency_ms": None,
-            "calls_24h": 0,
-        }
-    ]
-    for p in s.llm_provider_chain:
-        items.append(
-            {
-                "category": "llm",
-                "provider": p,
-                "model": p,
-                "deployment": "local" if p == "ollama" else "cloud",
-                "stage": llm_stage,
-                "healthy": False,
-                "circuit_open": False,
-                "p95_latency_ms": None,
-                "calls_24h": 0,
-            }
-        )
-    items += [
-        {
-            "category": "embedding",
-            "provider": "local",
-            "model": "bge-m3",
-            "deployment": "local",
-            "stage": "规则库向量检索",
-            "healthy": False,
-            "circuit_open": False,
-            "p95_latency_ms": None,
-            "calls_24h": 0,
-        },
-        {
-            "category": "reranker",
-            "provider": "local",
-            "model": "bge-reranker-v2-m3",
-            "deployment": "local",
-            "stage": "条款精排",
-            "healthy": False,
-            "circuit_open": False,
-            "p95_latency_ms": None,
-            "calls_24h": 0,
-        },
-    ]
-    return {"degrade_level": "L3", "llm_provider_chain": s.llm_provider_chain, "models": items}
+    st = request.app.state
+    result = await model_health(st.ai)
+    result = await apply_audit_metrics(result, st.db, _.tenant_id, st.settings)
+    result["llm_provider_chain"] = st.settings.llm_provider_chain
+    return result
