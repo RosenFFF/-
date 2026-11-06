@@ -116,11 +116,13 @@ def heuristic(text: str) -> Extraction:
     )
 
 
-async def extract(doc: Document, blocks: list[dict], ai, audit, request_id: str) -> tuple[list[dict], dict, list, str]:
+async def extract(
+    doc: Document, blocks: list[dict], ai, audit, request_id: str, *, actor: Actor | None = None
+) -> tuple[list[dict], dict, list, str]:
     text = "\n".join(b["text"] for b in blocks)
     flags = {**security_flags(), **ai.rag.security()}
     guard = inspect(text)
-    actor = Actor(id=doc.owner_id, tenant_id=doc.tenant_id)
+    actor = actor or Actor(id=doc.owner_id, tenant_id=doc.tenant_id)
     if guard.detected:
         flags["injection_detected"] = True
         flags["injection_snippets"] = ["blocked pattern:" + p for p in guard.patterns]

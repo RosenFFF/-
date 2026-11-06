@@ -16,6 +16,7 @@ from app.core.config import Settings
 from app.core.errors import AppError
 from app.db.base import Database
 from app.db.models import User
+from app.db.tenant import TenantScope, bind_scope
 from app.security.cookies import ACCESS_COOKIE
 from app.security.ratelimit import RateLimiter
 from app.security.rbac import Perm, perms_of
@@ -48,15 +49,20 @@ def ctx(request: Request) -> Ctx:
 
 async def session(request: Request) -> AsyncIterator[AsyncSession]:
     async with request.app.state.db.sessionmaker() as s:
+        s.info["scope_required"] = True
         yield s
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class CurrentUser:
     id: str
     tenant_id: str
     username: str
     role: str
+
+    @property
+    def scope(self) -> TenantScope:
+        return TenantScope(self.tenant_id, self.id, self.role)
 
     @property
     def actor(self) -> Actor:
@@ -79,9 +85,12 @@ async def current_user(
     if not token:
         raise AppError(401, "AUTH_TOKEN_EXPIRED", "未登录")
     claims = decode_access(c.settings, token)
-    user = (await s.execute(select(User).where(User.id == claims["sub"]))).scalar_one_or_none()
+    bind_scope(s, TenantScope(claims["tid"], claims["sub"], claims["role"]))
+    user = (
+        await s.execute(select(User).where(User.id == claims["sub"], User.tenant_id == claims["tid"]))
+    ).scalar_one_or_none()
     # 令牌签发后被停用或改了角色：以数据库为准
-    if user is None or user.disabled:
+    if user is None or user.disabled or user.role != claims["role"]:
         raise AppError(401, "AUTH_TOKEN_EXPIRED", "账号不可用")
     current = CurrentUser(user.id, user.tenant_id, user.username, user.role)
     if request.method in {"POST", "PUT", "PATCH", "DELETE"}:

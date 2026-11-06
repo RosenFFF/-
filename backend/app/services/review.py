@@ -83,18 +83,26 @@ def validate_citations(output: Reasoning, citations: list[dict]) -> tuple[list[d
     return findings, dropped
 
 
-async def process_review(db, store, audit, ai, review_id: str, request_id: str = "") -> None:
-    async with db.sessionmaker() as s:
+async def process_review(
+    db, store, audit, ai, review_id: str, request_id: str = "", *, tenant_context: dict | None = None
+) -> None:
+    async with db.job_session(tenant_context) as s:
+        scope = s.info["tenant_scope"]
         claimed = await s.execute(
             update(Review)
-            .where(Review.id == review_id, Review.status == "queued")
+            .where(
+                Review.id == review_id,
+                Review.tenant_id == scope.org_id,
+                Review.owner_id == scope.user_id,
+                Review.status == "queued",
+            )
             .values(status="running", progress={"step": "rules_engine", "percent": 10})
         )
         await s.commit()
         if not claimed.rowcount:
             return
         row = await s.get(Review, review_id)
-        actor = Actor(id=row.owner_id, tenant_id=row.tenant_id)
+        actor = Actor(id=scope.user_id, role=scope.role, tenant_id=scope.org_id)
         try:
             snapshots = (
                 (await s.execute(select(ReviewDocument).where(ReviewDocument.review_id == row.id))).scalars().all()

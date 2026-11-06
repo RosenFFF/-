@@ -62,7 +62,7 @@ class Api:
 
 
 async def _seed(app) -> None:
-    async with app.state.db.sessionmaker() as s:
+    async with app.state.db.maintenance_sessionmaker() as s:
         t = Tenant(name="t1")
         s.add(t)
         await s.flush()
@@ -199,6 +199,7 @@ async def postgres_rls_db(postgres_rls_owner):
 
     db.engine = base.create_async_engine(app_url, pool_pre_ping=True, pool_size=1, max_overflow=0)
     db.sessionmaker.configure(bind=db.engine)
+    db.maintenance_sessionmaker.configure(bind=db.engine)
     try:
         async with db.engine.connect() as conn:
             role = (await conn.execute(text("SELECT current_user"))).scalar_one()

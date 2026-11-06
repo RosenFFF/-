@@ -79,7 +79,7 @@ async def test_structured_model_outputs_filtered_at_service_boundary(api, task, 
     assert affected["degrade_level"] == "L3" and not affected["security"]["output_checks_passed"]
     assert dangerous not in json.dumps(affected)
     assert report["llm_verified"] is False if task == "compliance_reasoning" else True
-    async with api.app.state.db.sessionmaker() as s:
+    async with api.app.state.db.maintenance_sessionmaker() as s:
         blocked = (await s.scalars(select(AuditLog).where(AuditLog.action == "security.output_blocked"))).all()
         assert any(r.detail["task"] == task for r in blocked)
         assert dangerous not in json.dumps([r.detail for r in blocked])
@@ -134,7 +134,7 @@ async def test_legacy_api_prose_and_audit_are_read_sanitized(api):
     rid = await seed_review(api)
     c = await api.login("reviewer")
     secret = "api_key=" + "legacy-fixture-not-secret"
-    async with api.app.state.db.sessionmaker() as s:
+    async with api.app.state.db.maintenance_sessionmaker() as s:
         review = await s.get(Review, rid)
         review.summary = secret
         s.add(

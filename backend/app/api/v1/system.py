@@ -57,6 +57,6 @@ async def readyz(request: Request) -> JSONResponse:
 async def models(request: Request, _: CurrentUser = Depends(current_user)) -> dict:
     st = request.app.state
     result = await model_health(st.ai)
-    result = await apply_audit_metrics(result, st.db, _.tenant_id, st.settings)
+    result = await apply_audit_metrics(result, st.db, _.scope, st.settings)
     result["llm_provider_chain"] = st.settings.llm_provider_chain
     return result

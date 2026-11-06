@@ -87,7 +87,7 @@ async def test_recognition_not_ready_returns_conflict(api):
 
     c = await api.login("reviewer")
     doc = (await _upload(c, invoice_image())).json()
-    async with api.app.state.db.sessionmaker() as s:
+    async with api.app.state.db.maintenance_sessionmaker() as s:
         await s.execute(update(Document).where(Document.id == doc["id"]).values(status="ocr_running"))
         await s.commit()
     r = await c.get(f"/api/v1/documents/{doc['id']}/recognition")

@@ -6,7 +6,7 @@ from .conftest import PASSWORDS
 
 
 async def _actions(api, action):
-    async with api.app.state.db.sessionmaker() as s:
+    async with api.app.state.db.maintenance_sessionmaker() as s:
         return (await s.execute(select(AuditLog).where(AuditLog.action == action))).scalars().all()
 
 

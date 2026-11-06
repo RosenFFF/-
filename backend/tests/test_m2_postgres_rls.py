@@ -8,12 +8,12 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.exc import DBAPIError
 
 from alembic import command
 from app.db.base import Base
-from app.db.models import uid
+from app.db.models import Tenant, uid
 from app.db.tenant import TenantScope, bind_scope, check_application_role, set_local_scope
 
 TABLES = tuple(Base.metadata.tables)
@@ -146,12 +146,15 @@ async def test_pg_rls_catalog_all_business_tables_forced_and_restrictive(postgre
                 )
             )
         ).all()
-        assert len(policies) == 2 * len(TABLES)
+        assert len(policies) == 2 * len(TABLES) + 3
         for policy in policies:
-            assert policy.cmd == "ALL" and policy.qual and policy.with_check
+            assert policy.cmd in {"ALL", "SELECT", "INSERT", "UPDATE", "DELETE"}
+            assert policy.qual or policy.with_check
             if policy.policyname == "tenant_guard":
                 assert policy.permissive == "RESTRICTIVE"
-        assert (await c.execute(text("SELECT version_num FROM alembic_version"))).scalar_one() == "0002_m2_tenant_rls"
+        assert (
+            await c.execute(text("SELECT version_num FROM alembic_version"))
+        ).scalar_one() == "0003_m2_auth_audit_context"
 
 
 async def test_pg_rls_revision_downgrade_upgrade_preserves_rows(postgres_rls_owner):
@@ -348,20 +351,20 @@ async def test_pg_rls_orm_scopes_reapply_after_commit_rollback_and_concurrent_re
     for scope in scopes:
         async with db.tenant_session(scope) as s:
             for ending in [s.commit, s.rollback, s.commit]:
-                assert (await s.execute(text("SELECT id FROM tenants"))).scalars().all() == [scope.org_id]
+                assert (await s.execute(select(Tenant.id))).scalars().all() == [scope.org_id]
                 await ending()
             with pytest.raises(RuntimeError, match="fresh session"):
                 bind_scope(s, scopes[1])
 
     async def request(scope):
         async with db.tenant_session(scope) as s:
-            assert (await s.execute(text("SELECT id FROM tenants"))).scalars().all() == [scope.org_id]
+            assert (await s.execute(select(Tenant.id))).scalars().all() == [scope.org_id]
             await asyncio.sleep(0)
             await s.commit()
 
     await asyncio.gather(*(request(scope) for scope in scopes * 3))
-    async with db.sessionmaker() as s:
-        assert (await s.execute(text("SELECT id FROM tenants"))).all() == []
+    async with db.maintenance_sessionmaker() as s:
+        assert (await s.execute(select(Tenant.id))).all() == []
 
 
 async def test_pg_rls_owner_ddl_permission_is_not_runtime_safe(postgres_rls_owner):

@@ -18,7 +18,7 @@ pytestmark = pytest.mark.usefixtures("quick_ocr")
 
 
 async def foreign_admin(api):
-    async with api.app.state.db.sessionmaker() as s:
+    async with api.app.state.db.maintenance_sessionmaker() as s:
         t = Tenant(name="synthetic-foreign-org")
         s.add(t)
         await s.flush()
@@ -138,7 +138,7 @@ async def test_audit_tenant_null_events_secrets_and_verify_no_foreign_disclosure
     logs = (await admin.get("/api/v1/audit/logs")).json()
     assert own_id in [r["id"] for r in logs["items"]]
     assert foreign_id not in json.dumps(logs) and null_id not in json.dumps(logs) and secret not in json.dumps(logs)
-    async with api.app.state.db.sessionmaker() as s:
+    async with api.app.state.db.maintenance_sessionmaker() as s:
         saved = await s.scalar(select(AuditLog).where(AuditLog.id == own_id))
         assert secret not in json.dumps(saved.detail) and saved.detail["tokens_in"] == 11
         # A legacy unsanitized row must also be protected at read time (hash now intentionally invalid).

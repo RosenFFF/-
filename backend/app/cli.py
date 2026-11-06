@@ -24,7 +24,7 @@ async def create_user(username: str, role: str) -> None:
         raise SystemExit("密码太短或两次不一致")
     db = Database(get_settings().database_url)
     await db.check_migrated()
-    async with db.sessionmaker() as s:
+    async with db.maintenance_sessionmaker() as s:
         t = (await s.execute(select(Tenant).limit(1))).scalar_one_or_none()
         if t is None:
             t = Tenant(name="default")

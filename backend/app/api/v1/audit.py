@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -49,7 +49,7 @@ class AuditLogOut(BaseModel):
     ip: str | None
     request_id: str
     detail: AuditDetail
-    prev_hash: str | None
+    prev_hash: str | None = Field(description="本租户上一条审计 hash；租户首条为 null，不指向其他租户或平台链。")
     hash: str
 
 
@@ -219,7 +219,7 @@ async def stats(
                 setattr(buckets[stamp], name, getattr(buckets[stamp], name) + count)
         if row.action == "access.denied":
             denied[sanitize_public(row.actor_username, pii=True)] += 1
-    integrity = await c.audit.verify(user.tenant_id)
+    integrity = await c.audit.verify(user.scope)
     return SecurityStats(
         window=window,
         window_start=start,
@@ -238,4 +238,4 @@ async def stats(
 
 @router.get("/verify", response_model=AuditVerify)
 async def verify(user: CurrentUser = Depends(require(Perm.audit_read_all)), c: Ctx = Depends(ctx)) -> dict:
-    return await c.audit.verify(user.tenant_id)
+    return await c.audit.verify(user.scope)

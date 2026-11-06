@@ -12,6 +12,7 @@ import hashlib
 import json
 import re
 import time
+from dataclasses import asdict
 from datetime import UTC
 from uuid import UUID
 
@@ -144,6 +145,7 @@ class ChatStreams:
         if meta is None:
             raise AppError(404, "NOT_FOUND", "流不存在或已过期，请读取历史；不要自动重发问题")
         meta = json.loads(meta)
+        await self.authorize(user, review.id)
         if (meta["review_id"], meta["tenant_id"], meta["actor_id"]) != (review.id, user.tenant_id, user.id):
             raise AppError(404, "NOT_FOUND", "流不存在")
         if meta["fingerprint"] != fingerprint(content, language):
@@ -152,7 +154,27 @@ class ChatStreams:
             raise AppError(422, "VALIDATION_FAILED", "Last-Event-ID 超出已产生的事件")
         return stream_id, cursor
 
+    async def authorize(self, user, review_id):
+        try:
+            async with self.db.job_session(asdict(user.scope)) as s:
+                review = await s.get(Review, review_id)
+                if (
+                    review is None
+                    or review.tenant_id != user.tenant_id
+                    or (user.role == "reviewer" and review.owner_id != user.id)
+                ):
+                    raise ValueError
+                return review
+        except ValueError:
+            raise AppError(404, "NOT_FOUND", "流不存在") from None
+
+    @staticmethod
+    def check_meta(meta, user, review_id):
+        if (meta.get("review_id"), meta.get("tenant_id"), meta.get("actor_id")) != (review_id, user.tenant_id, user.id):
+            raise AppError(404, "NOT_FOUND", "流不存在")
+
     async def start(self, review, user, content: str, language: str, request_id: str) -> str:
+        review = await self.authorize(user, review.id)
         if review.status != "completed":
             raise AppError(409, "DOCUMENT_NOT_READY", "审查报告完成后才可追问")
         stream_id = uid()
@@ -180,7 +202,7 @@ class ChatStreams:
         if inspect_data(context).detected:
             reason = "prompt_injection"
         masked = mask(guard.text if not reason else "[BLOCKED INPUT]")
-        async with self.db.sessionmaker() as s:
+        async with self.db.job_session(asdict(user.scope)) as s:
             previous = (
                 (
                     await s.execute(
@@ -255,6 +277,8 @@ class ChatStreams:
             await self.fail(stream_id, meta, user, exc.traces if isinstance(exc, ModelUnavailable) else [])
 
     async def fail(self, stream_id, meta, user, traces):
+        self.check_meta(meta, user, meta["review_id"])
+        await self.authorize(user, meta["review_id"])
         await self.audit_models(meta, user, traces or [{"task": "chat", "status": "failed"}])
         await self.audit.record(
             "chat.message",
@@ -280,6 +304,8 @@ class ChatStreams:
             )
 
     async def generate(self, stream_id, meta, context, recent, content, language, reason, user):
+        self.check_meta(meta, user, meta["review_id"])
+        await self.authorize(user, meta["review_id"])
         citations, models = [], []
         if reason:
             if reason == "prompt_injection":
@@ -385,9 +411,12 @@ class ChatStreams:
             created_at=now(),
         )
         row.aigc_meta = aigc(row.id, models) if not reason else {}
-        if not await self.redis.exists(self.key(stream_id, "meta")):
+        live_meta = await self.redis.get(self.key(stream_id, "meta"))
+        if live_meta is None:
             return
-        async with self.db.sessionmaker() as s:
+        self.check_meta(json.loads(live_meta), user, meta["review_id"])
+        await self.authorize(user, meta["review_id"])
+        async with self.db.job_session(asdict(user.scope)) as s:
             review = await s.get(Review, meta["review_id"])
             if review is None or review.tenant_id != user.tenant_id:
                 return
@@ -409,7 +438,7 @@ class ChatStreams:
                 await self.append(stream_id, "citation", citation)
         await self.append(stream_id, "done", message_out(row))
 
-    async def events(self, stream_id: str, cursor: int = 0):
+    async def events(self, stream_id: str, cursor: int = 0, *, user, review_id: str):
         """Replay persisted events, then follow the *same* producer; never invoke the model."""
         heartbeat = time.monotonic()
         while True:
@@ -417,6 +446,8 @@ class ChatStreams:
             if meta_raw is None:
                 return  # Expiration during a connection; client must GET history.
             meta = json.loads(meta_raw)
+            self.check_meta(meta, user, review_id)
+            await self.authorize(user, review_id)
             # Read terminal BEFORE list, so completion cannot race an empty lrange.
             terminal = await self.redis.exists(self.key(stream_id, "terminal"))
             batch = await self.redis.lrange(self.key(stream_id, "events"), cursor, -1)
@@ -437,8 +468,8 @@ class ChatStreams:
                 heartbeat = time.monotonic()
             await asyncio.sleep(0.05)
 
-    async def result(self, stream_id: str):
-        async for event in self.events(stream_id):
+    async def result(self, stream_id: str, *, user, review_id: str):
+        async for event in self.events(stream_id, user=user, review_id=review_id):
             if event and event["event"] == "done":
                 return event["data"]
             if event and event["event"] == "error":

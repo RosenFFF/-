@@ -253,3 +253,18 @@ DEMO_MODE 的篡改/恢复步骤与 fixture 说明见 `docs/backend-m2-demo.md`�
 基础设施/模型边界：这些 PG API 用例仍使用 fakeredis、快速 OCR fixture 与 FakeLLM；
 只验证实际 PG 上的迁移和应用授权，不验证真实 Redis、OCR/LLM 主链路或生产部署。
 真实模型验收继续单独阻塞。
+
+
+### M2 租户上下文补强（仍未验收/不可部署）
+
+本轮以 `reports/progress/backend-m2-tenant-context.md` 为当前证据，早期「尚未实现」描述只作历史记录。
+迁移 head 为 `0003_m2_auth_audit_context`（前置 `0002_m2_tenant_rls`）：登录是 exact-username
+只读凭证能力，不建立业务访问身份；成功验密后才解除 credential-only 限制。访问 JWT 先验签/UUID/角色、
+绑定事务 LOCAL tenant scope 再查询 User；组织/角色漂移作废旧令牌。刷新 Cookie 变更为签名路由证明+nonce，
+仅存哈希，旧不透明 Cookie 需重新登录。请求、ARQ/inline、SSE 均显式传递/重验租户，无全局 tenant ContextVar。
+
+审计改为每租户独立 hash 链，平台事件独立 null 链；写入重验 actor org/role，后台失败也带完整归属。
+**没有改写任何历史审计 hash**：旧共享链有外租户前驱时 verify 仍失败，必须另审历史归档/切换方案。
+没有 PostgreSQL 活库通过证据，API 与 worker 启动门禁保持无条件阻止 PostgreSQL。
+SQLite 的 scoped ORM 查询/写入防护不是 SQLite 数据库 RLS；显式 maintenance_sessionmaker/raw connection 仍是受信管理能力，
+不能接给 API 请求。真实模型、真实 Redis、真实 PostgreSQL 的验收不能用 fakeredis/测试模型替代。

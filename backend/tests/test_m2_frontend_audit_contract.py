@@ -110,6 +110,6 @@ async def test_bad_cookie_csrf_events_never_attributed_from_unsigned_claims(api)
     )
     assert response.status_code == 403
     assert (await c.get("/api/v1/audit/stats")).json()["totals"]["csrf_failed"] == 0
-    async with api.app.state.db.sessionmaker() as s:
+    async with api.app.state.db.maintenance_sessionmaker() as s:
         user = (await s.scalars(select(User).where(User.id == me["id"]))).one()
         assert user.tenant_id == me["tenant_id"]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Path, Query, Request
@@ -64,9 +65,11 @@ async def create_review(
     row = await create_review_record(s, user, body, c.audit, c.request_id)
     st = request.app.state
     if c.settings.task_mode == "inline":
-        bg.add_task(process_review, st.db, st.store, st.audit, st.ai, row.id, c.request_id)
+        bg.add_task(
+            process_review, st.db, st.store, st.audit, st.ai, row.id, c.request_id, tenant_context=asdict(user.scope)
+        )
     else:
-        await st.arq.enqueue_job("review_task", row.id, c.request_id)
+        await st.arq.enqueue_job("review_task", row.id, c.request_id, tenant_context=asdict(user.scope))
     return review_out(row)
 
 
@@ -153,11 +156,11 @@ async def post_message(
         stream_id = await service.start(review, user, body.content, language, c.request_id)
         cursor = 0
     if not streaming:
-        return await service.result(stream_id)
+        return await service.result(stream_id, user=user, review_id=review.id)
 
     async def stream():
         yield f": stream {stream_id}\n\n"
-        async for event in service.events(stream_id, cursor):
+        async for event in service.events(stream_id, cursor, user=user, review_id=review.id):
             yield encode_event(event) if event else ": keepalive\n\n"
 
     return StreamingResponse(

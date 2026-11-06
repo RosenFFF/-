@@ -21,6 +21,7 @@ from app.core.errors import RATE_RESPONSES, VALIDATION_RESPONSE, AppError, insta
 from app.core.logging import setup_logging
 from app.db.base import Database
 from app.db.models import Tenant, User
+from app.db.tenant import TenantScope
 from app.security.cookies import ACCESS_COOKIE, CSRF_HEADER, csrf_ok
 from app.security.passwords import hash_password
 from app.security.ratelimit import RateLimiter
@@ -41,7 +42,7 @@ SECURITY_HEADERS = {
 
 
 async def bootstrap(db: Database, settings: Settings) -> None:
-    async with db.sessionmaker() as s:
+    async with db.maintenance_sessionmaker() as s:
         if (await s.execute(select(func.count()).select_from(User))).scalar_one() > 0:
             return
         if not (settings.bootstrap_admin_username and settings.bootstrap_admin_password):
@@ -71,9 +72,9 @@ async def csrf_actor(request: Request) -> Actor | None:
         claims = decode_access(request.app.state.settings, token)
     except AppError:
         return None
-    async with request.app.state.db.sessionmaker() as s:
+    async with request.app.state.db.tenant_session(TenantScope(claims["tid"], claims["sub"], claims["role"])) as s:
         user = await s.get(User, claims["sub"])
-        if user is not None and not user.disabled:
+        if user is not None and not user.disabled and user.tenant_id == claims["tid"] and user.role == claims["role"]:
             return Actor(user.id, user.username, user.role, user.tenant_id)
     return None
 

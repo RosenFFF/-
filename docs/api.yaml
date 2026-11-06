@@ -9,10 +9,13 @@ info:
     - 基础路径 `/api/v1`；请求与响应均为 JSON（UTF-8），文件上传为 multipart。
     - 鉴权：登录后服务端下发三个 Cookie，前端 JS 拿不到令牌：
       - `access_token`：HttpOnly; Secure; SameSite=Strict; Path=/api，15 分钟。
-      - `refresh_token`：HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth，7 天，每次刷新轮换，旧令牌重放会作废整条令牌族。
+      - `refresh_token`：HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth，7 天。签名的租户/用户/角色路由证明加随机 nonce，仅保存整串哈希；每次刷新轮换，旧令牌重放作废令牌族。旧不透明 Cookie 返回 401，须重新登录。
       - `csrf_token`：可读、非 HttpOnly; Secure; SameSite=Strict; Path=/。
       前端请求一律 `credentials: 'include'`；所有写请求（POST/PUT/PATCH/DELETE，登录除外）必须带请求头 `X-CSRF-Token`，值取自 `csrf_token` Cookie，不一致返回 403 `CSRF_FAILED`。
       服务间调用或脚本可改用 `Authorization: Bearer <access_token>`（此时不校验 CSRF）。
+    - 租户上下文先于身份查询绑定；签名 tid/role 与数据库不一致或账号停用返回 401，不能把旧令牌搬到新组织。登录仅允许唯一 username 的受限凭证查询，未认证请求无业务查询权限。
+    - 审计按租户独立链（共享物理表但不共享前驱）；平台无租户事件独立保存、不对组织暴露。旧共享链不自动重算或背书，历史切换须另行审核。
+    - PostgreSQL API/worker 启动门禁仍强制阻止上线，须完成真实非 owner PostgreSQL 验证；SQLite/fakeredis 通过不等价于 RLS/模型验收。
     - 每个响应带 `X-Request-ID` 头，同时写进审计日志，前端报错时展示它便于排查。
     - 错误统一为 RFC 9457 `application/problem+json`，见 `Problem`。
     - 分页：`page`（从 1 开始）+ `page_size`（默认 20，最大 100）。
@@ -528,6 +531,7 @@ paths:
 
         断线恢复：每个事件都有 id，格式为 `<stream UUID>:<递增序号>`，从 1 开始。
         响应头 X-Chat-Stream-ID 提供流 ID，首事件前断线可用该 ID 加 :0。
+        后台生成与每次重放都继承并重新校验用户/租户/审查权限；账号停用或角色/组织变更时不再输出或保存答案。
         使用 fetch POST、同一 URL、相同 content/language、credentials 与 CSRF/Origin，并带 Last-Event-ID 从下一事件重放，然后继续跟随同一进行中的生成任务。
         恢复不会再调用模型或重复入库；同一流只允许原发起用户、租户与审查。完成后重放剩余事件；若 done/error 已确认，返回空 SSE（可有注释），不重复终态。
         不同问题/语言返回 409；无效/超前游标 422；不存在、过期或越权的流返回 404，此时读取历史，不得自动重发问题。
@@ -1595,6 +1599,7 @@ components:
           - type: string
           - type: 'null'
           title: Prev Hash
+          description: 本租户上一条审计 hash；租户首条为 null，不指向其他租户或平台链。
         hash:
           type: string
           title: Hash

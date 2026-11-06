@@ -7,10 +7,11 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import select, text
 
 from alembic import command
 from app.db.base import Base, Database
+from app.db.models import Tenant
 from app.db.tenant import TenantScope, _set_scope, bind_scope, check_application_role, scope_values, set_local_scope
 
 ORG = "00000000-0000-4000-8000-000000000001"
@@ -24,7 +25,7 @@ def ddl(dialect, down=False):
     if down:
         command.downgrade(cfg, "0002_m2_tenant_rls:0001_m2_initial", sql=True)
     else:
-        command.upgrade(cfg, "head", sql=True)
+        command.upgrade(cfg, "0002_m2_tenant_rls", sql=True)
     return cfg.output_buffer.getvalue()
 
 
@@ -90,14 +91,15 @@ def test_invalid_or_missing_context_rejected(org, user, role):
 async def test_fresh_session_scope_immutable_and_sqlite_does_not_emulate_rls(tmp_path):
     db = Database(f"sqlite+aiosqlite:///{tmp_path}/scope.db")
     scope = TenantScope(ORG, USER, "reviewer")
+    await db.migrate()
     try:
         async with db.tenant_session(scope) as s:
             assert s.info["tenant_scope"] == scope
-            assert (await s.execute(text("SELECT 1"))).scalar() == 1
+            assert (await s.scalars(select(Tenant.id))).all() == []
             await s.commit()
             with pytest.raises(RuntimeError, match="fresh session"):
                 bind_scope(s, scope)
-        async with db.sessionmaker() as s:
+        async with db.maintenance_sessionmaker() as s:
             await s.execute(text("SELECT 1"))
             with pytest.raises(RuntimeError, match="fresh session"):
                 bind_scope(s, scope)
@@ -111,7 +113,7 @@ def test_orm_transaction_hook_uses_local_bound_parameters_and_explicit_empty_sco
     initial = TenantScope(ORG, USER, "admin")
     for scope in [initial, None]:
         _set_scope(SimpleNamespace(info={"tenant_scope": scope}), None, connection)
-        statement, values = connection.execute.call_args.args
+        statement, values = connection.execute.call_args_list[-2].args
         assert str(statement).count(", true)") == 3
         assert values == scope_values(scope)
         assert ORG not in str(statement)

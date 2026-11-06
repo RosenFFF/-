@@ -82,7 +82,7 @@ async def test_sensitive_write_limits_are_429_problem_with_retry(make_api, route
     assert response.json()["code"] == "RATE_LIMITED" and response.json()["request_id"]
     assert int(response.headers["retry-after"]) >= 1
     assert response.headers["content-type"].startswith("application/problem+json")
-    async with api.app.state.db.sessionmaker() as s:
+    async with api.app.state.db.maintenance_sessionmaker() as s:
         assert (await s.scalars(select(AuditLog).where(AuditLog.action == "rate_limit.hit"))).all()
 
 

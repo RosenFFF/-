@@ -64,7 +64,7 @@ async def test_fallback_and_legacy_rows_do_not_omit_labels(api, quick_ocr):
     assert report["degrade_status"] == "规则引擎回退，未完成真实 LLM 验证"
     assert report["llm_verified"] is False
     assert_labels(report)
-    async with api.app.state.db.sessionmaker() as session:
+    async with api.app.state.db.maintenance_sessionmaker() as session:
         for cls, rid in [(DocumentFields, doc_id), (Review, review_id)]:
             row = await session.get(cls, rid)
             row.security = {}
