@@ -1,0 +1,132 @@
+{
+  "status": "BLOCKED_NOT_LIVE_ACCEPTANCE",
+  "generated_at": "2026-11-05T19:32:21-08:00",
+  "timezone": "America/Tijuana",
+  "branch": "feat/backend-m2-security",
+  "prerequisite_sha": "3bbd9b8573d33b871d75c276cf90d4775b35e702",
+  "functional_tip": "3802fc3559576214af84f244dc4a09a93a8ad42c",
+  "bundle": "/workspace/competition/bundles/feat-backend-m2-postgres-live.bundle",
+  "postgres": {
+    "server_version": null,
+    "connected": false,
+    "client_version": "17.11 (Debian 17.11-0+deb13u1)",
+    "server_binaries_available": false,
+    "docker_or_podman_available": false,
+    "loopback_5432": "no response",
+    "unix_socket_5432": "no response",
+    "install_attempt": {
+      "stage": "apt-get update",
+      "exit_code": 100,
+      "error": "Debian trixie indexes HTTP 500; install not reached; no bypass attempted"
+    }
+  },
+  "migration": {
+    "repository_head_revision": "0001_m2_initial",
+    "postgres_migration_executed": false,
+    "sqlite_roundtrip": "passed",
+    "postgres_offline_sql": "passed_not_live"
+  },
+  "rls": {
+    "implemented": false,
+    "postgres_policies_verified": false,
+    "raw_sql_bypass_observed": false,
+    "negative_detection_test": "test_postgres_current_rls_absent_raw_sql_bypasses_application_scope",
+    "negative_detection_status": "written_but_skipped_no_postgres",
+    "claim_boundary": "SQLite application authorization tested only; no PostgreSQL or RLS acceptance"
+  },
+  "pytest": {
+    "tests": 233,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 11,
+    "passed": 222,
+    "seconds": 60.659
+  },
+  "postgres_live": {
+    "total": 10,
+    "executed": 0,
+    "passed": 0,
+    "skipped": 10,
+    "cases": [
+      {
+        "name": "test_postgres_alembic_schema_parity_idempotence_and_roundtrip",
+        "status": "skipped"
+      },
+      {
+        "name": "test_postgres_cross_scope_document_report_messages_replay_and_audit_denied[same_org_other_user]",
+        "status": "skipped"
+      },
+      {
+        "name": "test_postgres_cross_scope_document_report_messages_replay_and_audit_denied[foreign_org_admin]",
+        "status": "skipped"
+      },
+      {
+        "name": "test_postgres_audit_filters_boundaries_and_pagination",
+        "status": "skipped"
+      },
+      {
+        "name": "test_postgres_audit_tenant_null_events_and_verify_no_foreign_disclosure",
+        "status": "skipped"
+      },
+      {
+        "name": "test_postgres_dashboard_stats_and_reviewer_rbac[1h]",
+        "status": "skipped"
+      },
+      {
+        "name": "test_postgres_dashboard_stats_and_reviewer_rbac[24h]",
+        "status": "skipped"
+      },
+      {
+        "name": "test_postgres_dashboard_stats_and_reviewer_rbac[7d]",
+        "status": "skipped"
+      },
+      {
+        "name": "test_postgres_cross_org_demo_target_is_404_without_tampering",
+        "status": "skipped"
+      },
+      {
+        "name": "test_postgres_current_rls_absent_raw_sql_bypasses_application_scope",
+        "status": "skipped"
+      }
+    ]
+  },
+  "offline_target_guard_tests": {
+    "passed": 12,
+    "is_live_postgres_evidence": false
+  },
+  "configured_loopback_preflight": {
+    "tests": 1,
+    "passed": 0,
+    "errors": 1,
+    "skipped": 0,
+    "exit_code": 1,
+    "reason": "connection refused before migration; explicit configured URL does not silently skip"
+  },
+  "quality": {
+    "ruff_check": "passed",
+    "ruff_format_files": 84,
+    "security_scan": {
+      "tools_ok": 6,
+      "tools_skipped": 0,
+      "errors": 0,
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "functional_tip": "3802fc3559576214af84f244dc4a09a93a8ad42c"
+    }
+  },
+  "test_substitutes": {
+    "redis": "fakeredis",
+    "ocr": "quick_ocr fixture for PG API tests",
+    "llm": "FakeLLM",
+    "http": "ASGITransport"
+  },
+  "real_model_acceptance": "BLOCKED_NOT_ATTEMPTED",
+  "external_actions": {
+    "push": false,
+    "pull_request": false,
+    "cloud_agent": false,
+    "group_message": false
+  }
+}
