@@ -1,0 +1,107 @@
+{
+  "generated_at": "2026-11-05T19:26:08-08:00",
+  "time_zone": "America/Tijuana",
+  "branch": "feat/backend-m2-security",
+  "base_sha": "4afc04ea40ab9ec5c5bd573b51b54ae2b01e11eb",
+  "functional_tip_sha": "3de89192f20d1f1bff5329e979e9127094a23236",
+  "bundle_path": "/workspace/competition/bundles/feat-backend-m2-security.bundle",
+  "frontend_contract_tip": "76830b2",
+  "pytest": {
+    "command": "uv run --directory backend pytest -q --junitxml=/tmp/st143-backend-m2-final.xml",
+    "started_at": "2026-11-05T19:23:52-08:00",
+    "duration_seconds": 60.807,
+    "total": 212,
+    "passed": 210,
+    "skipped": 2,
+    "failed": 0,
+    "errors": 0,
+    "modules": {
+      "tests.test_audit": {
+        "passed": 5
+      },
+      "tests.test_auth": {
+        "passed": 9
+      },
+      "tests.test_documents": {
+        "passed": 10
+      },
+      "tests.test_m1_chat_sse": {
+        "passed": 32
+      },
+      "tests.test_m1_llm": {
+        "passed": 10
+      },
+      "tests.test_m1_pipeline": {
+        "passed": 16
+      },
+      "tests.test_m1_security": {
+        "passed": 27
+      },
+      "tests.test_m1b_provenance": {
+        "passed": 15
+      },
+      "tests.test_m1b_realpath": {
+        "skipped": 1
+      },
+      "tests.test_m2_audit_isolation": {
+        "passed": 8
+      },
+      "tests.test_m2_frontend_audit_contract": {
+        "passed": 5
+      },
+      "tests.test_m2_limits": {
+        "passed": 19
+      },
+      "tests.test_m2_migrations": {
+        "passed": 4,
+        "skipped": 1
+      },
+      "tests.test_m2_openapi": {
+        "passed": 5
+      },
+      "tests.test_m2_security": {
+        "passed": 27
+      },
+      "tests.test_rbac": {
+        "passed": 8
+      },
+      "tests.test_system": {
+        "passed": 5
+      },
+      "tests.test_units": {
+        "passed": 5
+      }
+    }
+  },
+  "ruff": {
+    "check": "passed",
+    "format": "passed",
+    "formatted_files": 81
+  },
+  "openapi": {
+    "specification": "3.1.0",
+    "api_version": "0.4.0",
+    "paths": 24,
+    "operations": 29,
+    "write_operations": 12,
+    "audit_operations_exact_schema_parity": 4,
+    "tests_passed": 5
+  },
+  "security_scan": {
+    "tools_ok": 6,
+    "tools_skipped": 0,
+    "errors": 0,
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 0,
+    "report": "reports/security/2026-11-05.md"
+  },
+  "uv_lock_check": "passed",
+  "real_model_acceptance": false,
+  "live_postgres_migration_verified": false,
+  "skip_reasons": [
+    "real model acceptance remains blocked; RUN_OLLAMA_E2E not enabled",
+    "no local disposable PostgreSQL server; opt-in TEST_POSTGRES_URL not configured"
+  ]
+}
