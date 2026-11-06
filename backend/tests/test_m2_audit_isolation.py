@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from app.audit.service import Actor
 from app.db.models import AuditLog, Tenant, User, uid
+from app.db.tenant import TenantScope
 from app.security.tokens import issue_access
 
 from .fakes import FakeLLM
@@ -18,11 +19,14 @@ pytestmark = pytest.mark.usefixtures("quick_ocr")
 
 
 async def foreign_admin(api):
-    async with api.app.state.db.maintenance_sessionmaker() as s:
-        t = Tenant(name="synthetic-foreign-org")
+    t = Tenant(id=uid(), name="synthetic-foreign-org")
+    user_id = uid()
+    async with api.app.state.db.tenant_session(TenantScope(t.id, user_id, "admin")) as s:
         s.add(t)
         await s.flush()
-        user = User(id=uid(), tenant_id=t.id, username="foreign-admin", password_hash="disabled-fixture", role="admin")
+        user = User(
+            id=user_id, tenant_id=t.id, username="foreign-admin", password_hash="disabled-fixture", role="admin"
+        )
         s.add(user)
         await s.commit()
         actor = Actor(user.id, user.username, user.role, t.id)
@@ -138,7 +142,7 @@ async def test_audit_tenant_null_events_secrets_and_verify_no_foreign_disclosure
     logs = (await admin.get("/api/v1/audit/logs")).json()
     assert own_id in [r["id"] for r in logs["items"]]
     assert foreign_id not in json.dumps(logs) and null_id not in json.dumps(logs) and secret not in json.dumps(logs)
-    async with api.app.state.db.maintenance_sessionmaker() as s:
+    async with api.app.state.db.tenant_session(TenantScope(me["tenant_id"], me["id"], "admin")) as s:
         saved = await s.scalar(select(AuditLog).where(AuditLog.id == own_id))
         assert secret not in json.dumps(saved.detail) and saved.detail["tokens_in"] == 11
         # A legacy unsanitized row must also be protected at read time (hash now intentionally invalid).

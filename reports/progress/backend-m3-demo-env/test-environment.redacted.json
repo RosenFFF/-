@@ -1,0 +1,9 @@
+{
+  "TEST_POSTGRES_DISPOSABLE": "1",
+  "TEST_POSTGRES_URL": "<redacted>",
+  "TEST_POSTGRES_APP_URL": "<redacted>",
+  "TEST_REDIS_SERVER": "/workspace/competition/m3-demo-env/src/redis-stable/src/redis-server",
+  "TZ": "America/Tijuana",
+  "credential_values_included": false,
+  "notes": "Values redacted for repo; live secrets only in private m3-demo-env/runtime/test-environment.json (mode 600)."
+}
