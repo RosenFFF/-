@@ -819,7 +819,9 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-      description: 从真实已落库审计事件计算，不是 mock；requests 为事件数而非 HTTP 请求数。pii_masked 为类型计数之和，tokens_used 来自模型轨迹；时间桶为 UTC，1h/24h/7d 分别按5分钟/1小时/1天聚合。窗口外、其他租户和无租户事件不计入。
+      description: 从真实已落库审计事件计算，不是 mock；requests 为事件数而非 HTTP 请求数。pii_masked 为类型计数之和，tokens_used 来自模型轨迹；时间桶为 UTC，1h/24h/7d 分别按5分钟/1小时/1天聚合。窗口外、其他租户和无租户事件不计入。window_start/window_end 表示统计窗口，generated_at 表示快照生成时间。
+        auth_locked 是账号进入锁定状态的次数，不是锁定后的每次重试；model_errors 是失败调用事件数，fallback 另列。
+        llm_verified 固定 false：本窗口未完成真实模型核对；source_kind=synthetic 保守包含来源未核验，不能把运行统计冒充真实模型验收。
   /audit/verify:
     get:
       tags:
@@ -1448,6 +1450,91 @@ components:
         - config.change
         - demo.audit_tamper
         - demo.audit_restore
+    AuditDetail:
+      properties:
+        source_kind:
+          type: string
+          enum:
+          - synthetic
+          - public
+          title: Source Kind
+        source_kind_label:
+          type: string
+          title: Source Kind Label
+        degrade_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Degrade Status
+        llm_verified:
+          type: boolean
+          title: Llm Verified
+        fallback_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Fallback Reason
+        injection_category:
+          anyOf:
+          - type: string
+            enum:
+            - prompt
+            - scope
+            - output
+          - type: 'null'
+          title: Injection Category
+        pii_fields:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Pii Fields
+        rate_limit_scope:
+          anyOf:
+          - type: string
+            enum:
+            - user
+            - ip
+            - route
+          - type: 'null'
+          title: Rate Limit Scope
+        actor_role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actor Role
+        resource_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Resource Type
+        resource_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Resource Id
+        ip:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ip
+      additionalProperties: true
+      type: object
+      required:
+      - source_kind
+      - source_kind_label
+      - degrade_status
+      - llm_verified
+      - fallback_reason
+      - injection_category
+      - pii_fields
+      - rate_limit_scope
+      - actor_role
+      - resource_type
+      - resource_id
+      - ip
+      title: AuditDetail
     AuditLog:
       properties:
         id:
@@ -1502,9 +1589,7 @@ components:
           type: string
           title: Request Id
         detail:
-          additionalProperties: true
-          type: object
-          title: Detail
+          $ref: '#/components/schemas/AuditDetail'
         prev_hash:
           anyOf:
           - type: string
@@ -1620,6 +1705,18 @@ components:
           type: integer
           title: Outputs Blocked
           default: 0
+        csrf_failed:
+          type: integer
+          title: Csrf Failed
+          default: 0
+        auth_locked:
+          type: integer
+          title: Auth Locked
+          default: 0
+        model_errors:
+          type: integer
+          title: Model Errors
+          default: 0
       type: object
       title: SecurityTotals
     SecurityBucket:
@@ -1628,6 +1725,30 @@ components:
           type: string
           format: date-time
           title: Bucket Start
+        logins_failed:
+          type: integer
+          title: Logins Failed
+          default: 0
+        pii_masked:
+          type: integer
+          title: Pii Masked
+          default: 0
+        model_fallbacks:
+          type: integer
+          title: Model Fallbacks
+          default: 0
+        csrf_failed:
+          type: integer
+          title: Csrf Failed
+          default: 0
+        auth_locked:
+          type: integer
+          title: Auth Locked
+          default: 0
+        model_errors:
+          type: integer
+          title: Model Errors
+          default: 0
         access_denied:
           type: integer
           title: Access Denied
@@ -1672,6 +1793,35 @@ components:
           - 24h
           - 7d
           title: Window
+        window_start:
+          type: string
+          format: date-time
+          title: Window Start
+        window_end:
+          type: string
+          format: date-time
+          title: Window End
+        generated_at:
+          type: string
+          format: date-time
+          title: Generated At
+        degrade_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Degrade Status
+        llm_verified:
+          type: boolean
+          title: Llm Verified
+        source_kind:
+          type: string
+          enum:
+          - synthetic
+          - public
+          title: Source Kind
+        source_kind_label:
+          type: string
+          title: Source Kind Label
         totals:
           $ref: '#/components/schemas/SecurityTotals'
         timeline:
@@ -1690,6 +1840,13 @@ components:
       type: object
       required:
       - window
+      - window_start
+      - window_end
+      - generated_at
+      - degrade_status
+      - llm_verified
+      - source_kind
+      - source_kind_label
       - totals
       - timeline
       - top_denied_actors

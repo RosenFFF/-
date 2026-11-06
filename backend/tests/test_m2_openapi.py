@@ -40,6 +40,7 @@ def test_entire_openapi_valid_route_method_parity_and_write_rate_contract(tmp_pa
         assert normalize_refs(declared_op.get("parameters", [])) == normalize_refs(actual.get("parameters", []))
         assert normalize_refs(declared_op["responses"]["200"]) == normalize_refs(actual["responses"]["200"])
     for name in (
+        "AuditDetail",
         "AuditLogOut",
         "AuditPage",
         "AuditVerify",

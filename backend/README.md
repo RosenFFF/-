@@ -197,3 +197,19 @@ RUN_OLLAMA_E2E=1 OLLAMA_BASE_URL=http://127.0.0.1:11434 OLLAMA_MODEL=qwen2.5:1.5
 回归证据：`test_m2_security.py`、`test_m2_limits.py`、`test_m2_audit_isolation.py`、`test_m2_migrations.py`、`test_m2_openapi.py`；完整范围和数字见 `reports/progress/backend-m2-security.md`。
 
 生产 env=prod 强制不注册 demo 路由，即使 DEMO_MODE 被误设为 true。
+
+
+### 前端审计字段对齐（frontend @76830b2）
+
+请求原文已复制到 `docs/backend-m2-audit-request.md`。看板新增 `window_start/window_end/generated_at`，totals 增加 `csrf_failed/auth_locked/model_errors`；timeline 补齐 `logins_failed/pii_masked/model_fallbacks` 及三项细分指标。时间均为 UTC ISO 8601，前端可自行转本地显示。
+
+- `csrf_failed`：有合法、未过期 access 签名且当前用户可用的 CSRF 拒绝事件归入该用户租户；伪造/过期 Cookie、未知登录等无法可信归属的事件仍为平台私有，不凭 unsigned claims 分配租户。
+- `auth_locked`：失败登录触发账号进入锁定状态的次数；锁定后每次重试仍计 `logins_failed`，不重复计一次新锁定。
+- `model_errors`：失败的 `model.call` 事件（非 status=fallback）；它不是最终报告失败数，也不等于真实模型质量评估。tokens 来自轨迹，不做计费声明。
+- 看板级 `degrade_status` 是「真实审计事件统计；模型事件已记录；未完成真实模型验收」，`llm_verified=false`。该字段表示**统计窗口缺少真实模型核对/验收证据**，不将普通模型成功轨迹或 FakeLLM 充当已验收。
+- `source_kind=synthetic` 保守包括来源未核验（与现有语料标签约定一致），配 `source_kind_label` 明确「来源未核验 · 非真实模型验收」。它不声称 API 在读 mock：指标始终来自落库事件；没有事件时真实返回零计数。
+- 每条 AuditLog 的 `detail` 使用显式 `AuditDetail` schema。`source_kind/source_kind_label/degrade_status/llm_verified/fallback_reason/injection_category/pii_fields/rate_limit_scope` 始终返回（不适用者 null）；同时镜像顶层 actor_role/resource_type/resource_id/ip。额外业务字段如 counts、模型轨迹仍保留。旧行按读取投影补齐，不重写哈希。
+- `injection_category` 为 prompt / scope / output；不虚构 SQL/path 检测。`pii_fields` 是脱敏类别名（不是原文）；`rate_limit_scope` 为 ip 或 user（租户+用户），route 仅预留枚举。
+- `fallback_reason` 可为 provider_fallback / model_error / unsafe_output；未发生或未知为 null。模型类行也保持 `llm_verified=false`；测试替身行明确标「测试替身/演示来源」。未核验不能自动推断为 public，也不会仅从 fallback 轨迹生成「真实主链路可用」标记。
+
+DEMO_MODE 的篡改/恢复步骤与 fixture 说明见 `docs/backend-m2-demo.md`。reviewer 对 `/audit/logs`、`/audit/stats` 均为403并审计，admin/auditor 可读。本 API 已真实实现落库聚合，不用501/503假装占位；内部错误仍按统一 Problem 返回，不返回伪造成功。

@@ -68,11 +68,13 @@ async def login(body: LoginIn, resp: Response, c: Ctx = Depends(ctx), s: AsyncSe
         raise AppError(423, "AUTH_LOCKED", "登录失败次数过多，账号已临时锁定")
 
     if u is None or u.disabled or not verify_password(body.password, u.password_hash):
+        account_locked = False
         if u is not None:
             u.failed_logins += 1
             if u.failed_logins >= c.settings.login_max_failures:
                 u.locked_until = now + timedelta(seconds=c.settings.login_lock_s)
                 u.failed_logins = 0
+                account_locked = True
             await s.commit()
         await c.audit.record(
             "auth.login_failed",
@@ -80,7 +82,7 @@ async def login(body: LoginIn, resp: Response, c: Ctx = Depends(ctx), s: AsyncSe
             actor=actor,
             ip=c.ip,
             request_id=c.request_id,
-            detail={"reason": "bad_credentials"},
+            detail={"reason": "bad_credentials", "account_locked": account_locked},
         )
         raise AppError(401, "AUTH_INVALID_CREDENTIALS", "用户名或密码错误")
 

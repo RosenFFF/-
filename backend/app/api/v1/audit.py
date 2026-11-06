@@ -6,10 +6,11 @@ from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.audit.presentation import MODEL_UNVERIFIED, UNVERIFIED, event_counts, public_detail
 from app.core.errors import AppError
 from app.db.models import AuditLog
 from app.deps import Ctx, CurrentUser, ctx, require, session
@@ -17,6 +18,22 @@ from app.security.output import sanitize_public
 from app.security.rbac import Perm
 
 router = APIRouter(prefix="/audit", tags=["audit"])
+
+
+class AuditDetail(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    source_kind: Literal["synthetic", "public"]
+    source_kind_label: str
+    degrade_status: str | None
+    llm_verified: bool
+    fallback_reason: str | None
+    injection_category: Literal["prompt", "scope", "output"] | None
+    pii_fields: list[str] | None
+    rate_limit_scope: Literal["user", "ip", "route"] | None
+    actor_role: str | None
+    resource_type: str | None
+    resource_id: str | None
+    ip: str | None
 
 
 class AuditLogOut(BaseModel):
@@ -31,7 +48,7 @@ class AuditLogOut(BaseModel):
     result: Literal["success", "denied", "blocked", "failed"]
     ip: str | None
     request_id: str
-    detail: dict
+    detail: AuditDetail
     prev_hash: str | None
     hash: str
 
@@ -61,10 +78,19 @@ class SecurityTotals(BaseModel):
     model_fallbacks: int = 0
     tokens_used: int = 0
     outputs_blocked: int = 0
+    csrf_failed: int = 0
+    auth_locked: int = 0
+    model_errors: int = 0
 
 
 class SecurityBucket(BaseModel):
     bucket_start: datetime
+    logins_failed: int = 0
+    pii_masked: int = 0
+    model_fallbacks: int = 0
+    csrf_failed: int = 0
+    auth_locked: int = 0
+    model_errors: int = 0
     access_denied: int = 0
     injections_blocked: int = 0
     rate_limited: int = 0
@@ -78,6 +104,13 @@ class DeniedActor(BaseModel):
 
 class SecurityStats(BaseModel):
     window: Literal["1h", "24h", "7d"]
+    window_start: datetime
+    window_end: datetime
+    generated_at: datetime
+    degrade_status: str | None
+    llm_verified: bool
+    source_kind: Literal["synthetic", "public"]
+    source_kind_label: str
     totals: SecurityTotals
     timeline: list[SecurityBucket]
     top_denied_actors: list[DeniedActor]
@@ -131,7 +164,7 @@ def to_dict(row: AuditLog) -> dict:
     result = {k: getattr(row, k) for k in AuditLogOut.model_fields}
     # SQLAlchemy SQLite loses timezone info; the DB stores UTC.
     result["ts"] = aware(row.ts)
-    result["detail"] = sanitize_public(row.detail, pii=True)
+    result["detail"] = public_detail(row)
     result["actor_username"] = sanitize_public(row.actor_username, pii=True)
     return result
 
@@ -179,39 +212,23 @@ async def stats(
     q = select(AuditLog).where(AuditLog.tenant_id == user.tenant_id, AuditLog.ts >= start, AuditLog.ts < end)
     rows = await s.stream_scalars(q)
     async for row in rows:
-        totals.requests += 1
-        names = []
-        if row.action == "auth.login_failed":
-            totals.logins_failed += 1
-        for action, name in (
-            ("access.denied", "access_denied"),
-            ("rate_limit.hit", "rate_limited"),
-            ("security.injection_detected", "injections_blocked"),
-            ("model.call", "model_calls"),
-        ):
-            if row.action == action:
-                setattr(totals, name, getattr(totals, name) + 1)
-                names.append(name)
-        if row.action == "security.output_blocked":
-            totals.outputs_blocked += 1
-        if row.action == "security.pii_masked":
-            counts = row.detail.get("counts", {})
-            if isinstance(counts, dict):
-                totals.pii_masked += sum(v for v in counts.values() if type(v) is int and v >= 0)
-        if row.action == "model.fallback" or (row.action == "model.call" and row.detail.get("status") == "fallback"):
-            totals.model_fallbacks += 1
-        if row.action == "model.call":
-            totals.tokens_used += sum(
-                v for k in ("tokens_in", "tokens_out") if type(v := row.detail.get(k)) is int and v >= 0
-            )
+        stamp = datetime.fromtimestamp(int(aware(row.ts).timestamp()) // step * step, UTC)
+        for name, count in event_counts(row).items():
+            setattr(totals, name, getattr(totals, name) + count)
+            if name in SecurityBucket.model_fields:
+                setattr(buckets[stamp], name, getattr(buckets[stamp], name) + count)
         if row.action == "access.denied":
             denied[sanitize_public(row.actor_username, pii=True)] += 1
-        stamp = datetime.fromtimestamp(int(aware(row.ts).timestamp()) // step * step, UTC)
-        for name in names:
-            setattr(buckets[stamp], name, getattr(buckets[stamp], name) + 1)
     integrity = await c.audit.verify(user.tenant_id)
     return SecurityStats(
         window=window,
+        window_start=start,
+        window_end=end,
+        generated_at=datetime.now(UTC),
+        degrade_status="真实审计事件统计；" + MODEL_UNVERIFIED,
+        llm_verified=False,
+        source_kind="synthetic",
+        source_kind_label=UNVERIFIED,
         totals=totals,
         timeline=list(buckets.values()),
         top_denied_actors=[DeniedActor(actor_username=k, count=v) for k, v in denied.most_common(10)],

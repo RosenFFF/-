@@ -15,15 +15,16 @@ from sqlalchemy import func, select
 
 from app.ai.runtime import AIRuntime
 from app.api.v1 import audit, auth, demo, documents, reviews, rules, system, users
-from app.audit.service import AuditService
+from app.audit.service import Actor, AuditService
 from app.core.config import Settings, get_settings
-from app.core.errors import RATE_RESPONSES, VALIDATION_RESPONSE, install_handlers, problem
+from app.core.errors import RATE_RESPONSES, VALIDATION_RESPONSE, AppError, install_handlers, problem
 from app.core.logging import setup_logging
 from app.db.base import Database
 from app.db.models import Tenant, User
-from app.security.cookies import CSRF_HEADER, csrf_ok
+from app.security.cookies import ACCESS_COOKIE, CSRF_HEADER, csrf_ok
 from app.security.passwords import hash_password
 from app.security.ratelimit import RateLimiter
+from app.security.tokens import decode_access
 from app.services.chat import ChatStreams
 from app.services.storage import EncryptedStore
 
@@ -59,6 +60,22 @@ async def bootstrap(db: Database, settings: Settings) -> None:
         )
         await s.commit()
         log.info("bootstrap_admin_created")
+
+
+async def csrf_actor(request: Request) -> Actor | None:
+    """Read-only attribution; never turns a rejected CSRF request into authenticated work."""
+    token = request.cookies.get(ACCESS_COOKIE)
+    if not token:
+        return None
+    try:
+        claims = decode_access(request.app.state.settings, token)
+    except AppError:
+        return None
+    async with request.app.state.db.sessionmaker() as s:
+        user = await s.get(User, claims["sub"])
+        if user is not None and not user.disabled:
+            return Actor(user.id, user.username, user.role, user.tenant_id)
+    return None
 
 
 def create_app(
@@ -123,6 +140,7 @@ def create_app(
             await request.app.state.audit.record(
                 "access.denied",
                 "denied",
+                actor=await csrf_actor(request),
                 ip=request.client.host if request.client else None,
                 request_id=rid,
                 detail={"reason": "csrf", "method": request.method, "path": request.url.path},

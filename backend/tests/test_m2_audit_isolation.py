@@ -180,3 +180,13 @@ async def test_dashboard_stats_tenant_real_events_and_rbac(api, window):
     assert (await c.get("/api/v1/audit/stats?window=bad")).status_code == 422
     reviewer = await api.login("reviewer")
     assert (await reviewer.get("/api/v1/audit/stats")).status_code == 403
+
+
+async def test_cross_org_specific_audit_demo_target_is_404_without_tampering(api):
+    own = await api.login("admin")
+    target = (await own.get("/api/v1/audit/logs")).json()["items"][0]["id"]
+    foreign, _ = await foreign_admin(api)
+    for action in ("tamper", "restore"):
+        response = await foreign.post("/api/v1/demo/audit/" + action, json={"log_id": target})
+        assert response.status_code == 404 and response.json()["code"] == "NOT_FOUND"
+    assert (await own.get("/api/v1/audit/verify")).json()["valid"]
