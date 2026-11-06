@@ -51,7 +51,7 @@ export function CasesPage() {
                 <th>{t("common.filename")}</th>
                 <th>{t("upload.type")}</th>
                 <th>{t("common.status")}</th>
-                <th />
+                <th>{t("common.actions")}</th>
               </tr>
             </thead>
             <tbody>

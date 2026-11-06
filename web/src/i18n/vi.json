@@ -121,5 +121,8 @@
   "risk.high": "Cao",
   "risk.medium": "Trung bình",
   "risk.low": "Thấp",
-  "risk.info": "Thông tin"
+  "risk.info": "Thông tin",
+  "common.actions": "Thao tác",
+  "errors.NOT_IMPLEMENTED": "Tính năng chưa được triển khai",
+  "models.noCalls": "Chưa có bản ghi gọi mô hình"
 }

@@ -121,5 +121,8 @@
   "risk.high": "高风险",
   "risk.medium": "中风险",
   "risk.low": "低风险",
-  "risk.info": "提示"
+  "risk.info": "提示",
+  "common.actions": "操作",
+  "errors.NOT_IMPLEMENTED": "功能暂未实现",
+  "models.noCalls": "尚无模型调用记录"
 }

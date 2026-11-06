@@ -121,5 +121,8 @@
   "risk.high": "High",
   "risk.medium": "Medium",
   "risk.low": "Low",
-  "risk.info": "Info"
+  "risk.info": "Info",
+  "common.actions": "Actions",
+  "errors.NOT_IMPLEMENTED": "Not implemented yet",
+  "models.noCalls": "No model call records"
 }

@@ -30,7 +30,7 @@ export function LoginPage() {
   }
 
   return (
-    <div
+    <main
       style={{
         minHeight: "100%",
         display: "grid",
@@ -49,7 +49,9 @@ export function LoginPage() {
         onSubmit={onSubmit}
       >
         <div>
-          <div style={{ fontSize: 22, fontWeight: 600 }}>{t("app.name")}</div>
+          <h1 style={{ fontSize: 22, fontWeight: 600, margin: 0 }}>
+            {t("app.name")}
+          </h1>
           <div className="muted" style={{ marginTop: 4 }}>
             {t("app.tagline")}
           </div>
@@ -110,6 +112,6 @@ export function LoginPage() {
           </button>
         </div>
       </form>
-    </div>
+    </main>
   );
 }

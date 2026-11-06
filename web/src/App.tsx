@@ -28,7 +28,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
 export default function App() {
   return (
     <AuthProvider>
-      <>
+      <div className="app-frame">
         {useMock ? (
           <div className="mock-banner" role="status">
             MOCK 数据 · 仅开发 / DEVELOPMENT ONLY
@@ -55,7 +55,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </>
+      </div>
     </AuthProvider>
   );
 }

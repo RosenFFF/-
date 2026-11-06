@@ -1,0 +1,242 @@
+{
+  "mode": "explicit-development-mock-only",
+  "axeVersion": "4.13.0",
+  "browser": "Chromium 158.0.8127.18",
+  "totalTabStops": 228,
+  "results": [
+    {
+      "page": "login",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 6,
+      "focusContrastMin": 7.761359822928518,
+      "screenshot": "/workspace/competition/screenshots/m1/login-390.png"
+    },
+    {
+      "page": "cases",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 10,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/cases-390.png"
+    },
+    {
+      "page": "upload",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 10,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/upload-390.png"
+    },
+    {
+      "page": "extract",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 24,
+      "focusContrastMin": 6.756747640246986,
+      "screenshot": "/workspace/competition/screenshots/m1/extract-390.png"
+    },
+    {
+      "page": "report",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 21,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/report-390.png"
+    },
+    {
+      "page": "ask",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 13,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/ask-390.png"
+    },
+    {
+      "page": "audit-reviewer-403",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 11,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/audit-reviewer-403-390.png"
+    },
+    {
+      "page": "audit-admin",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 11,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/audit-admin-390.png"
+    },
+    {
+      "page": "models",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 8,
+      "focusContrastMin": 7.761359822928518,
+      "screenshot": "/workspace/competition/screenshots/m1/models-390.png"
+    },
+    {
+      "page": "login",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 6,
+      "focusContrastMin": 7.761359822928518,
+      "screenshot": "/workspace/competition/screenshots/m1/login-1440.png"
+    },
+    {
+      "page": "cases",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 10,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/cases-1440.png"
+    },
+    {
+      "page": "upload",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 10,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/upload-1440.png"
+    },
+    {
+      "page": "extract",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 24,
+      "focusContrastMin": 6.756747640246986,
+      "screenshot": "/workspace/competition/screenshots/m1/extract-1440.png"
+    },
+    {
+      "page": "report",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 21,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/report-1440.png"
+    },
+    {
+      "page": "ask",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 13,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/ask-1440.png"
+    },
+    {
+      "page": "audit-reviewer-403",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 11,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/audit-reviewer-403-1440.png"
+    },
+    {
+      "page": "audit-admin",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 11,
+      "focusContrastMin": 6.798092572683761,
+      "screenshot": "/workspace/competition/screenshots/m1/audit-admin-1440.png"
+    },
+    {
+      "page": "models",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "axeViolations": 0,
+      "axeIncomplete": 0,
+      "tabStops": 8,
+      "focusContrastMin": 7.761359822928518,
+      "screenshot": "/workspace/competition/screenshots/m1/models-1440.png"
+    }
+  ]
+}

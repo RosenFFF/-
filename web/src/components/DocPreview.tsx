@@ -49,7 +49,12 @@ function PageImage({ documentId, page, pages, onPage, highlights }: Props) {
         >
           ‹
         </button>
-        <span className="mono">
+        <span
+          className="mono"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {t("extract.page")} {page} / {pages}
         </span>
         <button
@@ -65,7 +70,7 @@ function PageImage({ documentId, page, pages, onPage, highlights }: Props) {
       <ErrorNotice error={error} />
       {!src && !error ? <p role="status">{t("status.running")}</p> : null}
       {src ? (
-        <div className="document-image">
+        <div id="document-preview" className="document-image">
           <img src={src} alt={`${t("extract.original")} ${page}`} />
           {highlights
             .filter((loc) => loc.page === page)

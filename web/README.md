@@ -68,3 +68,22 @@ M1_INTEGRATION_DIR=/tmp/silkroad-m1-integration PYTHONPATH=backend \
 fixture 加载真实 FastAPI/RapidOCR，仅 SQLite/fakeredis 替换基础设施；不替换 OCR、鉴权、CSRF 或加密。密钥随机写入仓库外 `.env`（0600），保持 Secure=true、DEMO_MODE=false，不读取既有密钥、不需要 LLM key。**合成账号/该 fixture 不可用于部署。**
 
 HTTP 脚本固定连接本机 HTTPS，显式信任本地证书（不全局禁用 TLS 校验），检查代理 Origin/Host/Proto、Cookie、CSRF、真实多页 OCR/页图、刷新/登出及缺失端点。它不是浏览器视觉验收；后端 M1 到位后需更新缺失端点预期，并补字段/报告/问答浏览器联调。
+
+## 浏览器视觉 / 可访问性补验收
+
+```bash
+cd web
+npm ci
+npx playwright install chromium
+npm run test:e2e
+```
+
+脚本 `e2e/visual-a11y.spec.ts` 和 `playwright.config.ts` 入库，依赖锁定于 package-lock.json。命令先严格类型检查，再自动启动 **VITE_USE_MOCK=true 的本机 HTTPS dev server**（端口 5173 必须空闲，不复用不明服务），测试后自动停止。不连接真实后端，断言无 `/api/v1` 请求且每页有 mock 红条。
+
+两个 Chromium 视口：390×844、1440×900。分别覆盖登录、案件、上传、字段高亮、展开条款报告、追问回答、reviewer 403、admin 空审计/链校验、模型页。默认在仓库外 `../../screenshots/m1/` 保存 18 张全页 PNG、2 张键盘焦点证据图、逐页检查 JSON（完整 violations/incomplete，passes 计数） 和两个 summary JSON；可用 `M1_SCREENSHOT_DIR=/path` 指定输出目录。
+
+每页检查 document/body 水平溢出与超宽元素列表，axe 全页默认规则（无排除/禁用项），全部可用控件的实际 Tab 顺序、`:focus-visible`、2px 焦点环、相邻色对比 ≥3:1、可见且不被遮挡。用真实键盘事件检查登录 Enter、字段 Enter/Space 切换高亮/页码、翻页 Enter/Space、追问 Enter。保留 axe incomplete，不能把待人工确认项算成通过。
+
+HTTP 501 始终显示 `功能暂未实现` / `Not implemented yet` / `Tính năng chưa được triển khai`（即便旧后端 code=MODEL_UNAVAILABLE），另可附请求编号。真实模式错误不触发 mock；Vitest 覆盖 HTTP 错误、网络故障、生产禁止 mock。
+
+这只是明确标注的 mock 视觉/自动可访问性验收，不是现实法律依据、真实 LLM 调用或生产合规能力证明。现有 Review/RuleCitation/Rule 契约没有机器可读的「合成规则库/轻量检索」来源标识，前端不从 summary/source 文案猜测；需要后端提供相应字段后，才能依据响应在报告与引用旁显示「合成规则 · 非真实合规结论」。

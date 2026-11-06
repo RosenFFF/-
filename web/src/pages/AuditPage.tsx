@@ -77,34 +77,39 @@ export function AuditPage() {
       ) : null}
       {logs ? (
         <div className="panel table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t("common.time")}</th>
-                <th>Actor</th>
-                <th>Action</th>
-                <th>{t("common.status")}</th>
-                <th>{t("common.requestId")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log) => (
-                <tr key={log.id}>
-                  <td>
-                    {new Date(log.ts).toLocaleString(undefined, {
-                      timeZone: "America/Tijuana",
-                    })}{" "}
-                    (America/Tijuana)
-                  </td>
-                  <td>{log.actor_username ?? "—"}</td>
-                  <td>{log.action}</td>
-                  <td>{log.result}</td>
-                  <td className="mono">{log.request_id}</td>
+          {logs.length ? (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>{t("common.time")}</th>
+                  <th>Actor</th>
+                  <th>Action</th>
+                  <th>{t("common.status")}</th>
+                  <th>{t("common.requestId")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {!logs.length ? <p>{t("common.empty")}</p> : null}
+              </thead>
+              <tbody>
+                {logs.map((log) => (
+                  <tr key={log.id}>
+                    <td>
+                      {new Date(log.ts).toLocaleString(undefined, {
+                        timeZone: "America/Tijuana",
+                      })}{" "}
+                      (America/Tijuana)
+                    </td>
+                    <td>{log.actor_username ?? "—"}</td>
+                    <td>{log.action}</td>
+                    <td>{log.result}</td>
+                    <td className="mono">{log.request_id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="empty-message" role="status">
+              {t("common.empty")}
+            </p>
+          )}
         </div>
       ) : null}
     </div>

@@ -158,6 +158,8 @@ function ExtractContent() {
                         <td>
                           <button
                             className="btn btn-ghost field-button"
+                            aria-pressed={selected === f.key}
+                            aria-controls="document-preview"
                             onClick={() => selectField(f)}
                           >
                             {f.label}
@@ -215,6 +217,8 @@ function ExtractContent() {
                     <li key={b.id}>
                       <button
                         className="btn btn-ghost"
+                        aria-pressed={selected === b.id}
+                        aria-controls="document-preview"
                         onClick={() => {
                           setSelected(b.id);
                           setPage(b.page);

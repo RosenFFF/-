@@ -17,6 +17,7 @@ export const errorCodes = [
   "QUOTA_EXCEEDED",
   "MODEL_UNAVAILABLE",
   "INTERNAL_ERROR",
+  "NOT_IMPLEMENTED",
   "NETWORK_ERROR",
   "PROCESSING_TIMEOUT",
   "STREAM_INTERRUPTED",
@@ -25,10 +26,13 @@ export function errorText(error: unknown): string {
   const problem =
     error instanceof ApiError
       ? error.problem
-      : { code: "INTERNAL_ERROR", request_id: undefined };
-  const code = errorCodes.includes(problem.code as (typeof errorCodes)[number])
-    ? problem.code
-    : "INTERNAL_ERROR";
+      : { code: "INTERNAL_ERROR", status: undefined, request_id: undefined };
+  const code =
+    problem.status === 501
+      ? "NOT_IMPLEMENTED"
+      : errorCodes.includes(problem.code as (typeof errorCodes)[number])
+        ? problem.code
+        : "INTERNAL_ERROR";
   const text = i18n.t(`errors.${code}`);
   return problem.request_id
     ? `${text} (${i18n.t("common.requestId")}: ${problem.request_id})`

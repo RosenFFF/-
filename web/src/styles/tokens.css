@@ -121,8 +121,7 @@ a:hover {
 .input:focus,
 .select:focus {
   border-color: var(--brand);
-  outline: none;
-  box-shadow: 0 0 0 2px var(--brand-subtle);
+  /* Keep the shared :focus-visible ring; the subtle fill is not a focus indicator. */
 }
 
 .panel {
@@ -419,4 +418,65 @@ button:focus-visible {
   textarea {
     font-size: 16px;
   }
+}
+
+/* M1 visual/a11y findings: constrain intrinsic grid/form widths, not page overflow. */
+.stack,
+.stack > *,
+.form-panel label {
+  min-width: 0;
+}
+.stack {
+  grid-template-columns: minmax(0, 1fr);
+}
+.input,
+.select {
+  min-width: 0;
+  max-width: 100%;
+}
+.file-picker input[type="file"] {
+  width: 100%;
+  min-width: 0;
+}
+.input:focus-visible,
+.select:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+/* Keep keyboard targets clear of the sticky development notice. */
+button,
+input,
+select,
+textarea,
+a[href] {
+  scroll-margin-block: 64px 16px;
+}
+.lang-row {
+  flex-wrap: wrap;
+}
+.lang-row .btn {
+  white-space: nowrap;
+}
+
+.empty-message {
+  padding: 16px;
+  margin: 0;
+  color: var(--ink-secondary);
+}
+
+/* Let the document grow: a fixed-height #root would release the sticky mock notice
+   once keyboard navigation scrolls past the first viewport. */
+#root {
+  height: auto;
+  min-height: 100%;
+}
+.app-frame {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+.app-frame > .shell,
+.app-frame > main {
+  flex: 1;
 }

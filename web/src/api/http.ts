@@ -88,8 +88,10 @@ export async function http(
     throw new ApiError({
       status: response.status,
       code:
-        problem.code ??
-        (response.status === 404 ? "NOT_FOUND" : "INTERNAL_ERROR"),
+        response.status === 501
+          ? "NOT_IMPLEMENTED"
+          : (problem.code ??
+            (response.status === 404 ? "NOT_FOUND" : "INTERNAL_ERROR")),
       request_id:
         problem.request_id || response.headers.get("X-Request-ID") || undefined,
     });

@@ -206,6 +206,7 @@ function ReportResult({
                       key={f.id}
                       type="button"
                       className={`finding${active?.id === f.id ? " selected" : ""}`}
+                      aria-pressed={active?.id === f.id}
                       onClick={() => {
                         citationController.current?.abort();
                         setActive(f);
@@ -282,28 +283,32 @@ function ReportResult({
             </section>
           </div>
           <div className="panel table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>{t("models.stage")}</th>
-                  <th>Model</th>
-                  <th>ms</th>
-                  <th>Tokens</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(report.models ?? []).map((m, i) => (
-                  <tr key={i}>
-                    <td>{m.task}</td>
-                    <td className="mono">{m.model}</td>
-                    <td>{m.latency_ms}</td>
-                    <td>
-                      {m.tokens_in ?? "—"} / {m.tokens_out ?? "—"}
-                    </td>
+            {report.models?.length ? (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>{t("models.stage")}</th>
+                    <th>Model</th>
+                    <th>ms</th>
+                    <th>Tokens</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(report.models ?? []).map((m, i) => (
+                    <tr key={i}>
+                      <td>{m.task}</td>
+                      <td className="mono">{m.model}</td>
+                      <td>{m.latency_ms}</td>
+                      <td>
+                        {m.tokens_in ?? "—"} / {m.tokens_out ?? "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="empty-message">{t("models.noCalls")}</p>
+            )}
           </div>
         </>
       ) : null}

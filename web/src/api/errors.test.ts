@@ -26,3 +26,19 @@ describe("safe error-code i18n", () => {
     expect(text).toBe(i18n.t("errors.INTERNAL_ERROR"));
   });
 });
+
+describe("501 is explicitly not implemented, even with an old backend code", () => {
+  it.each([
+    ["zh", "功能暂未实现"],
+    ["en", "Not implemented yet"],
+    ["vi", "Tính năng chưa được triển khai"],
+  ])("%s uses the exact approved wording", async (lang, text) => {
+    await i18n.changeLanguage(lang);
+    expect(
+      errorText(new ApiError({ status: 501, code: "MODEL_UNAVAILABLE" })),
+    ).toBe(text);
+    expect(
+      errorText(new ApiError({ status: 501, code: "NOT_IMPLEMENTED" })),
+    ).toBe(text);
+  });
+});
