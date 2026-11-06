@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 丝路智审 API
-  version: 0.3.0
+  version: 0.3.2
   description: |
     跨境贸易单证 AI 合规审查平台后端接口契约（M0 草案）。
 
@@ -138,7 +138,7 @@ paths:
       parameters:
         - { $ref: '#/components/parameters/CsrfHeader' }
       responses:
-        '204': { description: 已登出 }
+        '204': { description: '已登出' }
   /auth/me:
     get:
       tags: [auth]
@@ -292,7 +292,7 @@ paths:
       tags: [documents]
       summary: 删除单证（同时删除密文、识别结果和派生数据）
       responses:
-        '204': { description: 已删除 }
+        '204': { description: '已删除' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
   /documents/{document_id}/pages/{page}/image:
@@ -363,7 +363,7 @@ paths:
     post:
       tags: [reviews]
       summary: 发起合规审查（admin, reviewer）
-      description: 可把同一票货的多份单证一起审（用于交叉核对发票、装箱单、原产地证）。异步执行，轮询 `GET /reviews/{id}`。
+      description: '可把同一票货的多份单证一起审（用于交叉核对发票、装箱单、原产地证）。异步执行，轮询 `GET /reviews/{id}`。'
       requestBody:
         required: true
         content:
@@ -421,9 +421,14 @@ paths:
       parameters:
         - name: language
           in: query
-          description: 换一种语言查看解释文字；没有缓存时会触发一次翻译生成
+          description: 目标契约为换语言查看；当前 M1b 不同于原语言时显式返回 501，不自动伪造翻译
           schema: { $ref: '#/components/schemas/Language' }
       responses:
+        '501':
+          description: 功能暂未实现（追问/SSE/已有报告二次翻译），不会自动切 mock
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
         '200':
           description: OK
           content:
@@ -437,7 +442,13 @@ paths:
     get:
       tags: [chat]
       summary: 追问历史
+      description: 当前 M1b 显式返回 501；以下 200 为后续目标契约
       responses:
+        '501':
+          description: 功能暂未实现（追问/SSE/已有报告二次翻译），不会自动切 mock
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
         '200':
           description: OK
           content:
@@ -453,6 +464,7 @@ paths:
       tags: [chat]
       summary: 针对报告追问（admin, reviewer）
       description: |
+        当前 M1b 显式返回 501「功能暂未实现：追问/SSE」，不自动切换 mock；以下为后续目标契约。
         `Accept: text/event-stream` 时流式返回，事件依次为：
         - `delta`：`{"text": "..."}` 增量文字
         - `citation`：`RuleCitation` 对象
@@ -471,6 +483,11 @@ paths:
                 content: { type: string, minLength: 1, maxLength: 2000 }
                 language: { $ref: '#/components/schemas/Language' }
       responses:
+        '501':
+          description: 功能暂未实现（追问/SSE/已有报告二次翻译），不会自动切 mock
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
         '200':
           description: OK
           content:
@@ -487,7 +504,7 @@ paths:
       - { name: rule_id, in: path, required: true, schema: { type: string, maxLength: 64 } }
     get:
       tags: [rules]
-      summary: 规则条款原文（点击引用时展示）
+      summary: 规则详情（点击引用时展示；含 source_kind/version_date，公开条目为摘要）
       responses:
         '200':
           description: OK
@@ -577,7 +594,7 @@ paths:
                 required: [valid, checked, head_hash]
                 properties:
                   valid: { type: boolean }
-                  checked: { type: integer, description: 校验的记录数 }
+                  checked: { type: integer, description: '校验的记录数' }
                   head_hash: { type: string }
                   first_broken_id: { type: [string, 'null'], format: uuid }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -652,7 +669,7 @@ components:
       name: X-CSRF-Token
       in: header
       required: true
-      description: 取自 csrf_token Cookie；所有 Cookie 鉴权的写请求都要带
+      description: 取自 csrf_token Cookie（服务端 HMAC 绑定当前 access/refresh 会话）；Cookie 写请求都须携带，且 Origin（缺失时 Referer）须在 CORS_ORIGINS 白名单，缺失或不匹配返回 CSRF_FAILED
       schema: { type: string }
 
   responses:
@@ -754,7 +771,7 @@ components:
       enum: [pass, low, medium, high]
     DegradeLevel:
       type: string
-      description: L0 正常；L1 已切换备用云端模型；L2 本地 LLM 离线模式；L3 仅规则引擎
+      description: L0 正常；L1 已切换备用云端模型；L2 本地 LLM 离线模式；L3=规则引擎回退，未完成真实 LLM 验证（勿把 L3 理解成“已用本地模型完成推理”）
       enum: [L0, L1, L2, L3]
 
     SessionResponse:
@@ -762,7 +779,7 @@ components:
       description: 令牌只在 HttpOnly Cookie 里，响应体不含任何令牌
       required: [expires_in, user]
       properties:
-        expires_in: { type: integer, description: access_token 剩余有效秒数 }
+        expires_in: { type: integer, description: 'access_token 剩余有效秒数' }
         user: { $ref: '#/components/schemas/CurrentUser' }
     User:
       type: object
@@ -794,7 +811,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         doc_type: { $ref: '#/components/schemas/DocType' }
-        filename: { type: string, description: 展示用文件名（已清洗） }
+        filename: { type: string, description: '展示用文件名（已清洗）' }
         mime: { type: string, enum: [application/pdf, image/png, image/jpeg] }
         size_bytes: { type: integer }
         pages: { type: [integer, 'null'] }
@@ -804,7 +821,7 @@ components:
         error: { oneOf: [ { $ref: '#/components/schemas/Problem' }, { type: 'null' } ] }
         owner_id: { type: string, format: uuid }
         created_at: { type: string, format: date-time }
-        expire_at: { type: string, format: date-time, description: 到期自动删除 }
+        expire_at: { type: string, format: date-time, description: '到期自动删除' }
 
     BBox:
       type: array
@@ -825,8 +842,8 @@ components:
       type: object
       required: [key, label, value, source]
       properties:
-        key: { type: string, description: 如 invoice_no, hs_code, total_amount, currency, origin_country, consignee }
-        label: { type: string, description: 本地化展示名 }
+        key: { type: string, description: '如 invoice_no, hs_code, total_amount, currency, origin_country, consignee' }
+        label: { type: string, description: '本地化展示名' }
         value: { type: [string, 'null'] }
         confidence: { type: [number, 'null'], minimum: 0, maximum: 1 }
         source_block_ids:
@@ -842,16 +859,21 @@ components:
             properties:
               page: { type: integer, minimum: 1 }
               bbox: { $ref: '#/components/schemas/BBox' }
-        masked: { type: boolean, description: 是否为敏感字段（展示时已部分打码） }
+        masked: { type: boolean, description: '是否为敏感字段（展示时已部分打码）' }
         source: { type: string, enum: [llm, rule, manual] }
     Recognition:
       type: object
-      required: [document_id, version, ocr, fields, models]
+      required: [document_id, version, ocr, fields, models, security, degrade_level, degrade_status, llm_verified]
       properties:
         document_id: { type: string, format: uuid }
         version: { type: integer }
         doc_type: { $ref: '#/components/schemas/DocType' }
         language_detected: { type: string }
+        degrade_level: { $ref: '#/components/schemas/DegradeLevel' }
+        degrade_status:
+          type: string
+          description: 固定可读降级说明；L3 文案为「规则引擎回退，未完成真实 LLM 验证」
+        llm_verified: { type: boolean, description: 'false 表示未完成真实 LLM 验证' }
         ocr:
           type: object
           required: [engine, blocks]
@@ -873,15 +895,37 @@ components:
 
     RuleCitation:
       type: object
-      required: [rule_id, source, article, excerpt]
+      required: [rule_id, source, article, excerpt, source_kind, source_kind_label, excerpt_kind, applicability]
       properties:
         rule_id: { type: string }
-        source: { type: string, description: 规则出处，如某协定原产地规则 }
+        source: { type: string, description: '规则出处，如某协定原产地规则' }
         jurisdiction: { type: string }
-        article: { type: string, description: 条款号 }
-        excerpt: { type: string, description: 原文摘录 }
+        article: { type: string, description: '条款号' }
+        excerpt: { type: string, description: '短摘录或自写摘要，不保证适用于本票交易' }
         url: { type: [string, 'null'], format: uri }
-        score: { type: number, description: 重排相关度 }
+        score: { type: number, description: '重排相关度' }
+        corpus:
+          type: string
+          enum: [synthetic, public_verified]
+          description: public_verified 仅表示公开出处核验，不表示适用或获准清关；缺失元数据按 synthetic
+        source_kind:
+          type: string
+          enum: [synthetic, public]
+          description: 前端徽章用固定字段；public=公开核验出处，synthetic=合成/未核验。展示文案见 source_kind_label
+        source_kind_label:
+          type: string
+          description: 可直接展示；synthetic 固定为「合成规则 · 非真实合规结论」
+        verified_at: { type: [string, 'null'], format: date, description: '公开条目人工核验日期' }
+        effective_date: { type: [string, 'null'], format: date, description: '规则生效日（若有）' }
+        version_date: { type: [string, 'null'], format: date, description: '前端版本/核验日期展示；优先 verified_at，否则 effective_date' }
+        excerpt_kind:
+          type: string
+          enum: [summary, verbatim]
+          description: summary=自写/摘录摘要，不得当作法规原文全文
+        applicability:
+          type: string
+          enum: [unverified]
+          description: 固定 unverified：公开出处不等于本票适用或合规已通过
     Finding:
       type: object
       required: [id, severity, category, title, message, determined_by, citations]
@@ -890,7 +934,7 @@ components:
         severity: { type: string, enum: [info, low, medium, high] }
         category: { type: string, enum: [missing_field, inconsistency, classification, origin, restricted_goods, sanctions, valuation, format, other] }
         title: { type: string }
-        message: { type: string, description: 按请求语言生成的解释 }
+        message: { type: string, description: '按请求语言生成的解释' }
         document_id: { type: [string, 'null'], format: uuid }
         field_keys:
           type: array
@@ -929,7 +973,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/ReviewSummary'
         - type: object
-          required: [language, findings, degrade_level]
+          required: [language, findings, degrade_level, degrade_status, llm_verified, security]
           properties:
             origin_country: { oneOf: [ { $ref: '#/components/schemas/CountryCode' }, { type: 'null' } ] }
             language: { $ref: '#/components/schemas/Language' }
@@ -944,6 +988,10 @@ components:
               type: array
               items: { $ref: '#/components/schemas/Finding' }
             degrade_level: { $ref: '#/components/schemas/DegradeLevel' }
+            degrade_status:
+              type: string
+              description: 固定可读降级说明；L3 文案为「规则引擎回退，未完成真实 LLM 验证」
+            llm_verified: { type: boolean, description: 'false 表示未完成真实 LLM 验证' }
             security: { $ref: '#/components/schemas/SecurityFlags' }
             models:
               type: array
@@ -963,7 +1011,7 @@ components:
         citations:
           type: array
           items: { $ref: '#/components/schemas/RuleCitation' }
-        blocked: { type: boolean, description: 输入被安全检测拦截 }
+        blocked: { type: boolean, description: '输入被安全检测拦截' }
         block_reason: { type: [string, 'null'], enum: [prompt_injection, jailbreak, out_of_scope, sensitive_data, null] }
         models:
           type: array
@@ -973,16 +1021,35 @@ components:
 
     Rule:
       type: object
-      required: [id, source, jurisdiction, article, title, text]
+      required: [id, source, jurisdiction, article, title, text, corpus, source_kind, source_kind_label, excerpt_kind, applicability]
       properties:
         id: { type: string }
         source: { type: string }
         jurisdiction: { type: string }
         article: { type: string }
         title: { type: string }
-        text: { type: string }
+        text: { type: string, description: '条目正文；公开规则为摘要，非法规原文全文' }
         url: { type: [string, 'null'], format: uri }
         effective_date: { type: [string, 'null'], format: date }
+        corpus: { type: string, enum: [synthetic, public_verified], description: '无标记的旧规则保守按 synthetic' }
+        verified_at: { type: [string, 'null'], format: date }
+        verification_note: { type: [string, 'null'] }
+        source_kind:
+          type: string
+          enum: [synthetic, public]
+          description: 与引用 citations[].source_kind 同语义
+        source_kind_label:
+          type: string
+          description: 可直接展示；synthetic 固定为「合成规则 · 非真实合规结论」
+        version_date: { type: [string, 'null'], format: date, description: '优先 verified_at，否则 effective_date' }
+        excerpt_kind:
+          type: string
+          enum: [summary, verbatim]
+          description: summary=摘要，不得当作法规原文
+        applicability:
+          type: string
+          enum: [unverified]
+          description: 固定 unverified：公开出处不等于本票适用或合规已通过
 
     ModelTrace:
       type: object
@@ -1012,9 +1079,30 @@ components:
         generated_at: { type: string, format: date-time }
     SecurityFlags:
       type: object
-      description: 本次处理中的安全事件，供报告页和看板展示
+      description: 本次处理中的安全事件与来源标签；前端必须展示语料/检索标签及免责声明，不得把合成检查包装为真实合规结论
+      required: [rule_corpus, rule_corpus_label, source_kind, source_kind_label, retrieval_mode, compliance_disclaimer]
       properties:
-        pii_masked_count: { type: integer, description: 出域前脱敏的敏感项数量 }
+        rule_corpus:
+          type: string
+          enum: [synthetic, public_verified, mixed]
+          description: Recognition=配置索引范围；Review=本次召回上下文与确定性发现的引用并集。public_verified 仅在非空且全部为核验公开出处时使用；混入合成或未核验即 mixed，仅合成或空集为 synthetic。queued/旧数据保守标 synthetic。
+        rule_corpus_label: { type: string, minLength: 1, description: '界面可直接展示的中文语料标签' }
+        source_kind:
+          type: string
+          enum: [synthetic, public]
+          description: 报告级固定徽章字段。mixed/synthetic→synthetic；仅全部公开核验→public。前端按此显示「合成规则 · 非真实合规结论」
+        source_kind_label:
+          type: string
+          minLength: 1
+          description: 与 source_kind 对应的固定中文；synthetic 恒为「合成规则 · 非真实合规结论」
+        retrieval_mode:
+          type: string
+          enum: [lightweight_hash, bge]
+          description: lightweight_hash=特征哈希召回+词项重排（非 BGE）；bge=本地 BGE embedding 和 reranker
+        compliance_disclaimer:
+          type: string
+          const: 自动审查仅供人工复核；合成或未核验语料不得作为清关或交易决定依据。
+        pii_masked_count: { type: integer, description: '出域前脱敏的敏感项数量' }
         pii_types:
           type: array
           items: { type: string, enum: [person_name, phone, email, bank_account, address, id_number] }
@@ -1040,13 +1128,25 @@ components:
           items:
             type: object
             required: [category, provider, model, deployment, stage, healthy]
+            allOf:
+              - if:
+                  properties:
+                    category: { enum: [embedding, reranker] }
+                then:
+                  required: [lightweight, retrieval_mode, implementation_mode, mode_label]
             properties:
               category: { type: string, enum: [ocr, llm, embedding, reranker] }
               provider: { type: string }
               model: { type: string }
               deployment: { type: string, enum: [local, cloud] }
-              stage: { type: string, description: 在链路中的环节 }
+              stage: { type: string, description: '在链路中的环节' }
               healthy: { type: boolean }
+              lightweight: { type: boolean, description: 'embedding/reranker 必填；true 表示非 BGE 轻量回退' }
+              retrieval_mode: { type: string, enum: [lightweight_hash, bge] }
+              implementation_mode: { type: string, enum: [lightweight_hash, lightweight_lexical, bge] }
+              mode_label: { type: string, minLength: 1, description: 'embedding/reranker 中文模式标签，供界面展示' }
+              configured_model: { type: string }
+              heavy_load_failed: { type: boolean }
               circuit_open: { type: boolean }
               p95_latency_ms: { type: [integer, 'null'] }
               calls_24h: { type: integer }
@@ -1106,9 +1206,9 @@ components:
         resource_type: { type: [string, 'null'] }
         resource_id: { type: [string, 'null'] }
         result: { type: string, enum: [success, denied, blocked, failed] }
-        ip: { type: [string, 'null'], description: 末段打码 }
+        ip: { type: [string, 'null'], description: '末段打码' }
         request_id: { type: string }
-        detail: { type: object, additionalProperties: true, description: 不含敏感原文 }
+        detail: { type: object, additionalProperties: true, description: '不含敏感原文' }
         prev_hash: { type: [string, 'null'] }
         hash: { type: string }
     SecurityStats:

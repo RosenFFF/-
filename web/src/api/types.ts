@@ -76,6 +76,14 @@ export type Aigc = {
   generator: string;
   generated_at: string;
 };
+export type SecurityFlags = {
+  rule_corpus?: string;
+  rule_corpus_label?: string | null;
+  source_kind?: "synthetic" | "public" | null;
+  source_kind_label?: string | null;
+  retrieval_mode?: "bge" | "lightweight_hash";
+  compliance_disclaimer?: string | null;
+};
 export type Recognition = {
   document_id: string;
   version: number;
@@ -83,13 +91,20 @@ export type Recognition = {
   fields: ExtractedField[];
   models: ModelTrace[];
   aigc?: Aigc;
+  degrade_level?: "L0" | "L1" | "L2" | "L3";
+  degrade_status?: string;
+  llm_verified?: boolean;
+  security?: SecurityFlags;
 };
 // Optional forward-compatible provenance fields; absent metadata is never inferred.
 export type SourceMetadata = {
   source_kind?: "synthetic" | "public" | null;
+  source_kind_label?: string | null;
   url?: string | null;
   article?: string | null;
   version_date?: string | null;
+  excerpt_kind?: "summary" | "verbatim" | null;
+  applicability?: "unverified" | null;
 };
 export type Citation = SourceMetadata & {
   rule_id: string;
@@ -123,12 +138,7 @@ export type Review = {
   degrade_level: "L0" | "L1" | "L2" | "L3";
   degrade_status?: string;
   llm_verified?: boolean;
-  security?: {
-    source_kind?: SourceMetadata["source_kind"];
-    rule_corpus?: string;
-    compliance_disclaimer?: string | null;
-    retrieval_mode?: "bge" | "lightweight_hash";
-  };
+  security?: SecurityFlags;
   models?: ModelTrace[];
   aigc?: Aigc;
   error?: Problem | null;

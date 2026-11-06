@@ -290,5 +290,20 @@
       "focusContrastMin": 7.761359822928518,
       "screenshot": "/workspace/competition/screenshots/m1/models-1440.png"
     }
-  ]
+  ],
+  "real_backend": {
+    "commit": "8d94e02",
+    "screenshots": [
+      "real-extract-1440.png",
+      "real-extract-390.png",
+      "real-login-1440.png",
+      "real-login-390.png",
+      "real-report-1440.png",
+      "real-report-390.png",
+      "real-upload-1440.png",
+      "real-upload-390.png"
+    ],
+    "mock_banner_red_top_samples": 0,
+    "ask_messages": "501 MODEL_UNAVAILABLE"
+  }
 }

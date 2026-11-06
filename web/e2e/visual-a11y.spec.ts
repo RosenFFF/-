@@ -338,19 +338,34 @@ test("mock review journey: screenshots, axe, overflow and real keyboard operatio
         const report = await original(...args);
         return {
           ...report,
-          security: mode === "public" ? { source_kind: "public" } : undefined,
+          // Keep wire degrade_status; only swap citation provenance for the scenario.
+          security:
+            mode === "public"
+              ? {
+                  source_kind: "public",
+                  source_kind_label: "公开出处已核验 · 仍须人工复核",
+                }
+              : undefined,
           findings: report.findings.map((finding) => ({
             ...finding,
-            citations: finding.citations.map((c) => ({
-              ...c,
-              source_kind: mode === "public" ? "public" : undefined,
-              url:
-                mode === "public"
-                  ? "https://example.org/development-only/public-summary"
-                  : undefined,
-              article: mode === "public" ? "MOCK § 3.2" : undefined,
-              version_date: mode === "public" ? "2026-11-05" : undefined,
-            })),
+            citations: finding.citations.map((c) =>
+              mode === "public"
+                ? {
+                    ...c,
+                    source_kind: "public",
+                    source_kind_label: "公开出处已核验 · 仍须人工复核",
+                    url: "https://example.org/development-only/public-summary",
+                    article: "MOCK § 3.2",
+                    version_date: "2026-11-05",
+                    excerpt_kind: "summary",
+                    applicability: "unverified",
+                  }
+                : {
+                    rule_id: c.rule_id,
+                    source: c.source,
+                    excerpt: c.excerpt,
+                  },
+            ),
           })),
         };
       };
@@ -358,7 +373,7 @@ test("mock review journey: screenshots, axe, overflow and real keyboard operatio
     await page.getByRole("button", { name: "重试", exact: true }).click();
   }
   await citationFixture("public");
-  await expect(page.locator(".source-kind")).toHaveText("公开摘要");
+  await expect(page.locator(".source-kind")).toHaveText("公开出处已核验 · 仍须人工复核");
   await expect(page.locator(".citation-source")).toContainText(
     "公开摘要，非法规原文，不代表已通过合规验证",
   );

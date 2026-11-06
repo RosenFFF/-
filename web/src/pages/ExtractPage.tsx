@@ -12,6 +12,7 @@ import type {
 } from "../api/types";
 import { DocPreview } from "../components/DocPreview";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { ReportVerification } from "../components/Provenance";
 export function ExtractPage() {
   const { id } = useParams();
   const [query] = useSearchParams();
@@ -108,6 +109,7 @@ function ExtractContent() {
         ) : null}
       </div>
       <ErrorNotice error={error} />
+      {result ? <ReportVerification report={result} /> : null}
       {error ? (
         <button
           className="btn btn-secondary"

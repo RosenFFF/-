@@ -1,11 +1,13 @@
-import type { Review } from "./types";
+import type { SourceMetadata } from "./types";
 
 export function sourceKind(value: unknown): "synthetic" | "public" | null {
   return value === "synthetic" || value === "public" ? value : null;
 }
+
 export function sourceText(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
+
 // Never turn backend-provided javascript/data/credential-bearing URLs into links.
 export function sourceUrl(value: unknown): string | null {
   const text = sourceText(value);
@@ -22,13 +24,25 @@ export function sourceUrl(value: unknown): string | null {
     return null;
   }
 }
-export function verificationKey(
-  report: Pick<Review, "degrade_level" | "llm_verified">,
-): string {
-  if (report.degrade_level === "L3") return "report.verification.L3";
-  // A contradictory/older response must not claim LLM validation succeeded.
-  if (report.llm_verified === false) return "report.verification.unverified";
-  return ["L0", "L1", "L2"].includes(report.degrade_level)
-    ? `report.verification.${report.degrade_level}`
-    : "report.verification.unknown";
+
+/** Prefer the wire label; never invent copy from source_kind alone. */
+export function sourceKindLabel(value: SourceMetadata): string | null {
+  return sourceText(value.source_kind_label);
+}
+
+/** Render degrade_status from the response only; missing → null (UI shows 状态信息缺失). */
+export function degradeStatusText(
+  report: { degrade_status?: string | null },
+): string | null {
+  return sourceText(report.degrade_status);
+}
+
+export function excerptKind(
+  value: unknown,
+): "summary" | "verbatim" | null {
+  return value === "summary" || value === "verbatim" ? value : null;
+}
+
+export function applicability(value: unknown): "unverified" | null {
+  return value === "unverified" ? value : null;
 }
