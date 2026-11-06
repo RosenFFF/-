@@ -86,3 +86,10 @@ worker startup 测试的数据库检查真实，OCR warmup 单独替换；不据
 
 本机 Ollama tags 返回 models=[]（model-preflight.log）；本轮未下载模型、未找/读 API 密钥，
 未执行真实 LLM 推理。真实模型 E2E 保留独立 skip，不能由 PG/Redis 结果抵消。
+
+## 交付与本地原始记录
+
+本目录 `.log/.xml` 是本地原始记录，已脱敏并通过 `.gitignore` 排除，不随 bundle 交付。
+可交付证据为 `validation-summary.json`（完整用例名/结果、源码摘要）、
+`test-environment.redacted.json`（只含环境元数据，不含私有连接值）、`postgresql-catalog.json` 和上一级 M3 报告。
+实际连接配置仅在仓库外的 0600 私有运行文件中保留；不要将其复制到本目录。
