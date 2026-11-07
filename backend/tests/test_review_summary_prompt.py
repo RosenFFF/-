@@ -38,11 +38,10 @@ def test_summary_rebuild_is_retained_fact_counts_not_generic_or_dropped_claims()
         {"determined_by": "llm", "severity": "low", "category": "other", "rule_ids": ["PUB-US-INVOICE"]},
     ]
     text = grounded_summary("Origin concern", {"unsupported_finding": 3}, retained, {"SYN-ORIGIN"})
-    assert "风险等级：high" in text
-    assert "high=1, medium=0, low=1, info=1" in text
-    assert "other=2, valuation=1" in text
-    assert "PUB-US-INVOICE, SYN-AMOUNT, SYN-REVIEW" in text
-    assert text.endswith("已过滤 3 条无依据结论")
+    assert "共列出 2 项问题，其中高风险 1 项" in text
+    assert "PUB-US-INVOICE、SYN-AMOUNT" in text
+    assert "SYN-REVIEW" not in text
+    assert text.endswith("已过滤 3 条无依据结论，建议人工复核。")
     assert "SYN-ORIGIN" not in text and "Origin concern" not in text
     assert text == grounded_summary("SYN-ORIGIN", {"unsupported_finding": 3}, list(reversed(retained)), {"SYN-ORIGIN"})
 

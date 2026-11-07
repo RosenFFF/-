@@ -1,0 +1,13 @@
+{
+  "synthetic_only": true,
+  "issues": 2,
+  "high_risk": 1,
+  "filtered": 2,
+  "model_calls": 0,
+  "samples": {
+    "zh-CN": "保留的审查结果共列出 2 项问题，其中高风险 1 项，涉及规则 SYN-AMOUNT、SYN-HS。已过滤 2 条无依据结论，建议人工复核。",
+    "en": "The retained findings identify 2 issues, including 1 high-risk issue. They cite rules SYN-AMOUNT and SYN-HS. Removed 2 unsupported conclusions. Manual review is recommended.",
+    "ru": "В сохранённых результатах проверки отмечены 2 проблемы. Из них 1 проблема с высоким риском. Выводы связаны с правилами SYN-AMOUNT и SYN-HS. Отфильтрованы 2 необоснованных вывода. Рекомендуется проверка специалистом.",
+    "vi": "Các kết quả được giữ lại nêu 2 vấn đề, trong đó có 1 vấn đề rủi ro cao, liên quan đến các quy tắc SYN-AMOUNT và SYN-HS. Đã lọc 2 kết luận không có căn cứ, khuyến nghị xem xét thủ công."
+  }
+}

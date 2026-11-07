@@ -60,12 +60,12 @@ async def capture_no_chat(tmp_path, postgres_rls_db, live_redis, monkeypatch, *,
         persist()  # Before review persistence/HTTP response/any metric computation can fail.
         return generated, dropped
 
-    def summary(text, counts, retained_findings=(), dropped_rule_ids=()):
+    def summary(text, counts, retained_findings=(), dropped_rule_ids=(), *, language="zh-CN"):
         current["summary_rebuilt"] = summary_needs_rebuild(text, counts, dropped_rule_ids)
         current["summary_text_persisted"] = False
         current["dropped_rule_ids"] = sorted(dropped_rule_ids)
         persist()
-        return original_summary(text, counts, retained_findings, dropped_rule_ids)
+        return original_summary(text, counts, retained_findings, dropped_rule_ids, language=language)
 
     monkeypatch.setattr(review, "grounded_summary", summary)
     monkeypatch.setattr(review, "check", check)
