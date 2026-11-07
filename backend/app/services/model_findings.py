@@ -3,7 +3,7 @@
 import re
 from collections import Counter
 
-from app.services.rules_engine import risk_level
+from app.services.summary_text import retained_summary
 
 SYNTHETIC_CONDITIONS = frozenset({"SYN-REQUIRED", "SYN-HS", "SYN-AMOUNT", "SYN-RESTRICTED", "SYN-ORIGIN"})
 
@@ -73,26 +73,8 @@ def summary_needs_rebuild(summary, counts, dropped_rule_ids):
     return False
 
 
-def grounded_summary(summary, counts, retained_findings=(), dropped_rule_ids=()):
+def grounded_summary(summary, counts, retained_findings=(), dropped_rule_ids=(), *, language="zh-CN"):
     """Keep unrelated model text; rebuild affected summaries from retained facts only."""
     if not summary_needs_rebuild(summary, counts, dropped_rule_ids):
         return summary
-    severity = Counter(f["severity"] for f in retained_findings)
-    categories = Counter(f.get("category", "other") for f in retained_findings)
-    rules = sorted(
-        {
-            r
-            for f in retained_findings
-            for r in (f["rule_ids"] if "rule_ids" in f else [c["rule_id"] for c in f.get("citations", [])])
-        }
-    )
-    return (
-        f"风险等级：{risk_level(retained_findings)}；"
-        + "严重性计数："
-        + ", ".join(f"{k}={severity[k]}" for k in ("high", "medium", "low", "info"))
-        + "；分类计数："
-        + (", ".join(f"{k}={v}" for k, v in sorted(categories.items())) or "none")
-        + "；保留规则："
-        + (", ".join(rules) or "none")
-        + f"\n已过滤 {counts['unsupported_finding']} 条无依据结论"
-    )
+    return retained_summary(retained_findings, counts["unsupported_finding"], language)

@@ -1,0 +1,19 @@
+{
+  "model_http_calls": 0,
+  "service_restarts": 0,
+  "ruff": "passed",
+  "regression": {
+    "passed": 472,
+    "skipped": 7,
+    "seconds": 117.15,
+    "paid_opt_ins": false
+  },
+  "targeted": {
+    "passed": 66,
+    "seconds": 2.4
+  },
+  "bandit_app_eval_findings": 0,
+  "gitleaks_worktree_findings": 0,
+  "actual_key_hits": 0,
+  "final_range_receipt": "/workspace/competition/backend-grounded-summary-i18n-evidence/gitleaks-range.json"
+}

@@ -236,7 +236,9 @@ async def process_review(
                     and all(f["determined_by"] != "llm_unverified" for f in generated)
                 )
                 # Do not restore PII into generated prose: placeholders remain masked in the report.
-                row.summary = grounded_summary(result.value.summary, filter_counts, findings, dropped_rule_ids)
+                row.summary = grounded_summary(
+                    result.value.summary, filter_counts, findings, dropped_rule_ids, language=row.language
+                )
             else:
                 row.summary = (
                     "规则引擎回退，未完成真实 LLM 验证。LLM 不可用或输入已被拦截，仅提供确定性检查；建议人工复核。"
