@@ -38,7 +38,7 @@ const ENVIRONMENT = {
   llm_chain: ["deepseek", "qwen", "ollama"],
   llm_keys: "deepseek/qwen keys unset",
   // (a) HARDCODED contract expectation only — proves the UI renders this case, not that it is true.
-  ollama_expected_contract: "hardcoded expectation: /api/tags models=[] (not probed here; see models-probe-*.json)",
+  ollama_expected_contract: "hardcoded expectation: Ollama has no usable model (models=[] or unreachable); not probed here, see models-probe-*.json",
   real_model: "unavailable",
   rate_limit_default_per_min: Number(process.env.FIXTURE_RL_DEFAULT_PER_MIN ?? "2"),
 } as const;
