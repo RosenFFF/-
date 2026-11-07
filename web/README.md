@@ -96,3 +96,7 @@ npm run test:e2e
 HTTP 501 始终显示 `功能暂未实现` / `Not implemented yet` / `Tính năng chưa được triển khai`（即便旧后端 code=MODEL_UNAVAILABLE），另可附请求编号。真实模式错误不触发 mock；Vitest 覆盖 HTTP 错误、网络故障、生产禁止 mock。
 
 这只是明确标注的 mock 视觉/自动可访问性验收，不是现实法律依据、真实 LLM 调用或生产合规能力证明。报告顶部独立显示模型验证状态，L3 明示「规则引擎回退，未完成真实 LLM 验证」（zh/en/vi），绝不从 L3 推断引用是合成。报告级规则来源只读取 security.source_kind/retrieval_mode；每条引用/展开条款/追问引用分别读取可选 source_kind、url、article、version_date。synthetic 显示「合成规则 · 非真实合规结论」，public 明示「公开摘要，非法规原文，不代表已通过合规验证」；缺失/未知类型或缺失字段逐项显示「来源信息缺失」，不猜 URL/日期，不解析 summary/source 自由文本。URL 只允许无内嵌凭据的绝对 HTTP(S)。当前后端 M1 工作区已提供引用扩展，但尚未并入本分支 v0.3.0 基线；规则详情等缺项见 reports/progress/frontend-m1-provenance.md。
+
+## 演示机真实生产包全链路
+
+见 `../docs/demo-machine-acceptance.md`。专用命令 `npm run test:demo-machine` 只在获准演示机执行；平台电脑禁止执行或绕过本机网络策略。该用例不使用旧 fixture，也不等同于既有 mock 视觉验收。

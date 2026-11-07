@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:demo-machine": "tsc -p tsconfig.e2e.json && playwright test --config playwright.demo-machine.config.ts",
     "test:e2e": "tsc -p tsconfig.e2e.json && playwright test",
     "check:prod-no-mock": "bash ../scripts/check-prod-no-mock.sh",
     "verify": "npm run lint && npm test && npm run test:prod-no-mock && npm run build",
