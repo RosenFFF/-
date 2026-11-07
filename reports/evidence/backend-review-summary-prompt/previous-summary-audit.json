@@ -1,0 +1,230 @@
+{
+  "samples": 20,
+  "summary_text_absent": 20,
+  "known_kept": 0,
+  "known_rebuilt": 0,
+  "decision_unknown": 20,
+  "known_kept_sample_ids": [],
+  "unknown_sample_ids": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+  ],
+  "model_calls": 0,
+  "details": [
+    {
+      "sample": 1,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 3
+    },
+    {
+      "sample": 2,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 2
+    },
+    {
+      "sample": 3,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 1
+    },
+    {
+      "sample": 4,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 4,
+      "retained_finding_count": 2
+    },
+    {
+      "sample": 5,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 2
+    },
+    {
+      "sample": 6,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 1
+    },
+    {
+      "sample": 7,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 2
+    },
+    {
+      "sample": 8,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 2
+    },
+    {
+      "sample": 9,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-HS",
+        "SYN-ORIGIN"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 2
+    },
+    {
+      "sample": 10,
+      "dropped_rule_ids": [
+        "SYN-ORIGIN"
+      ],
+      "unsupported_finding_count": 1,
+      "retained_finding_count": 2
+    },
+    {
+      "sample": 11,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-HS",
+        "SYN-ORIGIN"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 2
+    },
+    {
+      "sample": 12,
+      "dropped_rule_ids": [
+        "PUB-CN-DECLARATION",
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 4,
+      "retained_finding_count": 3
+    },
+    {
+      "sample": 13,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 2
+    },
+    {
+      "sample": 14,
+      "dropped_rule_ids": [
+        "PUB-CN-DECLARATION",
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 2
+    },
+    {
+      "sample": 15,
+      "dropped_rule_ids": [
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 2,
+      "retained_finding_count": 3
+    },
+    {
+      "sample": 16,
+      "dropped_rule_ids": [
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 2,
+      "retained_finding_count": 3
+    },
+    {
+      "sample": 17,
+      "dropped_rule_ids": [
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 1,
+      "retained_finding_count": 3
+    },
+    {
+      "sample": 18,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 4
+    },
+    {
+      "sample": 19,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 5
+    },
+    {
+      "sample": 20,
+      "dropped_rule_ids": [
+        "SYN-AMOUNT",
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ],
+      "unsupported_finding_count": 3,
+      "retained_finding_count": 4
+    }
+  ]
+}

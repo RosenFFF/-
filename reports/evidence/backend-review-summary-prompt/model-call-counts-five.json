@@ -1,0 +1,9 @@
+{
+  "model_http_calls_by_task": {
+    "field_extraction": 5,
+    "compliance_reasoning": 5
+  },
+  "model_http_status_counts": {
+    "200": 10
+  }
+}

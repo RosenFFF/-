@@ -1,0 +1,126 @@
+{
+  "sample": 1,
+  "expected_rule_ids": [
+    "SYN-REVIEW"
+  ],
+  "field_mismatch_keys": [
+    "goods_description"
+  ],
+  "finding_metadata": [
+    {
+      "determined_by": "rule",
+      "severity": "info",
+      "category": "other",
+      "field_keys": [],
+      "rule_ids": [
+        "SYN-REVIEW"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "info",
+      "category": "other",
+      "field_keys": [
+        "currency",
+        "goods_description",
+        "origin_country",
+        "total_amount"
+      ],
+      "rule_ids": [
+        "PUB-US-INVOICE"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "info",
+      "category": "other",
+      "field_keys": [
+        "goods_description",
+        "hs_code",
+        "origin_country",
+        "quantity",
+        "total_amount"
+      ],
+      "rule_ids": [
+        "PUB-CN-DECLARATION"
+      ]
+    }
+  ],
+  "review_completed": true,
+  "model_output_captured": true,
+  "recognition_level": "L0",
+  "upload_extraction_ms": 2852,
+  "condition_flags": {
+    "SYN-AMOUNT": false,
+    "SYN-HS": false,
+    "SYN-ORIGIN": false,
+    "SYN-REQUIRED": false,
+    "SYN-RESTRICTED": false
+  },
+  "deterministic_rule_ids": [
+    "SYN-REVIEW"
+  ],
+  "summary_rebuilt": false,
+  "summary_text_persisted": false,
+  "dropped_rule_ids": [],
+  "post_filter_metadata": [
+    {
+      "determined_by": "rule",
+      "severity": "info",
+      "category": "other",
+      "field_keys": [],
+      "rule_ids": [
+        "SYN-REVIEW"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "info",
+      "category": "other",
+      "field_keys": [
+        "currency",
+        "goods_description",
+        "origin_country",
+        "total_amount"
+      ],
+      "rule_ids": [
+        "PUB-US-INVOICE"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "info",
+      "category": "other",
+      "field_keys": [
+        "goods_description",
+        "hs_code",
+        "origin_country",
+        "quantity",
+        "total_amount"
+      ],
+      "rule_ids": [
+        "PUB-CN-DECLARATION"
+      ]
+    }
+  ],
+  "model_output_filter": {
+    "duplicate_citations_removed": 0
+  },
+  "review_level": "L0",
+  "llm_verified": true,
+  "upload_review_ms": 7321,
+  "traces": [
+    {
+      "provider": "deepseek",
+      "task": "field_extraction",
+      "status": "ok",
+      "latency_ms": 1677
+    },
+    {
+      "provider": "deepseek",
+      "task": "compliance_reasoning",
+      "status": "ok",
+      "latency_ms": 4359
+    }
+  ]
+}

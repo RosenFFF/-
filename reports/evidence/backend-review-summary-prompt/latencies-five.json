@@ -1,0 +1,16 @@
+{
+  "upload_extraction_ms": {
+    "n": 5,
+    "p50": 2196,
+    "p95": 2852,
+    "max": 2852,
+    "method": "nearest-rank"
+  },
+  "upload_review_ms": {
+    "n": 5,
+    "p50": 6080,
+    "p95": 7321,
+    "max": 7321,
+    "method": "nearest-rank"
+  }
+}

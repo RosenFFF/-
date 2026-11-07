@@ -1,0 +1,19 @@
+{
+  "baseline": "c8c9a00009612a7fec60b44193795d9a9ac8180c",
+  "checked_at": "2026-11-07T02:09:27.823065-08:00",
+  "database": "PostgreSQL",
+  "schema": "st143_dsc8_browser_b67f8909565b4a5f9957ffc536156f52",
+  "runtime_role": "m3_runtime",
+  "runtime_superuser_or_bypassrls": false,
+  "startup_gate": "unmodified check_migrated + check_runtime_access; passed",
+  "seeding": "fresh schema + scoped _seed",
+  "redis": "real redis.asyncio.Redis",
+  "redis_ping": true,
+  "redis_database": 12,
+  "task_mode": "inline",
+  "ocr": "actual RapidOCR; not quick_ocr",
+  "llm": "actual ProviderChain; no FakeLLM; DeepSeek key injected from private env into this process only (value withheld)",
+  "demo_mode": false,
+  "sqlite_or_fakeredis_fallback": false,
+  "production_deployment": false
+}

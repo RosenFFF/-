@@ -1,0 +1,17 @@
+{
+  "ruff": "passed",
+  "regression": {
+    "passed": 430,
+    "skipped": 7,
+    "seconds": 99.08,
+    "paid_opt_ins": false
+  },
+  "targeted_offline": {
+    "passed": 24,
+    "seconds": 0.06
+  },
+  "bandit_app_eval_findings": 0,
+  "gitleaks_worktree_findings": 0,
+  "actual_key_hit_count": 0,
+  "final_commit_range_receipt": "/workspace/competition/backend-review-summary-prompt-evidence/gitleaks-range.json"
+}
