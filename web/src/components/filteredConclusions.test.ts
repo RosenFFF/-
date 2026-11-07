@@ -5,6 +5,7 @@ import i18n from "../i18n";
 import en from "../i18n/en.json";
 import vi from "../i18n/vi.json";
 import zh from "../i18n/zh.json";
+import { unsupportedFindingCount } from "../api/modelOutputFilter";
 import { FilteredConclusions } from "./FilteredConclusions";
 
 function markup(security: unknown) {
@@ -34,6 +35,20 @@ describe("filtered conclusions line", () => {
     expect(html).not.toContain("degrade-strip");
     expect(html).not.toContain("tabindex");
     expect(html).not.toContain('role="status"');
+  });
+
+  it("hides both semantic zero and a missing filter dictionary", () => {
+    const presentZero = { model_output_filter: {} };
+    const duplicateOnly = { model_output_filter: { duplicate_finding: 5, duplicate_citations_removed: 2 } };
+    const missing = {};
+    expect(unsupportedFindingCount(presentZero)).toEqual({ kind: "zero" });
+    expect(unsupportedFindingCount(duplicateOnly)).toEqual({ kind: "zero" });
+    expect(unsupportedFindingCount(missing)).toEqual({ kind: "absent" });
+    expect(unsupportedFindingCount({ model_output_filter: null })).toEqual({ kind: "null" });
+    expect(unsupportedFindingCount({ model_output_filter: [] })).toEqual({ kind: "invalid" });
+    for (const security of [presentZero, duplicateOnly, missing, { model_output_filter: null }, { model_output_filter: [] }]) {
+      expect(markup(security), JSON.stringify(security)).toBe("");
+    }
   });
 
   it("hides zero and every non-count payload", () => {

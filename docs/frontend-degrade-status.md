@@ -16,9 +16,9 @@
 | `duplicate_finding` | 引用已全被确定性结论覆盖而被丢掉的重复项 | 不展示 |
 | `duplicate_citations_removed` | 保留项上删掉的重复引用数 | 不展示 |
 
-`security.invalid_citations_dropped`、`output_checks_passed`、`finding_counts` 都不是这个 N。过滤函数没加过的键不会出现；空字典表示没有计入任何一类，不等于显式 0。
+`security.invalid_citations_dropped`、`output_checks_passed`、`finding_counts` 都不是这个 N。后端字典只保留大于 0 的键。因此 `{}`，以及只有 `duplicate_finding` / `duplicate_citations_removed` 的字典，表示无依据结论条数为 0，不是「没有证据」。整个 `model_output_filter` 缺失才表示没有可用的模型结果或过滤证据，不能当成 0。`null` 字典仍是 null。数组、数字等非对象，以及 `unsupported_finding` 本身为负数、小数、字符串、非有限数或其他畸形值，都是 invalid，不能当成 0。
 
-只渲染有限、非负、安全整数且大于 0 的 `unsupported_finding`。显式 `0` 与 `-0` 识别为 0 并隐藏：这句话是在说明丢掉了结论，0 会读成清场。缺字段、`null`、负数、小数、字符串、非有限数、布尔、数组和其他畸形值都不显示，也不改写成 0。文案只有「已过滤 N 条无依据的模型结论」及其英越对应句，不说剩余结论已通过法律或合规验证。这一行在审查结果列表上方，不放进降级状态条，也不使用降级字段。
+界面只在 N 为正的安全整数时写出「已过滤 N 条无依据的模型结论」及其英越对应句。显式 0、由缺键得到的 0，以及 absent / null / invalid，都不渲染。空字典和缺字典看起来一样，内部结果分别是 zero 和 absent。这句不说剩余结论已通过法律或合规验证，不放进降级状态条，也不使用降级字段。
 
 ## 降级状态条
 
@@ -65,4 +65,4 @@ L0 文案是云端模型，L1 是备用云端模型，L3 是规则引擎并且�
 4. 在 1280 和 390 宽度看抽取、报告、追问、模型链路：状态条换行，文字不被裁切，导航可点区域不小于 44px。
 5. 用一份抽取为 L3、审查为 L0（或实际返回的其他组合）、追问轨迹为另一个模型的真实响应，确认三处文案各自跟随自己的字段，且模型页的当前健康不改写那份报告。
 6. 若响应里的 `degrade_level` 确为 L2，来源行应出现该条轨迹或健康条目中的模型名，并同时看到「不是已验收的离线能力」。没有 L2 字段时不得出现 L2。
-7. 完成的审查若 `security.model_output_filter.unsupported_finding` 为正整数，结果列表上方只出现该数字的过滤句。显式 0、缺字段，以及只有 `duplicate_finding` 时不出现这句。这句不在降级条内，也不写剩余结论已通过验证。
+7. 完成的审查若 `security.model_output_filter.unsupported_finding` 为正整数，结果列表上方只出现该数字的过滤句。显式 0、空字典、只有 `duplicate_finding` 的字典，以及整个字典缺失，都不出现这句。前三种内部是 0，字典缺失不是 0。这句不在降级条内，也不写剩余结论已通过验证。

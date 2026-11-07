@@ -3,8 +3,9 @@ import { unsupportedFindingCount } from "../api/modelOutputFilter";
 
 /**
  * One line for dropped ungrounded model conclusions on this review.
- * Explicit zero is hidden: the sentence is a disclosure of drops, and a zero
- * would read as a clearance. Missing and malformed values render nothing.
+ * Zero is hidden, including an explicit 0 and a present filter dict that omits
+ * unsupported_finding. A missing dictionary is not zero, and it is also hidden.
+ * Malformed values render nothing. The sentence is a disclosure of drops.
  * Not a live region and not part of the degrade strip.
  */
 export function FilteredConclusions({ security }: { security: unknown }) {

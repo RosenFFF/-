@@ -2,10 +2,10 @@
  * Review response path, from c8c9a00 review_out:
  * security.model_output_filter.unsupported_finding
  *
- * filter_model_findings increments unsupported_finding once per model finding
- * dropped because a cited synthetic precondition was not true.
- * duplicate_finding and duplicate_citations_removed are different counters and
- * are never read. Other security fields are not this count.
+ * filter_model_findings stores only keys whose count is greater than zero.
+ * A real dictionary without unsupported_finding therefore means zero dropped
+ * ungrounded conclusions. A missing dictionary means the filter did not run.
+ * duplicate_finding and duplicate_citations_removed are never read.
  */
 
 export type FilterCount =
@@ -28,11 +28,12 @@ export function unsupportedFindingCount(security: unknown): FilterCount {
   const filter = security.model_output_filter;
   if (filter === undefined) return { kind: "absent" };
   if (filter === null) return { kind: "null" };
-  if (!isRecord(filter) || !Object.prototype.hasOwnProperty.call(filter, "unsupported_finding")) {
-    return isRecord(filter) ? { kind: "absent" } : { kind: "invalid" };
+  if (!isRecord(filter)) return { kind: "invalid" };
+  // Backend omits zero counts. A present dict without this key is zero, not "unknown".
+  if (!Object.prototype.hasOwnProperty.call(filter, "unsupported_finding")) {
+    return { kind: "zero" };
   }
   const value = filter.unsupported_finding;
-  if (value === undefined) return { kind: "absent" };
   if (value === null) return { kind: "null" };
   if (typeof value !== "number" || !Number.isFinite(value) || !Number.isSafeInteger(value) || value < 0) {
     return { kind: "invalid" };
