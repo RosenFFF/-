@@ -128,3 +128,30 @@ async def test_input_budget_bounds_cloud_context_without_network(tmp_path):
     )
     result = await client.chat_json([{"role": "user", "content": "x" * 1001}], Extraction, task="field_extraction")
     assert result.value is None and result.degrade_level == "L3"
+
+
+@pytest.mark.parametrize("outcome", ["success", "not_found", "malformed", "unauthorized"])
+async def test_cloud_alias_health_requires_real_completion_and_caches(tmp_path, outcome):
+    calls = []
+
+    def handler(request):
+        calls.append((request.method, request.url.path))
+        if request.method == "GET":
+            if outcome == "unauthorized":
+                return httpx.Response(401)
+            return httpx.Response(200, json={"data": [{"id": "canonical-model"}]})
+        body = json.loads(request.content)
+        assert body["model"] == "deepseek-chat" and body["max_tokens"] == 1
+        if outcome == "not_found":
+            return httpx.Response(404)
+        if outcome == "malformed":
+            return httpx.Response(200, json={"choices": []})
+        return httpx.Response(200, json={"choices": [{"message": {"content": "OK"}}]})
+
+    client = ProviderChain(
+        make_settings(tmp_path, llm_provider_chain=["deepseek"], deepseek_api_key="fixture"),
+        transport=httpx.MockTransport(handler),
+    )
+    assert (await client.health())[0]["healthy"] is (outcome == "success")
+    assert (await client.health())[0]["healthy"] is (outcome == "success")
+    assert calls == [("GET", "/v1/models")] + ([] if outcome == "unauthorized" else [("POST", "/v1/chat/completions")])
