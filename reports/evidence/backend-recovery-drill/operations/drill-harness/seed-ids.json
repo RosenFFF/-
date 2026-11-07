@@ -1,0 +1,12 @@
+{
+  "a": {
+    "tenant": "81ae596b-824c-4729-bfef-74396bd73fcd",
+    "user": "f2c6b212-a34d-4cf7-8bcc-ad1fd7d055d3",
+    "document": "a118cc49-113e-4504-b1bf-9b4d4fce3982"
+  },
+  "b": {
+    "tenant": "ed4d44be-0b6f-4b73-9204-2550163c5f1a",
+    "user": "8ec3d587-437b-4bdb-a1af-d77580691507",
+    "document": "0f325bbc-c922-4055-a137-cc6e5468905c"
+  }
+}

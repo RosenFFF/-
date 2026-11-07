@@ -1,0 +1,215 @@
+INFO:     Started server process [1344197]
+INFO:     Waiting for application startup.
+Context impl PostgresqlImpl.
+Will assume transactional DDL.
+Running upgrade  -> 0001_m2_initial, Frozen initial schema for M0/M1/M2, including encrypted fields, snapshots and SSE history.
+Running upgrade 0001_m2_initial -> 0002_m2_tenant_rls, Fail-closed PostgreSQL tenant/owner RLS; SQLite has no equivalent.
+Running upgrade 0002_m2_tenant_rls -> 0003_m2_auth_audit_context, Narrow pre-auth SELECT capability and platform-private audit chain.
+Context impl PostgresqlImpl.
+Will assume transactional DDL.
+Context impl PostgresqlImpl.
+Will assume transactional DDL.
+INFO:     Application startup complete.
+{"status": 200, "event": "request", "method": "POST", "request_id": "3c69cd72d1a2474fb544363ecdfc7f85", "path": "/api/v1/auth/login", "level": "info", "timestamp": "2026-11-07T10:42:53.379628Z"}
+{"status": 200, "event": "request", "method": "POST", "request_id": "60c57a64f29349c2b79edeef7b85ac49", "path": "/api/v1/auth/login", "level": "info", "timestamp": "2026-11-07T10:42:53.478370Z"}
+{"status": 200, "event": "request", "method": "GET", "request_id": "6c9e26865761403da61e72817cc5abd5", "path": "/api/v1/readyz", "level": "info", "timestamp": "2026-11-07T10:42:54.157678Z"}
+{"status": 200, "event": "request", "method": "POST", "request_id": "5efc73e51b3d449a9bd9a04402c1fd60", "path": "/api/v1/auth/login", "level": "info", "timestamp": "2026-11-07T10:42:54.237982Z"}
+{"status": 200, "event": "request", "method": "POST", "request_id": "c1a1d29d48f54e7fb499980464a43706", "path": "/api/v1/auth/login", "level": "info", "timestamp": "2026-11-07T10:42:54.323750Z"}
+{"status": 200, "event": "request", "method": "GET", "request_id": "0b08aeccc9f14949b628be5a5c1c2bc2", "path": "/api/v1/system/models", "level": "info", "timestamp": "2026-11-07T10:42:54.348335Z"}
+{"status": 200, "event": "request", "method": "GET", "request_id": "2a6ca348e1264449ba7f55f6204faf66", "path": "/api/v1/documents/a118cc49-113e-4504-b1bf-9b4d4fce3982", "level": "info", "timestamp": "2026-11-07T10:42:54.367630Z"}
+{"status": 404, "event": "request", "method": "GET", "request_id": "e04811daa9ed42a695b7e255b0f4016b", "path": "/api/v1/documents/0f325bbc-c922-4055-a137-cc6e5468905c", "level": "info", "timestamp": "2026-11-07T10:42:54.373109Z"}
+{"status": 200, "event": "request", "method": "GET", "request_id": "a7730df04068493f86c460b2c958c6e9", "path": "/api/v1/documents/0f325bbc-c922-4055-a137-cc6e5468905c", "level": "info", "timestamp": "2026-11-07T10:42:54.378469Z"}
+{"status": 404, "event": "request", "method": "GET", "request_id": "c3c6ba333cc14b9f8df44aa5e5bcf71f", "path": "/api/v1/documents/a118cc49-113e-4504-b1bf-9b4d4fce3982", "level": "info", "timestamp": "2026-11-07T10:42:54.383909Z"}
+{"status": 405, "event": "request", "method": "POST", "request_id": "1f1e85973a1c4120afa52afc41d554f3", "path": "/api/v1/documents/upload", "level": "info", "timestamp": "2026-11-07T10:42:54.395071Z"}
+{"status": 422, "event": "request", "method": "POST", "request_id": "724fbd8ebbd44bb29e61b39febe569a4", "path": "/api/v1/reviews", "level": "info", "timestamp": "2026-11-07T10:42:54.401597Z"}
+{"status": 503, "event": "request", "method": "GET", "request_id": "142edab909d748ac98ca78ce4827f2d3", "path": "/api/v1/readyz", "level": "info", "timestamp": "2026-11-07T10:42:54.438591Z"}
+{"status": 503, "event": "request", "method": "POST", "request_id": "6a8978d4656c4860a07131add5536070", "path": "/api/v1/auth/login", "level": "info", "timestamp": "2026-11-07T10:42:54.441123Z"}
+{"status": 503, "event": "request", "method": "POST", "request_id": "1da724624d484890b7d4f4b19d6c298e", "path": "/api/v1/auth/login", "level": "info", "timestamp": "2026-11-07T10:42:54.443364Z"}
+{"status": 200, "event": "request", "method": "GET", "request_id": "ce733697a62d497c9e28937fddbf7707", "path": "/api/v1/system/models", "level": "info", "timestamp": "2026-11-07T10:42:54.451287Z"}
+{"status": 200, "event": "request", "method": "GET", "request_id": "126eafc03ecd4618bdbb1295ee98ef5e", "path": "/api/v1/documents/a118cc49-113e-4504-b1bf-9b4d4fce3982", "level": "info", "timestamp": "2026-11-07T10:42:54.456043Z"}
+{"status": 404, "event": "request", "method": "GET", "request_id": "8333197e0ba94a69943d8bdcd7b1ba7a", "path": "/api/v1/documents/0f325bbc-c922-4055-a137-cc6e5468905c", "level": "info", "timestamp": "2026-11-07T10:42:54.462328Z"}
+{"status": 200, "event": "request", "method": "GET", "request_id": "87753a97dcef4d40ad37647c36719b97", "path": "/api/v1/documents/0f325bbc-c922-4055-a137-cc6e5468905c", "level": "info", "timestamp": "2026-11-07T10:42:54.467529Z"}
+{"status": 404, "event": "request", "method": "GET", "request_id": "8aa4ffcdc2914a8fa155d4e196fe7446", "path": "/api/v1/documents/a118cc49-113e-4504-b1bf-9b4d4fce3982", "level": "info", "timestamp": "2026-11-07T10:42:54.473657Z"}
+{"status": 405, "event": "request", "method": "POST", "request_id": "0a43e13da297471c9cd9a0c4efe86d34", "path": "/api/v1/documents/upload", "level": "info", "timestamp": "2026-11-07T10:42:54.475454Z"}
+{"status": 503, "event": "request", "method": "POST", "request_id": "aa59f95a27434079b21a1d1bb5060c26", "path": "/api/v1/reviews", "level": "info", "timestamp": "2026-11-07T10:42:54.481346Z"}
+{"status": 200, "event": "request", "method": "GET", "request_id": "d316dd3358d046e8b1b3022d3ff71506", "path": "/api/v1/readyz", "level": "info", "timestamp": "2026-11-07T10:42:54.592230Z"}
+{"status": 200, "event": "request", "method": "GET", "request_id": "997e99f4f9964b69adeb617e72a8edfd", "path": "/api/v1/readyz", "level": "info", "timestamp": "2026-11-07T10:42:54.596850Z"}
+{"status": 200, "event": "request", "method": "POST", "request_id": "891b5784526d44f892f9ce840fd36691", "path": "/api/v1/auth/login", "level": "info", "timestamp": "2026-11-07T10:42:54.676806Z"}
+{"status": 200, "event": "request", "method": "POST", "request_id": "ad18b5cf66a04bf090c00f95841f0eb3", "path": "/api/v1/auth/login", "level": "info", "timestamp": "2026-11-07T10:42:54.760666Z"}
+{"status": 200, "event": "request", "method": "GET", "request_id": "e822ec1117ca44efa0d619011018a43e", "path": "/api/v1/system/models", "level": "info", "timestamp": "2026-11-07T10:42:54.768929Z"}
+{"status": 200, "event": "request", "method": "GET", "request_id": "ff532104a026495eb7a26260480f00ef", "path": "/api/v1/documents/a118cc49-113e-4504-b1bf-9b4d4fce3982", "level": "info", "timestamp": "2026-11-07T10:42:54.774362Z"}
+{"status": 404, "event": "request", "method": "GET", "request_id": "8f51dfdea43d4b099df9d4bf78132912", "path": "/api/v1/documents/0f325bbc-c922-4055-a137-cc6e5468905c", "level": "info", "timestamp": "2026-11-07T10:42:54.779582Z"}
+{"status": 200, "event": "request", "method": "GET", "request_id": "24852593c973431b98ee87fb2c344f0a", "path": "/api/v1/documents/0f325bbc-c922-4055-a137-cc6e5468905c", "level": "info", "timestamp": "2026-11-07T10:42:54.785160Z"}
+{"status": 404, "event": "request", "method": "GET", "request_id": "4e2bebc36a4248ed800c7ff2188a89fb", "path": "/api/v1/documents/a118cc49-113e-4504-b1bf-9b4d4fce3982", "level": "info", "timestamp": "2026-11-07T10:42:54.791112Z"}
+{"status": 405, "event": "request", "method": "POST", "request_id": "787e832018644646b43a2a524a48f3a9", "path": "/api/v1/documents/upload", "level": "info", "timestamp": "2026-11-07T10:42:54.792861Z"}
+{"status": 422, "event": "request", "method": "POST", "request_id": "cf2019a7e7014747a217a686f5fa3027", "path": "/api/v1/reviews", "level": "info", "timestamp": "2026-11-07T10:42:54.798150Z"}
+{"status": 503, "event": "request", "method": "GET", "request_id": "871efbd81f43432eb15cfed756a126f0", "path": "/api/v1/readyz", "level": "info", "timestamp": "2026-11-07T10:42:54.908489Z"}
+{"path": "/api/v1/auth/login", "event": "unhandled_error", "method": "POST", "request_id": "0ec1a4a42fe54dbab0a95eb795f28bf7", "level": "error", "timestamp": "2026-11-07T10:42:54.913071Z"}
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/fastapi/applications.py", line 1194, in __call__
+    await super().__call__(scope, receive, send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-c75f877-src/backend/app/main.py", line 161, in request_context
+    resp = await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 91, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 149, in simple_response
+    await self.app(scope, receive, send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/routing.py", line 683, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 2811, in app
+    await route.handle(scope, receive, send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 1839, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 2894, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 1865, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 1328, in handle
+    await effective_context.app(scope, receive, send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 166, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 152, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 745, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 372, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-c75f877-src/backend/app/api/v1/auth.py", line 60, in login
+    candidate = await c.db.login_candidate(body.username)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-c75f877-src/backend/app/db/base.py", line 155, in login_candidate
+    async with self.engine.begin() as c:
+               ^^^^^^^^^^^^^^^^^^^
+  File "/home/box/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1086, in begin
+    async with conn:
+               ^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 152, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 283, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/util/concurrency.py", line 210, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3279, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 154, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3303, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 445, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1340, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 718, in checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    dbapi_connection = rec.get_connection()
+                       ^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 893, in get_connection
+    self.__connect()
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 932, in __connect
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 928, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 869, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 967, in connect
+    return await_(
+           ^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/util/concurrency.py", line 167, in await_
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/util/concurrency.py", line 205, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/connectors/asyncio.py", line 378, in create
+    cls._handle_exception_no_connection(dbapi, error)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 841, in _handle_exception_no_connection
+    super()._handle_exception_no_connection(dbapi, error)
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/connectors/asyncio.py", line 409, in _handle_exception_no_connection
+    raise error.with_traceback(exc_info[2])
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/sqlalchemy/connectors/asyncio.py", line 376, in create
+    connection = await connection_awaitable
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2498, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1307, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1278, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1092, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1162, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/workspace/competition/live-deepseek-71311f4-src/backend/.venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 996, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2040, in create_connection
+  File "uvloop/loop.pyx", line 2017, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [1344197]

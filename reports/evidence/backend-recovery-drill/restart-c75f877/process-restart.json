@@ -1,0 +1,7 @@
+{
+  "old_pid": 1047443,
+  "old_source": "c8c9a00",
+  "cmdline_and_cwd_verified": true,
+  "signal": "SIGTERM",
+  "exit_verified_by_pidfd": true
+}

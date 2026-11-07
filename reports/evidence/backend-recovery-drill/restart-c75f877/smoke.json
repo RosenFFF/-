@@ -1,0 +1,19 @@
+{
+  "source_commit": "c75f877e09decd1b598c26f25e6b70e8742660d7",
+  "new_pid": 1341808,
+  "bind_host": "127.0.0.1",
+  "port": 8002,
+  "readyz_status": 200,
+  "login_status": 200,
+  "models_status": 200,
+  "degrade_level": "L0",
+  "deepseek_healthy": true,
+  "origin": "https://localhost:5173",
+  "cookie_secure_config_preserved": true,
+  "environment_proof_mode": "0o600",
+  "probe_scope": "health probe only; readiness and models share the 15-second health cache",
+  "reviews": 0,
+  "chat_calls": 0,
+  "elapsed_ms": 1592,
+  "browser_e2e": false
+}

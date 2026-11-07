@@ -1,0 +1,20 @@
+{
+  "ruff": "passed",
+  "regression": {
+    "passed": 487,
+    "skipped": 7,
+    "seconds": 118.81,
+    "paid_opt_ins": false
+  },
+  "targeted": {
+    "passed": 8,
+    "seconds": 4.43
+  },
+  "bandit_app_eval_findings": 0,
+  "actual_live_model_inference_posts": 2,
+  "normal_content_inference_calls": 0,
+  "shared_service_restarts": 0,
+  "range_receipt_external": "/workspace/competition/backend-recovery-drill-evidence/gitleaks-range.json",
+  "gitleaks_worktree_findings": 0,
+  "actual_key_hit_count": 0
+}

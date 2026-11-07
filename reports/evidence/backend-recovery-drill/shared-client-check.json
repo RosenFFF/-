@@ -1,0 +1,23 @@
+{
+  "pg_client_count": 2,
+  "pg_groups": [
+    {
+      "usename": "m3_runtime",
+      "datname": "st143_m2_test_m3",
+      "application_name": "<unnamed>",
+      "count": 2
+    }
+  ],
+  "query_schema_markers_only": {},
+  "redis_client_count": 2,
+  "redis_groups": [
+    {
+      "db": "12",
+      "name": "<unnamed>",
+      "count": 2
+    }
+  ],
+  "unattributed_clients_present": true,
+  "decision": "DO NOT restart shared services; conservative attribution; dedicated 5433/6380/8003 only",
+  "shared_service_restarts": 0
+}

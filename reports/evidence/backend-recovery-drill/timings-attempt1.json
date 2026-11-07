@@ -1,0 +1,482 @@
+{
+  "target": "dedicated c75f877 API8003, PG5433, Redis6380; 8002 untouched during faults",
+  "shared_service_restarts": 0,
+  "faults": [
+    {
+      "fault": "redis",
+      "during": {
+        "name": "redis-during",
+        "same_pid": true,
+        "readyz": {
+          "http_status": 503,
+          "error_body": {
+            "status": "not_ready"
+          },
+          "body": {
+            "status": "not_ready",
+            "degrade_level": "L0",
+            "checks": {
+              "database": {
+                "ok": true,
+                "latency_ms": 1,
+                "detail": null
+              },
+              "redis": {
+                "ok": false,
+                "latency_ms": null,
+                "detail": "unreachable"
+              },
+              "ocr": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "rapidocr-ppocrv4"
+              },
+              "llm": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "deepseek-flash, qwen2.5:7b"
+              },
+              "embedding": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "feature-hash-128 (lightweight, not BGE)"
+              },
+              "reranker": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "token-overlap-v1 (lightweight, not BGE)"
+              }
+            }
+          }
+        },
+        "logins": {
+          "a": {
+            "http_status": 503,
+            "error_body": {
+              "type": "about:blank",
+              "title": "\u9650\u6d41\u670d\u52a1\u6682\u4e0d\u53ef\u7528\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5",
+              "status": 503,
+              "code": "RATE_LIMIT_UNAVAILABLE"
+            }
+          },
+          "b": {
+            "http_status": 503,
+            "error_body": {
+              "type": "about:blank",
+              "title": "\u9650\u6d41\u670d\u52a1\u6682\u4e0d\u53ef\u7528\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5",
+              "status": 503,
+              "code": "RATE_LIMIT_UNAVAILABLE"
+            }
+          }
+        },
+        "models": {
+          "http_status": 200,
+          "degrade_level": "L0",
+          "llm": [
+            {
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "healthy": true,
+              "circuit_open": false
+            },
+            {
+              "provider": "qwen",
+              "model": "qwen-plus",
+              "healthy": false,
+              "circuit_open": false
+            },
+            {
+              "provider": "ollama",
+              "model": "qwen2.5:7b",
+              "healthy": true,
+              "circuit_open": false
+            }
+          ]
+        },
+        "reads": {
+          "a": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "\u5355\u8bc1\u4e0d\u5b58\u5728",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          },
+          "b": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "\u5355\u8bc1\u4e0d\u5b58\u5728",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          }
+        },
+        "invalid_upload_no_inference": {
+          "http_status": 405,
+          "error_body": {
+            "type": "about:blank",
+            "title": "Method Not Allowed",
+            "status": 405,
+            "code": "NOT_FOUND"
+          }
+        },
+        "invalid_review_no_inference": {
+          "http_status": 503,
+          "error_body": {
+            "type": "about:blank",
+            "title": "\u9650\u6d41\u670d\u52a1\u6682\u4e0d\u53ef\u7528\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5",
+            "status": 503,
+            "code": "RATE_LIMIT_UNAVAILABLE"
+          }
+        },
+        "direct_rls": {
+          "database_available": true,
+          "runtime_role": "m3_runtime",
+          "unsafe_role_attributes": false,
+          "force_rls_all_four": true,
+          "unscoped_visible_count": 0,
+          "tenant_checks": {
+            "a": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            },
+            "b": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            }
+          },
+          "passed": true
+        }
+      },
+      "ready_recovery_seconds": 0.106,
+      "recovery_polls": [
+        {
+          "elapsed_ms": 106,
+          "http_status": 200,
+          "degrade_level": "L0"
+        }
+      ],
+      "after": {
+        "name": "redis-after",
+        "same_pid": true,
+        "readyz": {
+          "http_status": 200,
+          "body": {
+            "status": "ready",
+            "degrade_level": "L0",
+            "checks": {
+              "database": {
+                "ok": true,
+                "latency_ms": 1,
+                "detail": null
+              },
+              "redis": {
+                "ok": true,
+                "latency_ms": 0,
+                "detail": null
+              },
+              "ocr": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "rapidocr-ppocrv4"
+              },
+              "llm": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "deepseek-flash, qwen2.5:7b"
+              },
+              "embedding": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "feature-hash-128 (lightweight, not BGE)"
+              },
+              "reranker": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "token-overlap-v1 (lightweight, not BGE)"
+              }
+            }
+          }
+        },
+        "logins": {
+          "a": {
+            "http_status": 200
+          },
+          "b": {
+            "http_status": 200
+          }
+        },
+        "models": {
+          "http_status": 200,
+          "degrade_level": "L0",
+          "llm": [
+            {
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "healthy": true,
+              "circuit_open": false
+            },
+            {
+              "provider": "qwen",
+              "model": "qwen-plus",
+              "healthy": false,
+              "circuit_open": false
+            },
+            {
+              "provider": "ollama",
+              "model": "qwen2.5:7b",
+              "healthy": true,
+              "circuit_open": false
+            }
+          ]
+        },
+        "reads": {
+          "a": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "\u5355\u8bc1\u4e0d\u5b58\u5728",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          },
+          "b": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "\u5355\u8bc1\u4e0d\u5b58\u5728",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          }
+        },
+        "invalid_upload_no_inference": {
+          "http_status": 405,
+          "error_body": {
+            "type": "about:blank",
+            "title": "Method Not Allowed",
+            "status": 405,
+            "code": "NOT_FOUND"
+          }
+        },
+        "invalid_review_no_inference": {
+          "http_status": 422,
+          "error_body": {
+            "type": "about:blank",
+            "title": "\u53c2\u6570\u6821\u9a8c\u5931\u8d25",
+            "status": 422,
+            "code": "VALIDATION_FAILED",
+            "errors": [
+              {
+                "field": "document_ids",
+                "message": "List should have at least 1 item after validation, not 0"
+              }
+            ]
+          }
+        },
+        "direct_rls": {
+          "database_available": true,
+          "runtime_role": "m3_runtime",
+          "unsafe_role_attributes": false,
+          "force_rls_all_four": true,
+          "unscoped_visible_count": 0,
+          "tenant_checks": {
+            "a": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            },
+            "b": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            }
+          },
+          "passed": true
+        }
+      },
+      "full_observation_seconds": 0.316,
+      "automatic_recovery_without_api_restart": true
+    }
+  ],
+  "drill_cloud_model": "deepseek-flash",
+  "model_selection": "actual listed canonical ID; health GET needs no paid alias inference; 8002 keeps original configured alias",
+  "api_pid": 1344197,
+  "baseline": {
+    "name": "baseline",
+    "same_pid": true,
+    "readyz": {
+      "http_status": 200,
+      "body": {
+        "status": "ready",
+        "degrade_level": "L0",
+        "checks": {
+          "database": {
+            "ok": true,
+            "latency_ms": 1,
+            "detail": null
+          },
+          "redis": {
+            "ok": true,
+            "latency_ms": 0,
+            "detail": null
+          },
+          "ocr": {
+            "ok": true,
+            "latency_ms": null,
+            "detail": "rapidocr-ppocrv4"
+          },
+          "llm": {
+            "ok": true,
+            "latency_ms": null,
+            "detail": "deepseek-flash, qwen2.5:7b"
+          },
+          "embedding": {
+            "ok": true,
+            "latency_ms": null,
+            "detail": "feature-hash-128 (lightweight, not BGE)"
+          },
+          "reranker": {
+            "ok": true,
+            "latency_ms": null,
+            "detail": "token-overlap-v1 (lightweight, not BGE)"
+          }
+        }
+      }
+    },
+    "logins": {
+      "a": {
+        "http_status": 200
+      },
+      "b": {
+        "http_status": 200
+      }
+    },
+    "models": {
+      "http_status": 200,
+      "degrade_level": "L0",
+      "llm": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "healthy": true,
+          "circuit_open": false
+        },
+        {
+          "provider": "qwen",
+          "model": "qwen-plus",
+          "healthy": false,
+          "circuit_open": false
+        },
+        {
+          "provider": "ollama",
+          "model": "qwen2.5:7b",
+          "healthy": true,
+          "circuit_open": false
+        }
+      ]
+    },
+    "reads": {
+      "a": {
+        "own": {
+          "http_status": 200
+        },
+        "cross": {
+          "http_status": 404,
+          "error_body": {
+            "type": "about:blank",
+            "title": "\u5355\u8bc1\u4e0d\u5b58\u5728",
+            "status": 404,
+            "code": "NOT_FOUND"
+          }
+        }
+      },
+      "b": {
+        "own": {
+          "http_status": 200
+        },
+        "cross": {
+          "http_status": 404,
+          "error_body": {
+            "type": "about:blank",
+            "title": "\u5355\u8bc1\u4e0d\u5b58\u5728",
+            "status": 404,
+            "code": "NOT_FOUND"
+          }
+        }
+      }
+    },
+    "invalid_upload_no_inference": {
+      "http_status": 405,
+      "error_body": {
+        "type": "about:blank",
+        "title": "Method Not Allowed",
+        "status": 405,
+        "code": "NOT_FOUND"
+      }
+    },
+    "invalid_review_no_inference": {
+      "http_status": 422,
+      "error_body": {
+        "type": "about:blank",
+        "title": "\u53c2\u6570\u6821\u9a8c\u5931\u8d25",
+        "status": 422,
+        "code": "VALIDATION_FAILED",
+        "errors": [
+          {
+            "field": "document_ids",
+            "message": "List should have at least 1 item after validation, not 0"
+          }
+        ]
+      }
+    },
+    "direct_rls": {
+      "database_available": true,
+      "runtime_role": "m3_runtime",
+      "unsafe_role_attributes": false,
+      "force_rls_all_four": true,
+      "unscoped_visible_count": 0,
+      "tenant_checks": {
+        "a": {
+          "visible_count": 1,
+          "own_visible": true,
+          "other_visible": false
+        },
+        "b": {
+          "visible_count": 1,
+          "own_visible": true,
+          "other_visible": false
+        }
+      },
+      "passed": true
+    }
+  },
+  "owned_drill_services_cleaned_up": true,
+  "completed": false,
+  "failure_stage": "postgres",
+  "failure_class": "ReadError"
+}

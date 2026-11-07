@@ -1,0 +1,1028 @@
+{
+  "drill_targets": {
+    "pg": 5433,
+    "redis": 6380,
+    "api": 8003,
+    "connect_relay": 8899
+  },
+  "shared_service_restarts": 0,
+  "faults": [
+    {
+      "fault": "redis",
+      "during": {
+        "name": "redis-during",
+        "same_pid": true,
+        "readyz": {
+          "http_status": 503,
+          "error_body": {
+            "status": "not_ready"
+          },
+          "body": {
+            "status": "not_ready",
+            "degrade_level": "L0",
+            "checks": {
+              "database": {
+                "ok": true,
+                "latency_ms": 1,
+                "detail": null
+              },
+              "redis": {
+                "ok": false,
+                "latency_ms": null,
+                "detail": "unreachable"
+              },
+              "ocr": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "rapidocr-ppocrv4"
+              },
+              "llm": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "deepseek-flash, qwen2.5:7b"
+              },
+              "embedding": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "feature-hash-128 (lightweight, not BGE)"
+              },
+              "reranker": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "token-overlap-v1 (lightweight, not BGE)"
+              }
+            }
+          }
+        },
+        "logins": {
+          "a": {
+            "http_status": 503,
+            "error_body": {
+              "type": "about:blank",
+              "title": "限流服务暂不可用，请稍后再试",
+              "status": 503,
+              "code": "RATE_LIMIT_UNAVAILABLE"
+            }
+          },
+          "b": {
+            "http_status": 503,
+            "error_body": {
+              "type": "about:blank",
+              "title": "限流服务暂不可用，请稍后再试",
+              "status": 503,
+              "code": "RATE_LIMIT_UNAVAILABLE"
+            }
+          }
+        },
+        "models": {
+          "http_status": 200,
+          "degrade_level": "L0",
+          "llm": [
+            {
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "healthy": true,
+              "circuit_open": false
+            },
+            {
+              "provider": "qwen",
+              "model": "qwen-plus",
+              "healthy": false,
+              "circuit_open": false
+            },
+            {
+              "provider": "ollama",
+              "model": "qwen2.5:7b",
+              "healthy": true,
+              "circuit_open": false
+            }
+          ]
+        },
+        "reads": {
+          "a": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "单证不存在",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          },
+          "b": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "单证不存在",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          }
+        },
+        "invalid_upload_no_inference": {
+          "http_status": 405,
+          "error_body": {
+            "type": "about:blank",
+            "title": "Method Not Allowed",
+            "status": 405,
+            "code": "NOT_FOUND"
+          }
+        },
+        "invalid_review_no_inference": {
+          "http_status": 503,
+          "error_body": {
+            "type": "about:blank",
+            "title": "限流服务暂不可用，请稍后再试",
+            "status": 503,
+            "code": "RATE_LIMIT_UNAVAILABLE"
+          }
+        },
+        "direct_rls": {
+          "database_available": true,
+          "runtime_role": "m3_runtime",
+          "unsafe_role_attributes": false,
+          "force_rls_all_four": true,
+          "unscoped_visible_count": 0,
+          "tenant_checks": {
+            "a": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            },
+            "b": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            }
+          },
+          "passed": true
+        }
+      },
+      "ready_recovery_seconds": 0.106,
+      "recovery_polls": [
+        {
+          "elapsed_ms": 106,
+          "http_status": 200,
+          "degrade_level": "L0"
+        }
+      ],
+      "after": {
+        "name": "redis-after",
+        "same_pid": true,
+        "readyz": {
+          "http_status": 200,
+          "body": {
+            "status": "ready",
+            "degrade_level": "L0",
+            "checks": {
+              "database": {
+                "ok": true,
+                "latency_ms": 1,
+                "detail": null
+              },
+              "redis": {
+                "ok": true,
+                "latency_ms": 0,
+                "detail": null
+              },
+              "ocr": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "rapidocr-ppocrv4"
+              },
+              "llm": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "deepseek-flash, qwen2.5:7b"
+              },
+              "embedding": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "feature-hash-128 (lightweight, not BGE)"
+              },
+              "reranker": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "token-overlap-v1 (lightweight, not BGE)"
+              }
+            }
+          }
+        },
+        "logins": {
+          "a": {
+            "http_status": 200
+          },
+          "b": {
+            "http_status": 200
+          }
+        },
+        "models": {
+          "http_status": 200,
+          "degrade_level": "L0",
+          "llm": [
+            {
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "healthy": true,
+              "circuit_open": false
+            },
+            {
+              "provider": "qwen",
+              "model": "qwen-plus",
+              "healthy": false,
+              "circuit_open": false
+            },
+            {
+              "provider": "ollama",
+              "model": "qwen2.5:7b",
+              "healthy": true,
+              "circuit_open": false
+            }
+          ]
+        },
+        "reads": {
+          "a": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "单证不存在",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          },
+          "b": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "单证不存在",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          }
+        },
+        "invalid_upload_no_inference": {
+          "http_status": 405,
+          "error_body": {
+            "type": "about:blank",
+            "title": "Method Not Allowed",
+            "status": 405,
+            "code": "NOT_FOUND"
+          }
+        },
+        "invalid_review_no_inference": {
+          "http_status": 422,
+          "error_body": {
+            "type": "about:blank",
+            "title": "参数校验失败",
+            "status": 422,
+            "code": "VALIDATION_FAILED",
+            "errors": [
+              {
+                "field": "document_ids",
+                "message": "List should have at least 1 item after validation, not 0"
+              }
+            ]
+          }
+        },
+        "direct_rls": {
+          "database_available": true,
+          "runtime_role": "m3_runtime",
+          "unsafe_role_attributes": false,
+          "force_rls_all_four": true,
+          "unscoped_visible_count": 0,
+          "tenant_checks": {
+            "a": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            },
+            "b": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            }
+          },
+          "passed": true
+        }
+      },
+      "full_observation_seconds": 0.316,
+      "automatic_recovery_without_api_restart": true
+    },
+    {
+      "fault": "postgres",
+      "during": {
+        "name": "postgres-during",
+        "same_pid": true,
+        "readyz": {
+          "http_status": 503,
+          "error_body": {
+            "status": "not_ready"
+          },
+          "body": {
+            "status": "not_ready",
+            "degrade_level": "L0",
+            "checks": {
+              "database": {
+                "ok": false,
+                "latency_ms": null,
+                "detail": "unreachable"
+              },
+              "redis": {
+                "ok": true,
+                "latency_ms": 0,
+                "detail": null
+              },
+              "ocr": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "rapidocr-ppocrv4"
+              },
+              "llm": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "deepseek-flash, qwen2.5:7b"
+              },
+              "embedding": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "feature-hash-128 (lightweight, not BGE)"
+              },
+              "reranker": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "token-overlap-v1 (lightweight, not BGE)"
+              }
+            }
+          }
+        },
+        "logins": {
+          "a": {
+            "http_status": 500,
+            "error_body": {
+              "type": "about:blank",
+              "title": "服务内部错误",
+              "status": 500,
+              "code": "INTERNAL_ERROR"
+            }
+          },
+          "b": {
+            "http_status": null,
+            "transport_error": "ReadError"
+          }
+        },
+        "models": {
+          "http_status": 500,
+          "error_body": {
+            "type": "about:blank",
+            "title": "服务内部错误",
+            "status": 500,
+            "code": "INTERNAL_ERROR"
+          }
+        },
+        "reads": {
+          "a": {
+            "own": {
+              "http_status": null,
+              "transport_error": "ReadError"
+            },
+            "cross": {
+              "http_status": 500,
+              "error_body": {
+                "type": "about:blank",
+                "title": "服务内部错误",
+                "status": 500,
+                "code": "INTERNAL_ERROR"
+              }
+            }
+          },
+          "b": {
+            "own": {
+              "http_status": null,
+              "transport_error": "ReadError"
+            },
+            "cross": {
+              "http_status": 500,
+              "error_body": {
+                "type": "about:blank",
+                "title": "服务内部错误",
+                "status": 500,
+                "code": "INTERNAL_ERROR"
+              }
+            }
+          }
+        },
+        "invalid_upload_no_inference": {
+          "http_status": null,
+          "transport_error": "ReadError"
+        },
+        "invalid_review_no_inference": {
+          "http_status": 500,
+          "error_body": {
+            "type": "about:blank",
+            "title": "服务内部错误",
+            "status": 500,
+            "code": "INTERNAL_ERROR"
+          }
+        },
+        "direct_rls": {
+          "database_available": false,
+          "exception_class": "ConnectionRefusedError",
+          "passed": null
+        }
+      },
+      "ready_recovery_seconds": 0.117,
+      "recovery_polls": [
+        {
+          "elapsed_ms": 117,
+          "http_status": 200,
+          "degrade_level": "L0"
+        }
+      ],
+      "after": {
+        "name": "postgres-after",
+        "same_pid": true,
+        "readyz": {
+          "http_status": 200,
+          "body": {
+            "status": "ready",
+            "degrade_level": "L0",
+            "checks": {
+              "database": {
+                "ok": true,
+                "latency_ms": 5,
+                "detail": null
+              },
+              "redis": {
+                "ok": true,
+                "latency_ms": 0,
+                "detail": null
+              },
+              "ocr": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "rapidocr-ppocrv4"
+              },
+              "llm": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "deepseek-flash, qwen2.5:7b"
+              },
+              "embedding": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "feature-hash-128 (lightweight, not BGE)"
+              },
+              "reranker": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "token-overlap-v1 (lightweight, not BGE)"
+              }
+            }
+          }
+        },
+        "logins": {
+          "a": {
+            "http_status": 200
+          },
+          "b": {
+            "http_status": 200
+          }
+        },
+        "models": {
+          "http_status": 200,
+          "degrade_level": "L0",
+          "llm": [
+            {
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "healthy": true,
+              "circuit_open": false
+            },
+            {
+              "provider": "qwen",
+              "model": "qwen-plus",
+              "healthy": false,
+              "circuit_open": false
+            },
+            {
+              "provider": "ollama",
+              "model": "qwen2.5:7b",
+              "healthy": true,
+              "circuit_open": false
+            }
+          ]
+        },
+        "reads": {
+          "a": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "单证不存在",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          },
+          "b": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "单证不存在",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          }
+        },
+        "invalid_upload_no_inference": {
+          "http_status": 405,
+          "error_body": {
+            "type": "about:blank",
+            "title": "Method Not Allowed",
+            "status": 405,
+            "code": "NOT_FOUND"
+          }
+        },
+        "invalid_review_no_inference": {
+          "http_status": 422,
+          "error_body": {
+            "type": "about:blank",
+            "title": "参数校验失败",
+            "status": 422,
+            "code": "VALIDATION_FAILED",
+            "errors": [
+              {
+                "field": "document_ids",
+                "message": "List should have at least 1 item after validation, not 0"
+              }
+            ]
+          }
+        },
+        "direct_rls": {
+          "database_available": true,
+          "runtime_role": "m3_runtime",
+          "unsafe_role_attributes": false,
+          "force_rls_all_four": true,
+          "unscoped_visible_count": 0,
+          "tenant_checks": {
+            "a": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            },
+            "b": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            }
+          },
+          "passed": true
+        }
+      },
+      "full_observation_seconds": 0.323,
+      "automatic_recovery_without_api_restart": true
+    },
+    {
+      "fault": "deepseek_relay",
+      "during": {
+        "name": "deepseek_relay-during",
+        "same_pid": true,
+        "readyz": {
+          "http_status": 200,
+          "body": {
+            "status": "degraded",
+            "degrade_level": "L2",
+            "checks": {
+              "database": {
+                "ok": true,
+                "latency_ms": 1,
+                "detail": null
+              },
+              "redis": {
+                "ok": true,
+                "latency_ms": 0,
+                "detail": null
+              },
+              "ocr": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "rapidocr-ppocrv4"
+              },
+              "llm": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "qwen2.5:7b"
+              },
+              "embedding": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "feature-hash-128 (lightweight, not BGE)"
+              },
+              "reranker": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "token-overlap-v1 (lightweight, not BGE)"
+              }
+            }
+          }
+        },
+        "logins": {
+          "a": {
+            "http_status": 200
+          },
+          "b": {
+            "http_status": 200
+          }
+        },
+        "models": {
+          "http_status": 200,
+          "degrade_level": "L2",
+          "llm": [
+            {
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "healthy": false,
+              "circuit_open": false
+            },
+            {
+              "provider": "qwen",
+              "model": "qwen-plus",
+              "healthy": false,
+              "circuit_open": false
+            },
+            {
+              "provider": "ollama",
+              "model": "qwen2.5:7b",
+              "healthy": true,
+              "circuit_open": false
+            }
+          ]
+        },
+        "reads": {
+          "a": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "单证不存在",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          },
+          "b": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "单证不存在",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          }
+        },
+        "invalid_upload_no_inference": {
+          "http_status": 405,
+          "error_body": {
+            "type": "about:blank",
+            "title": "Method Not Allowed",
+            "status": 405,
+            "code": "NOT_FOUND"
+          }
+        },
+        "invalid_review_no_inference": {
+          "http_status": 422,
+          "error_body": {
+            "type": "about:blank",
+            "title": "参数校验失败",
+            "status": 422,
+            "code": "VALIDATION_FAILED",
+            "errors": [
+              {
+                "field": "document_ids",
+                "message": "List should have at least 1 item after validation, not 0"
+              }
+            ]
+          }
+        },
+        "direct_rls": {
+          "database_available": true,
+          "runtime_role": "m3_runtime",
+          "unsafe_role_attributes": false,
+          "force_rls_all_four": true,
+          "unscoped_visible_count": 0,
+          "tenant_checks": {
+            "a": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            },
+            "b": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            }
+          },
+          "passed": true
+        }
+      },
+      "ready_recovery_seconds": 15.578,
+      "recovery_polls": [
+        {
+          "elapsed_ms": 105,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 1113,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 2120,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 3128,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 4134,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 5141,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 6148,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 7155,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 8161,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 9169,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 10175,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 11182,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 12189,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 13196,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 14204,
+          "http_status": 200,
+          "degrade_level": "L2"
+        },
+        {
+          "elapsed_ms": 15578,
+          "http_status": 200,
+          "degrade_level": "L0"
+        }
+      ],
+      "after": {
+        "name": "deepseek_relay-after",
+        "same_pid": true,
+        "readyz": {
+          "http_status": 200,
+          "body": {
+            "status": "ready",
+            "degrade_level": "L0",
+            "checks": {
+              "database": {
+                "ok": true,
+                "latency_ms": 2,
+                "detail": null
+              },
+              "redis": {
+                "ok": true,
+                "latency_ms": 0,
+                "detail": null
+              },
+              "ocr": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "rapidocr-ppocrv4"
+              },
+              "llm": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "deepseek-flash, qwen2.5:7b"
+              },
+              "embedding": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "feature-hash-128 (lightweight, not BGE)"
+              },
+              "reranker": {
+                "ok": true,
+                "latency_ms": null,
+                "detail": "token-overlap-v1 (lightweight, not BGE)"
+              }
+            }
+          }
+        },
+        "logins": {
+          "a": {
+            "http_status": 200
+          },
+          "b": {
+            "http_status": 200
+          }
+        },
+        "models": {
+          "http_status": 200,
+          "degrade_level": "L0",
+          "llm": [
+            {
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "healthy": true,
+              "circuit_open": false
+            },
+            {
+              "provider": "qwen",
+              "model": "qwen-plus",
+              "healthy": false,
+              "circuit_open": false
+            },
+            {
+              "provider": "ollama",
+              "model": "qwen2.5:7b",
+              "healthy": true,
+              "circuit_open": false
+            }
+          ]
+        },
+        "reads": {
+          "a": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "单证不存在",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          },
+          "b": {
+            "own": {
+              "http_status": 200
+            },
+            "cross": {
+              "http_status": 404,
+              "error_body": {
+                "type": "about:blank",
+                "title": "单证不存在",
+                "status": 404,
+                "code": "NOT_FOUND"
+              }
+            }
+          }
+        },
+        "invalid_upload_no_inference": {
+          "http_status": 405,
+          "error_body": {
+            "type": "about:blank",
+            "title": "Method Not Allowed",
+            "status": 405,
+            "code": "NOT_FOUND"
+          }
+        },
+        "invalid_review_no_inference": {
+          "http_status": 422,
+          "error_body": {
+            "type": "about:blank",
+            "title": "参数校验失败",
+            "status": 422,
+            "code": "VALIDATION_FAILED",
+            "errors": [
+              {
+                "field": "document_ids",
+                "message": "List should have at least 1 item after validation, not 0"
+              }
+            ]
+          }
+        },
+        "direct_rls": {
+          "database_available": true,
+          "runtime_role": "m3_runtime",
+          "unsafe_role_attributes": false,
+          "force_rls_all_four": true,
+          "unscoped_visible_count": 0,
+          "tenant_checks": {
+            "a": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            },
+            "b": {
+              "visible_count": 1,
+              "own_visible": true,
+              "other_visible": false
+            }
+          },
+          "passed": true
+        }
+      },
+      "full_observation_seconds": 15.74,
+      "automatic_recovery_without_api_restart": true
+    }
+  ],
+  "partial_observer_attempt": {
+    "failed_stage": "postgres",
+    "failure_class": "ReadError",
+    "first_api_pid": 1344197,
+    "reason": "HTTP connection ReadError was not initially recorded; observer aborted and owned resources cleaned up; remaining faults performed on a fresh dedicated instance",
+    "second_api_pid": 1345511
+  },
+  "model_post_calls": 2,
+  "health_discovery_get_attempts": 14,
+  "final_8002": {
+    "source_commit": "c75f877e09decd1b598c26f25e6b70e8742660d7",
+    "new_pid": 1341808,
+    "bind_host": "127.0.0.1",
+    "port": 8002,
+    "readyz_status": 200,
+    "login_status": 200,
+    "models_status": 200,
+    "degrade_level": "L0",
+    "deepseek_healthy": true,
+    "origin": "https://localhost:5173",
+    "cookie_secure_config_preserved": true,
+    "environment_proof_mode": "0o600",
+    "probe_scope": "health probe only; readiness and models share the 15-second health cache",
+    "reviews": 0,
+    "chat_calls": 0,
+    "elapsed_ms": 1592,
+    "browser_e2e": false
+  },
+  "runtime_guard_caveat": "8002 retains temporary health-only BudgetTransport; normal inference POSTs blocked; do not claim unrestricted inference or indefinite L0 after budget depletion; no second restart performed; next approved restart must omit temporary transport"
+}
