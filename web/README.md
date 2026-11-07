@@ -12,7 +12,16 @@ npm run dev -- --port 5173 --strictPort
 
 打开 **https://localhost:5173**，仅开发时信任本机自签证书。`@vitejs/plugin-basic-ssl` 的证书/私钥保存在被忽略的 `node_modules/.vite/`，不入库。生产环境使用正式证书与 HTTPS 反向代理，不使用开发证书。
 
-Vite `/api` 代理到 `http://127.0.0.1:8000`，不改写 Host / Origin，传递 HTTPS 的 `X-Forwarded-Proto`。浏览器只访问同源 HTTPS，服务端 `Secure; HttpOnly; SameSite=Strict` Cookie 不变。**不要关闭 Secure、放宽生产 CSRF/CORS 来联调。**
+Vite dev / preview 的 `/api` 代理由启动进程环境变量 `ST143_API_PROXY_TARGET` 配置，未设置时保持兼容默认 `http://127.0.0.1:8000`。此代理设置只读取启动进程环境变量，不调用 `loadEnv` 加载 `.env`，也不使用会暴露给浏览器的 `VITE_*` 变量。仅允许 HTTP(S) 回环 origin（`127.0.0.1`、`localhost`、`[::1]`），拒绝凭据、路径、查询参数、片段和外部地址，配置错误直接停止启动且不回显输入。配置仅影响 Vite 进程，不改变构建产物；正式反向代理仍需单独配置。
+
+```bash
+# web/ 下，将 dev 或已构建生产包的 preview 指向 8002
+ST143_API_PROXY_TARGET=http://127.0.0.1:8002 npm run dev -- --port 5173 --strictPort
+npm run build
+ST143_API_PROXY_TARGET=http://127.0.0.1:8002 npm run preview -- --port 5175 --strictPort
+```
+
+preview 使用 `dist/` 而不是 dev 模块，不等同于正式生产部署。dev / preview 均保留本机 HTTPS，不改写 Host / Origin，传递 HTTPS 的 `X-Forwarded-Proto`。浏览器只访问同源 HTTPS，服务端 `Secure; HttpOnly; SameSite=Strict` Cookie 不变。**不要关闭 Secure、放宽生产 CSRF/CORS 来联调。**
 
 ### 真实 / mock
 
