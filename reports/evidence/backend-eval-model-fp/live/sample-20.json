@@ -1,0 +1,130 @@
+{
+  "sample": 20,
+  "expected_rule_ids": [
+    "SYN-REVIEW",
+    "SYN-RESTRICTED"
+  ],
+  "field_mismatch_keys": [
+    "consignee"
+  ],
+  "finding_metadata": [
+    {
+      "determined_by": "rule",
+      "severity": "high",
+      "category": "restricted_goods",
+      "field_keys": [
+        "goods_description"
+      ],
+      "rule_ids": [
+        "SYN-RESTRICTED"
+      ]
+    },
+    {
+      "determined_by": "rule",
+      "severity": "info",
+      "category": "other",
+      "field_keys": [],
+      "rule_ids": [
+        "SYN-REVIEW"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "medium",
+      "category": "missing_field",
+      "field_keys": [
+        "invoice_no",
+        "origin_country"
+      ],
+      "rule_ids": [
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "medium",
+      "category": "restricted_goods",
+      "field_keys": [
+        "goods_description",
+        "hs_code",
+        "quantity"
+      ],
+      "rule_ids": [
+        "PUB-CN-DECLARATION"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "low",
+      "category": "inconsistency",
+      "field_keys": [
+        "certificate_no",
+        "consignee",
+        "origin_country"
+      ],
+      "rule_ids": [
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "info",
+      "category": "valuation",
+      "field_keys": [
+        "currency",
+        "quantity",
+        "total_amount",
+        "unit_price"
+      ],
+      "rule_ids": [
+        "SYN-AMOUNT"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "info",
+      "category": "classification",
+      "field_keys": [
+        "goods_description",
+        "hs_code"
+      ],
+      "rule_ids": [
+        "PUB-CN-DECLARATION"
+      ]
+    }
+  ],
+  "review_completed": true,
+  "model_output_captured": true,
+  "recognition_level": "L0",
+  "upload_extraction_ms": 2388,
+  "condition_flags": {
+    "SYN-AMOUNT": false,
+    "SYN-HS": false,
+    "SYN-ORIGIN": false,
+    "SYN-REQUIRED": false,
+    "SYN-RESTRICTED": true
+  },
+  "deterministic_rule_ids": [
+    "SYN-RESTRICTED",
+    "SYN-REVIEW"
+  ],
+  "review_level": "L0",
+  "llm_verified": true,
+  "upload_review_ms": 9820,
+  "traces": [
+    {
+      "provider": "deepseek",
+      "task": "field_extraction",
+      "status": "ok",
+      "latency_ms": 1516
+    },
+    {
+      "provider": "deepseek",
+      "task": "compliance_reasoning",
+      "status": "ok",
+      "latency_ms": 7358
+    }
+  ]
+}

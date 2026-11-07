@@ -60,7 +60,15 @@ async def test_fake_llm_upload_real_ocr_recognition_to_grounded_report(fake_api)
             assert all(0 <= p <= 1 for p in location["bbox"])
     assert report["status"] == "completed" and report["degrade_level"] == "L0"
     assert {"ocr", "llm", "embedding", "reranker"} <= {t["category"] for t in report["models"]}
-    assert any(f["determined_by"] == "llm" and f["citations"] for f in report["findings"])
+    # The fixture's single model finding is now deduplicated or rejected when unfounded;
+    # successful inference remains in provenance, not as a forced duplicate finding.
+    filtered = report["security"]["model_output_filter"]
+    assert filtered.get("duplicate_finding", 0) + filtered.get("unsupported_finding", 0) == 1
+    assert all(f["determined_by"] == "rule" for f in report["findings"])
+    assert any(
+        t["category"] == "llm" and t["task"] == "compliance_reasoning" and t["status"] != "failed"
+        for t in report["models"]
+    )
     assert report["aigc"]["content_id"] == review_id and report["completed_at"]
     assert report["progress"]["percent"] == 100
     for finding in report["findings"]:

@@ -50,3 +50,18 @@ values or prose. Legacy aggregate counts remain alongside corrected counts.
 `eval.finding_metrics.attribute_ledger` reproduces exact per-rule source buckets
 from such a ledger; duplicated sample IDs and unknown provenance fail closed.
 No new model evaluation was performed for this correction.
+
+## Explicitly authorized no-chat model-FP capture
+
+`tests/test_model_fp_capture.py` requires RUN_MODEL_FP_E2E=1 and a fresh evidence
+folder; it is a PAID opt-in, never part of normal regression. Do not rerun it
+without new explicit approval. It records 20 extraction/review pairs (40 model
+requests maximum), no chat or model-health alias probe. Balance snapshots stay
+only in memory; only the bracketed consumption delta is persisted. Capture hooks
+write rule-condition booleans and finding metadata before review commit/response.
+
+Offline validation: `python -m eval.replay_model_fp --capture <saved-ledger-dir>
+--output <counts.json>`. This uses the same production output filter and NEVER
+calls a model. See reports/progress/backend-eval-model-fp.md for metric definitions,
+exact before/after data and limitations (remaining public advisory extras are not
+all adjudicated false positives). No prompt-change effectiveness is claimed.

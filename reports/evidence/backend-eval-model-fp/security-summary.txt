@@ -1,0 +1,8 @@
+ruff check backend: passed
+bandit backend/app backend/eval: passed, 0 findings
+gitleaks full worktree and commit range: 0 leaks
+actual private-key comparison: 0 hits
+paid model capture: exactly one, 40 model HTTP calls
+balance queries: 2, consumed delta only recorded
+chat calls: 0
+additional model validation calls: 0

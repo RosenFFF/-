@@ -18,6 +18,7 @@ def finding_metadata(findings):
             {
                 "determined_by": source,
                 "severity": finding["severity"],
+                "category": finding.get("category", "other"),
                 "field_keys": sorted(set(finding.get("field_keys", []))),
                 "rule_ids": sorted(
                     {

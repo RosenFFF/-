@@ -16,6 +16,7 @@ from app.security.output import sanitize_public, unsafe_output
 from app.security.redact import mask
 from app.services.document_access import get_document
 from app.services.fields import aigc, open_fields
+from app.services.model_findings import condition_flags, filter_model_findings, grounded_summary
 from app.services.provenance import COMPLIANCE_DISCLAIMER, CORPUS_LABELS, degrade_fields
 from app.services.rules_engine import check, risk_level
 
@@ -216,6 +217,12 @@ async def process_review(
                 row.models = [*row.models, *result.traces]
             if result and result.value is not None:
                 generated, dropped = validate_citations(result.value, citations)
+                generated, filter_counts = filter_model_findings(
+                    generated,
+                    condition_flags(findings),
+                    {c["rule_id"] for f in findings for c in f.get("citations", [])},
+                )
+                flags["model_output_filter"] = filter_counts
                 findings.extend(generated)
                 flags["invalid_citations_dropped"] += dropped
                 flags["output_checks_passed"] = (
@@ -224,7 +231,7 @@ async def process_review(
                     and all(f["determined_by"] != "llm_unverified" for f in generated)
                 )
                 # Do not restore PII into generated prose: placeholders remain masked in the report.
-                row.summary = result.value.summary
+                row.summary = grounded_summary(result.value.summary, filter_counts)
             else:
                 row.summary = (
                     "规则引擎回退，未完成真实 LLM 验证。LLM 不可用或输入已被拦截，仅提供确定性检查；建议人工复核。"

@@ -1,0 +1,16 @@
+{
+  "model_http_calls": 40,
+  "balance_http_calls": 2,
+  "chat_http_calls": 0,
+  "consumed_amount_by_currency": {
+    "CNY": "0.00"
+  },
+  "consumption_measured": true,
+  "model_http_calls_by_task": {
+    "field_extraction": 20,
+    "compliance_reasoning": 20
+  },
+  "model_http_status_counts": {
+    "200": 40
+  }
+}
