@@ -225,5 +225,14 @@
   "ask.modelUnavailableHint": "When no live model is available, the UI will not invent a streamed answer.",
   "upload.fileChosen": "File selected",
   "common.skipToContent": "Skip to main content",
-  "env.standInNote": "When the fixture uses stand-ins, screenshot sidecars label SQLite/fakeredis; not a live DB acceptance."
+  "env.standInNote": "When the fixture uses stand-ins, screenshot sidecars label SQLite/fakeredis; not a live DB acceptance.",
+  "models.chain": "LLM fallback order",
+  "models.noLlm": "No LLM is available (all healthy=false): review falls back to the rule engine and follow-up returns 503 MODEL_UNAVAILABLE. No answers are faked.",
+  "models.mode": "Mode",
+  "models.circuitOpen": "Circuit open",
+  "models.calls24h": "Calls 24h",
+  "models.p95": "P95 latency",
+  "models.lightweight": "Lightweight fallback",
+  "models.level": "Degrade level (from API)",
+  "audit.logsRegion": "Audit log table"
 }

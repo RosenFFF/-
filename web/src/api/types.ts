@@ -222,16 +222,28 @@ export type AuditLogQuery = {
   since?: string;
   until?: string;
 };
+/** GET /system/models — mirrors docs/api.yaml ModelChain and the live wire at a437305. */
+export type ModelEntry = {
+  category: "ocr" | "llm" | "embedding" | "reranker";
+  provider: string;
+  model: string;
+  deployment: "local" | "cloud";
+  stage: string;
+  healthy: boolean;
+  lightweight?: boolean;
+  retrieval_mode?: "lightweight_hash" | "bge";
+  implementation_mode?: "lightweight_hash" | "lightweight_lexical" | "bge";
+  mode_label?: string;
+  configured_model?: string;
+  heavy_load_failed?: boolean;
+  circuit_open?: boolean;
+  p95_latency_ms?: number | null;
+  calls_24h?: number;
+};
 export type ModelChain = {
-  degrade_level: string;
-  models: {
-    category: string;
-    provider: string;
-    model: string;
-    deployment: string;
-    stage: string;
-    healthy: boolean;
-  }[];
+  degrade_level: "L0" | "L1" | "L2" | "L3";
+  llm_provider_chain?: string[];
+  models: ModelEntry[];
 };
 export type Verify = {
   valid: boolean;

@@ -933,3 +933,57 @@ a.flow-trail-link:hover {
   border-color: var(--brand);
   background: var(--brand-subtle);
 }
+
+/* Demo-ready: ledger tables never clip cells (no axe "obscured" contrast gaps). */
+.table-wrap:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.table-records {
+  table-layout: fixed;
+}
+/* Ledger tables wrap instead of scrolling, so the region needs no extra tab stop. */
+.table-wrap:has(> .table-records) {
+  overflow-x: visible;
+}
+.table-records td.mono,
+.table-records td {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.table-records td.mono {
+  word-break: break-all;
+}
+@media (max-width: 960px) {
+  .table-records thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .table-records,
+  .table-records tbody,
+  .table-records tr,
+  .table-records td {
+    display: block;
+    width: 100%;
+  }
+  .table-records tr {
+    border-bottom: 1px solid var(--line);
+    padding: 8px 0;
+  }
+  .table-records td {
+    display: grid;
+    grid-template-columns: minmax(84px, 32%) minmax(0, 1fr);
+    gap: 8px;
+    border-bottom: 0;
+    padding: 4px 12px;
+  }
+  .table-records td::before {
+    content: attr(data-label);
+    color: var(--ink-secondary);
+    font-family: var(--font-ui);
+  }
+}

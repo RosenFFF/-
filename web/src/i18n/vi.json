@@ -225,5 +225,14 @@
   "ask.modelUnavailableHint": "Khi không có mô hình thật, giao diện không bịa luồng trả lời.",
   "upload.fileChosen": "Đã chọn tệp",
   "common.skipToContent": "Chuyển tới nội dung chính",
-  "env.standInNote": "Khi dùng fixture thay thế, sidecar ảnh ghi SQLite/fakeredis; không phải nghiệm thu DB thật."
+  "env.standInNote": "Khi dùng fixture thay thế, sidecar ảnh ghi SQLite/fakeredis; không phải nghiệm thu DB thật.",
+  "models.chain": "Thứ tự dự phòng LLM",
+  "models.noLlm": "Không có LLM khả dụng (healthy=false): kiểm tra dùng bộ quy tắc, hỏi thêm trả 503 MODEL_UNAVAILABLE. Không bịa câu trả lời.",
+  "models.mode": "Chế độ",
+  "models.circuitOpen": "Ngắt mạch",
+  "models.calls24h": "Gọi 24h",
+  "models.p95": "Độ trễ P95",
+  "models.lightweight": "Dự phòng nhẹ",
+  "models.level": "Mức suy giảm (từ API)",
+  "audit.logsRegion": "Bảng nhật ký kiểm toán"
 }

@@ -301,17 +301,14 @@ export const mockApi: Api = {
     };
   },
   async models() {
+    // MOCK only: same shape as the live wire; LLMs unavailable, no fake health.
     return {
-      degrade_level: "L3",
+      degrade_level: "L3" as const,
+      llm_provider_chain: ["MOCK-llm"],
       models: [
-        {
-          category: "ocr",
-          provider: "MOCK",
-          model: "MOCK",
-          deployment: "local",
-          stage: "MOCK",
-          healthy: false,
-        },
+        { category: "ocr" as const, provider: "MOCK", model: "MOCK-ocr", deployment: "local" as const, stage: "MOCK", healthy: false, circuit_open: false, p95_latency_ms: null, calls_24h: 0 },
+        { category: "llm" as const, provider: "MOCK", model: "MOCK-llm", deployment: "local" as const, stage: "MOCK", healthy: false, circuit_open: false, p95_latency_ms: null, calls_24h: 0 },
+        { category: "embedding" as const, provider: "MOCK", model: "MOCK-embedding", deployment: "local" as const, stage: "MOCK", healthy: false, lightweight: true, retrieval_mode: "lightweight_hash" as const, implementation_mode: "lightweight_hash" as const, mode_label: "MOCK 轻量回退", circuit_open: false, p95_latency_ms: null, calls_24h: 0 },
       ],
     };
   },
