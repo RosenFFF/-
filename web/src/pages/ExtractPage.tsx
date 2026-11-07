@@ -111,7 +111,9 @@ function ExtractContent() {
         ) : null}
       </div>
       <ErrorNotice error={error} />
-      {result ? <ReportVerification report={result} /> : null}
+      {result ? (
+        <ReportVerification report={result} capability="extraction" />
+      ) : null}
       {error ? (
         <button
           className="btn btn-secondary"

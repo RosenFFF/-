@@ -8,6 +8,7 @@ import type { Language, Finding, Review, Rule } from "../api/types";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { FlowTrail } from "../components/FlowTrail";
 import { languages } from "../api/languages";
+import { FilteredConclusions } from "../components/FilteredConclusions";
 import {
   CitationSource,
   ReportRuleSource,
@@ -175,7 +176,9 @@ function ReportResult({
           {report?.progress?.percent ?? 0}%
         </div>
       ) : null}
-      {report ? <ReportVerification report={report} /> : null}
+      {report ? (
+        <ReportVerification report={report} capability="review" />
+      ) : null}
       {report?.status === "completed" ? (
         <Link
           className="btn"
@@ -203,6 +206,7 @@ function ReportResult({
           </div>
           <div className="grid-2">
             <div className="panel">
+              <FilteredConclusions security={report.security} />
               <div className="finding-list">
                 {report.findings.length ? (
                   report.findings.map((f) => (

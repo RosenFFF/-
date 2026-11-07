@@ -1,45 +1,40 @@
 import { useTranslation } from "react-i18next";
+import { recordProvenance } from "../api/degradeStatus";
 import type { Review, SourceMetadata } from "../api/types";
 import {
   applicability,
-  degradeStatusText,
   excerptKind,
   sourceKind,
   sourceKindLabel,
   sourceText,
   sourceUrl,
 } from "../api/provenance";
+import { DegradeStrip } from "./DegradeStrip";
 
 type DegradeCarrier = {
   degrade_level?: Review["degrade_level"] | string;
   degrade_status?: string | null;
   llm_verified?: boolean | null;
+  models?: Review["models"];
 };
 
-/** Always show wire degrade_status; never substitute fixed frontend L0–L3 copy. */
-export function ReportVerification({ report }: { report: DegradeCarrier }) {
-  const { t } = useTranslation();
-  const status = degradeStatusText(report);
-  const verified = report.llm_verified;
+/**
+ * Historical extraction or review strip. Wire degrade_status is shown as returned.
+ * Capability defaults to review so existing report call sites stay on that scope.
+ */
+export function ReportVerification({
+  report,
+  capability = "review",
+}: {
+  report: DegradeCarrier;
+  capability?: "extraction" | "review";
+}) {
   return (
-    <div
-      className="banner report-verification"
-      role="status"
-      aria-label={t("report.verificationLabel")}
-    >
-      <div className="verification-copy">
-        <strong>{status ?? t("report.statusMissing")}</strong>
-        <span>
-          {t("report.llmVerified")}:{" "}
-          {verified === true
-            ? t("report.llmVerified.true")
-            : verified === false
-              ? t("report.llmVerified.false")
-              : t("report.statusMissing")}
-        </span>
-      </div>
-      <span className="mono">{report.degrade_level}</span>
-    </div>
+    <DegradeStrip
+      view={recordProvenance(capability, report)}
+      live
+      className="report-verification"
+    />
   );
 }
 
