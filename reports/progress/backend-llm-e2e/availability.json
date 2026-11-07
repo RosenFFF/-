@@ -1,0 +1,19 @@
+{
+  "successful": false,
+  "error_kind": "HTTPError",
+  "redirect_blocked": true,
+  "non_public_ip": true,
+  "checked_at": "2026-11-07T09:14:42.797722+08:00",
+  "model": "qwen2.5:0.5b",
+  "path": "official Ollama /api/pull",
+  "attempts": 1,
+  "model_inventory_count": 0,
+  "cloud_key_presence_in_process": {
+    "deepseek": false,
+    "qwen": false
+  },
+  "worktree_dotenv_present": false,
+  "real_inference_verified": false,
+  "real_sse_success_verified": false,
+  "network_bypass_used": false
+}

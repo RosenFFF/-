@@ -1,0 +1,103 @@
+{
+  "real_inference_verified": false,
+  "real_sse_success_verified": false,
+  "degradation_probe_passed": true,
+  "scope": "real local Ollama HTTP; SQLite/fakeredis API harness; synthetic review; no FakeLLM",
+  "cloud_keys": "deliberately absent in probe; not a cloud connectivity test",
+  "system_models": {
+    "degrade_level": "L3",
+    "models": [
+      {
+        "category": "ocr",
+        "provider": "local",
+        "model": "rapidocr-ppocrv4",
+        "deployment": "local",
+        "stage": "单证识别",
+        "healthy": true,
+        "circuit_open": false,
+        "p95_latency_ms": null,
+        "calls_24h": 0
+      },
+      {
+        "category": "llm",
+        "provider": "deepseek",
+        "model": "deepseek-chat",
+        "deployment": "cloud",
+        "stage": "字段抽取 / 合规推理",
+        "healthy": false,
+        "circuit_open": false,
+        "p95_latency_ms": null,
+        "calls_24h": 0
+      },
+      {
+        "category": "llm",
+        "provider": "qwen",
+        "model": "qwen-plus",
+        "deployment": "cloud",
+        "stage": "字段抽取 / 合规推理",
+        "healthy": false,
+        "circuit_open": false,
+        "p95_latency_ms": null,
+        "calls_24h": 0
+      },
+      {
+        "category": "llm",
+        "provider": "ollama",
+        "model": "qwen2.5:0.5b",
+        "deployment": "local",
+        "stage": "字段抽取 / 合规推理",
+        "healthy": false,
+        "circuit_open": false,
+        "p95_latency_ms": null,
+        "calls_24h": 0
+      },
+      {
+        "category": "embedding",
+        "provider": "local",
+        "model": "feature-hash-128 (lightweight, not BGE)",
+        "deployment": "local",
+        "stage": "规则检索",
+        "healthy": true,
+        "lightweight": true,
+        "retrieval_mode": "lightweight_hash",
+        "implementation_mode": "lightweight_hash",
+        "mode_label": "轻量回退（非 BGE 神经模型）",
+        "configured_model": "BAAI/bge-m3",
+        "heavy_load_failed": false,
+        "circuit_open": false,
+        "p95_latency_ms": null,
+        "calls_24h": 0
+      },
+      {
+        "category": "reranker",
+        "provider": "local",
+        "model": "token-overlap-v1 (lightweight, not BGE)",
+        "deployment": "local",
+        "stage": "条款精排",
+        "healthy": true,
+        "lightweight": true,
+        "retrieval_mode": "lightweight_hash",
+        "implementation_mode": "lightweight_lexical",
+        "mode_label": "轻量回退（非 BGE 神经模型）",
+        "configured_model": "BAAI/bge-reranker-v2-m3",
+        "heavy_load_failed": false,
+        "circuit_open": false,
+        "p95_latency_ms": null,
+        "calls_24h": 0
+      }
+    ],
+    "llm_provider_chain": [
+      "deepseek",
+      "qwen",
+      "ollama"
+    ]
+  },
+  "sse": {
+    "http_status": 200,
+    "events": [
+      "error"
+    ],
+    "code": "MODEL_UNAVAILABLE",
+    "problem_status": 503
+  }
+}
