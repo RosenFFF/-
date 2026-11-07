@@ -12,7 +12,7 @@ This fixture serves the **real backend code at `a437305`** from a separate check
 | Database | SQLite file in `$FIXTURE_STATE_DIR` (**stand-in**, not Postgres) |
 | Redis | `fakeredis` in-process (**stand-in**, not Redis) |
 | Tenant gate | **ON**. Existence check via `maintenance_sessionmaker` → `tests.conftest._seed` (tenant_session). No unscoped COUNT. |
-| LLM chain | `deepseek, qwen, ollama`. DeepSeek/Qwen keys are **unset**. Ollama at `127.0.0.1:11434` is expected to have **no models** or not be running. Expect `degrade_level: L3` with every LLM `healthy: false`. The follow-up SSE should be HTTP 200 with only `event: error` (503 `MODEL_UNAVAILABLE`). The spec probes this and saves `models-probe-*.json`. |
+| LLM chain | `deepseek, qwen, ollama`. DeepSeek/Qwen keys are **unset**. Ollama at `127.0.0.1:11434` is expected to provide no usable model. A failed probe is recorded as "本轮 Ollama 可达性探测失败，模型库存未知" in `models-probe-*.json`. It is never recorded as an empty model list or as a daemon state. Expect `degrade_level: L3` with every LLM `healthy: false`. The follow-up SSE should be HTTP 200 with only `event: error` (503 `MODEL_UNAVAILABLE`). The spec probes this and saves `models-probe-*.json`. |
 | Sample document | synthetic, generated from backend `tests.samples.invoice_pdf()` |
 | Accounts | synthetic `tests.conftest` fixture accounts (reviewer/admin), not real users |
 
@@ -34,7 +34,7 @@ The Ollama model names (`qwen2.5:7b` in a437305 config, `qwen2.5:0.5b` in backen
 | `FIXTURE_RL_DEFAULT_PER_MIN` | no | `30` (runner) / `2` (fixture) |
 | `FIXTURE_OLLAMA_URL` | no | `http://127.0.0.1:11434` |
 | `FIXTURE_PORT` | no | `8000` |
-| `DEMO_SCREENSHOT_DIR` | no | `<repo>/../screenshots/demo-ready/` |
+| `DEMO_SCREENSHOT_DIR` | no | `<repo>/../screenshots/demo-ready/` (final evidence used `.../demo-ready/real-backend/`) |
 | `DEMO_SAMPLE_PDF` | set by runner | `$FIXTURE_STATE_DIR/sample-invoice.pdf` |
 | `JWT_SECRET`, `DATA_KEK` | **never set by hand** | generated per run into `$FIXTURE_STATE_DIR/.env` (0600, outside the repo) |
 

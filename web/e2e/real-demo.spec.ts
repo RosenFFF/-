@@ -38,7 +38,7 @@ const ENVIRONMENT = {
   llm_chain: ["deepseek", "qwen", "ollama"],
   llm_keys: "deepseek/qwen keys unset",
   // (a) HARDCODED contract expectation only — proves the UI renders this case, not that it is true.
-  ollama_expected_contract: "hardcoded expectation: Ollama has no usable model (models=[] or unreachable); not probed here, see models-probe-*.json",
+  ollama_expected_contract: "hardcoded expectation: no usable Ollama model (UI must show no-LLM / L3); not probed here, actual status in models-probe-*.json",
   real_model: "unavailable",
   rate_limit_default_per_min: Number(process.env.FIXTURE_RL_DEFAULT_PER_MIN ?? "2"),
 } as const;
@@ -208,13 +208,13 @@ test("demo-ready: upload → review → follow-up → audit on real backend", as
   const modelsRaw = await mr.text();
   // (b) ACTUAL probe: raw backend response captured during this run + live Ollama reachability.
   const ollamaUrl = process.env.FIXTURE_OLLAMA_URL ?? "http://127.0.0.1:11434";
-  let ollama: { url: string; reachable: boolean; status?: number; models?: string[]; error?: string };
+  let ollama: { url: string; status_label: "unreachable" | "reachable"; note?: string; reachable: boolean; status?: number; models?: string[]; error?: string };
   try {
     const r = await fetch(`${ollamaUrl}/api/tags`, { signal: AbortSignal.timeout(3000) });
     const j = (await r.json()) as { models?: { name: string }[] };
-    ollama = { url: ollamaUrl, reachable: true, status: r.status, models: (j.models ?? []).map((m) => m.name) };
+    ollama = { url: ollamaUrl, status_label: "reachable", reachable: true, status: r.status, models: (j.models ?? []).map((m) => m.name) };
   } catch (e) {
-    ollama = { url: ollamaUrl, reachable: false, error: String(e).slice(0, 200) };
+    ollama = { url: ollamaUrl, status_label: "unreachable", note: "本轮 Ollama 可达性探测失败，模型库存未知", reachable: false, error: String(e).slice(0, 200) };
   }
   const probeFile = `models-probe-${size}.json`;
   await writeFile(
@@ -262,9 +262,11 @@ test("demo-ready: upload → review → follow-up → audit on real backend", as
       {
         environment: ENVIRONMENT,
         evidence: {
-          contract_assertion: "hardcoded: UI shows no-LLM banner / L3 when wire says so; ollama models=[] is an expectation, not a probe",
+          contract_assertion: "hardcoded: UI shows no-LLM banner / L3 when wire says so; the Ollama expectation is not a probe",
           actual_probe: probeFile,
           actual_degrade_level: models.degrade_level,
+          actual_ollama_status: ollama.status_label,
+          actual_ollama_note: ollama.note ?? null,
           actual_ollama_reachable: ollama.reachable,
           actual_ollama_models: ollama.models ?? null,
         },

@@ -18,7 +18,7 @@
   ]
 }
 ```
-与 831cbe8 `model-probe.json.system_models` 结构一致（L3、三个 LLM 均 `healthy=false`）。差异仅为 Ollama 型号配置：本 fixture 用后端默认 `qwen2.5:7b`，probe 用 `qwen2.5:0.5b`；两者均未拉取。早先运行时本机 Ollama `/api/tags` → `models: []`；0f6d43c 干净克隆运行的实测探针显示 Ollama **不可达**（见 `models-probe-*.json`）。两种情况下都没有可用 LLM，均为 L3。
+与 831cbe8 `model-probe.json.system_models` 结构一致（L3、三个 LLM 均 `healthy=false`）。差异仅为 Ollama 型号配置：本 fixture 用后端默认 `qwen2.5:7b`，probe 用 `qwen2.5:0.5b`；两者均未拉取。最终 tip 干净克隆运行：本轮 Ollama 可达性探测失败，模型库存未知（见 `models-probe-*.json`）。L3 与各模型 `healthy` 状态严格以该次实际 `/system/models` 响应为准。
 
 ## 与 `docs/api.yaml` ModelChain 比对
 - 字段、枚举、embedding/reranker 条件必填：**一致**，无契约偏差。
@@ -40,8 +40,8 @@ HTTP **200** `text/event-stream`，流内**仅** `event: error`，`data` 为 Pro
 
 | Kind | What it is | What it proves | Where |
 |---|---|---|---|
-| (a) Contract assertion (**hardcoded**) | Spec `ENVIRONMENT.ollama_expected_contract` = "/api/tags models=[]", plus UI assertions (L3 banner, no-LLM banner, lightweight ≠ BGE) | Only that the frontend **renders** the expected behaviour for this wire shape. Not a measurement. | `e2e/real-demo.spec.ts`; `run-*.json` → `evidence.contract_assertion` |
-| (b) Actual probe | Raw `GET /api/v1/system/models` body captured from the fixture backend during the run, plus a live `GET {FIXTURE_OLLAMA_URL}/api/tags` | What the backend actually reported in that run (degrade_level, per-model `healthy`), whether Ollama was reachable, and which models it listed | `screenshots/demo-ready/models-probe-{390,1440}.json`; `run-*.json` → `evidence.actual_*` |
+| (a) Contract assertion (**hardcoded**) | Spec `ENVIRONMENT.ollama_expected_contract` = "no usable Ollama model" (expectation text only), plus UI assertions (L3 banner, no-LLM banner, lightweight ≠ BGE) | Only that the frontend **renders** the expected behaviour for this wire shape. Not a measurement. | `e2e/real-demo.spec.ts`; `run-*.json` → `evidence.contract_assertion` |
+| (b) Actual probe | Raw `GET /api/v1/system/models` body captured from the fixture backend during the run, plus a live `GET {FIXTURE_OLLAMA_URL}/api/tags` | What the backend actually reported in that run (degrade_level, per-model `healthy`), whether Ollama was reachable, and which models it listed | `screenshots/demo-ready/real-backend/models-probe-{390,1440}.json`; `run-*.json` → `evidence.actual_*` |
 
 ## Ollama model names
 
