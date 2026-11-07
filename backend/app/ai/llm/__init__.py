@@ -285,6 +285,30 @@ class ProviderChain:
                         else [x.get("id") for x in data.get("data", [])]
                     )
                     p.healthy = p.model in names
+                    # Providers may accept compatibility aliases omitted from /models.
+                    # Never infer alias support from a name: verify a bounded real call.
+                    if not p.healthy and p.name != "ollama":
+                        check = await c.post(
+                            p.api_url + "/chat/completions",
+                            headers=headers,
+                            json={
+                                "model": p.model,
+                                "messages": [{"role": "user", "content": "Reply OK."}],
+                                "max_tokens": 1,
+                                "stream": False,
+                            },
+                        )
+                        check.raise_for_status()
+                        if len(check.content) > 64_000:
+                            raise ValueError("oversized health response")
+                        choices = check.json().get("choices", [])
+                        p.healthy = any(
+                            isinstance(choice, dict)
+                            and isinstance(choice.get("message"), dict)
+                            and isinstance(choice["message"].get("content"), str)
+                            and bool(choice["message"]["content"])
+                            for choice in choices
+                        )
             except (httpx.HTTPError, ValueError, TypeError, AttributeError):
                 p.healthy = False
             p.checked_at = time.monotonic()
