@@ -36,7 +36,7 @@ async def seed_review(api, *, username="reviewer", status="completed", **kw):
             destination_country="VN",
             status=status,
             summary="Test review summary",
-            findings=[],
+            findings=kw.pop("findings", []),
             **kw,
         )
         s.add(row)
