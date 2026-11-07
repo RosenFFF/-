@@ -22,27 +22,38 @@ def _rule_list(rules, language):
     if language == "zh-CN":
         return "、".join(listed) + ("等" if capped else "")
     if capped:
-        return ", ".join(listed) + (", etc." if language == "en" else " и др.")
+        suffix = {"en": ", etc.", "vi": ", v.v.", "ru": " и др."}[language]
+        return ", ".join(listed) + suffix
     if len(listed) < 2:
         return "".join(listed)
-    conjunction = " and " if language == "en" else " и "
+    conjunction = {"en": " and ", "vi": " và ", "ru": " и "}[language]
     comma = "," if language == "en" and len(listed) > 2 else ""
     return ", ".join(listed[:-1]) + comma + conjunction + listed[-1]
 
 
 def retained_summary(findings, removed, language="zh-CN"):
-    """Default/fallback zh-CN; API also accepts vi/pt/ar, which have no template yet.
+    """Default/fallback zh-CN; API also accepts pt/ar, which have no template yet.
 
     An info finding citing ONLY SYN-REVIEW is a scope note, not an issue. A mixed
     citation or non-info finding still counts; info scope citations aren't listed.
     Count finding objects, not unique rules, and never inspect document values.
     """
-    language = language if language in ("en", "ru") else "zh-CN"
+    language = language if language in ("en", "ru", "vi") else "zh-CN"
     issues = [f for f in findings if not (f["severity"] == "info" and set(_rule_ids(f)) == {"SYN-REVIEW"})]
     count = len(issues)
     high = sum(f["severity"] == "high" for f in issues)
     rules = sorted({r for f in issues for r in _rule_ids(f) if r != "SYN-REVIEW" or f["severity"] != "info"})
     listed = _rule_list(rules, language)
+    if language == "vi":
+        text = (
+            f"Các kết quả được giữ lại nêu {count} vấn đề" if count else "Các kết quả được giữ lại không nêu vấn đề nào"
+        )
+        if high:
+            text += f", trong đó có {high} vấn đề rủi ro cao"
+        if listed:
+            noun = "quy tắc" if len(rules) == 1 else "các quy tắc"
+            text += f", liên quan đến {noun} {listed}"
+        return text.rstrip(".") + f". Đã lọc {removed} kết luận không có căn cứ, khuyến nghị xem xét thủ công."
     if language == "en":
         text = (
             f"The retained findings identify {count} {'issue' if count == 1 else 'issues'}"

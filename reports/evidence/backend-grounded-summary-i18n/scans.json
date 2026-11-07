@@ -3,14 +3,14 @@
   "service_restarts": 0,
   "ruff": "passed",
   "regression": {
-    "passed": 472,
+    "passed": 479,
     "skipped": 7,
-    "seconds": 117.15,
+    "seconds": 113.59,
     "paid_opt_ins": false
   },
   "targeted": {
-    "passed": 66,
-    "seconds": 2.4
+    "passed": 73,
+    "seconds": 2.32
   },
   "bandit_app_eval_findings": 0,
   "gitleaks_worktree_findings": 0,

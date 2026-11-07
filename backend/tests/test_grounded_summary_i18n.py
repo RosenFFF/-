@@ -30,6 +30,12 @@ def rebuild(rows, language="zh-CN", removed=2):
             "They cite rules SYN-AMOUNT and SYN-HS. Removed 2 unsupported conclusions. Manual review is recommended.",
         ),
         (
+            "vi",
+            "Các kết quả được giữ lại nêu 2 vấn đề, trong đó có 1 vấn đề rủi ro cao, "
+            "liên quan đến các quy tắc SYN-AMOUNT và SYN-HS. "
+            "Đã lọc 2 kết luận không có căn cứ, khuyến nghị xem xét thủ công.",
+        ),
+        (
             "ru",
             "В сохранённых результатах проверки отмечены 2 проблемы. Из них 1 проблема с высоким риском. "
             "Выводы связаны с правилами SYN-AMOUNT и SYN-HS. Отфильтрованы 2 необоснованных вывода. "
@@ -50,6 +56,7 @@ def test_one_natural_template_per_language(language, expected):
         ("zh-CN", "保留的审查结果未列出问题"),
         ("en", "No issues are listed in the retained findings"),
         ("ru", "В сохранённых результатах проверки проблемы не указаны"),
+        ("vi", "Các kết quả được giữ lại không nêu vấn đề nào"),
     ],
 )
 @pytest.mark.parametrize("scope_only", [False, True])
@@ -58,7 +65,7 @@ def test_zero_issues_no_high_risk_or_rule_clause(language, phrase, scope_only):
     text = rebuild(rows, language)
     assert text.startswith(phrase)
     assert "SYN-REVIEW" not in text
-    assert not any(term in text for term in ("高风险", "high-risk", "высоким риском"))
+    assert not any(term in text for term in ("高风险", "high-risk", "высоким риском", "rủi ro cao"))
 
 
 @pytest.mark.parametrize(
@@ -94,7 +101,7 @@ def test_english_singular_plural(count):
     assert "cite rule SYN-HS." in text  # unique rule count, not finding count
 
 
-@pytest.mark.parametrize("language,tail", [("zh-CN", "等。"), ("en", ", etc."), ("ru", " и др.")])
+@pytest.mark.parametrize("language,tail", [("zh-CN", "等。"), ("en", ", etc."), ("ru", " и др."), ("vi", ", v.v.")])
 def test_rule_list_sorted_unique_and_capped(language, tail):
     rows = [finding(f"RULE-{i}", "low", api_shape=True) for i in reversed(range(7))]
     rows.append(finding("RULE-0", "low"))
@@ -105,7 +112,7 @@ def test_rule_list_sorted_unique_and_capped(language, tail):
     assert "high-risk" not in text and "高风险" not in text and "высоким риском" not in text
 
 
-@pytest.mark.parametrize("language", ["zh", "unknown", "en-US", "vi", "pt", "ar", None])
+@pytest.mark.parametrize("language", ["zh", "unknown", "en-US", "pt", "ar", None])
 def test_default_and_unimplemented_language_fallback_is_api_default_chinese(language):
     rows = [finding()]
     assert rebuild(rows, language) == rebuild(rows, "zh-CN")
@@ -123,13 +130,13 @@ def test_scope_exclusion_is_only_pure_info_note_and_never_mutates_findings_or_co
     assert "涉及规则" not in retained_summary([{"severity": "low", "rule_ids": []}], 1)
 
 
-@pytest.mark.parametrize("language", ["zh-CN", "en", "ru"])
+@pytest.mark.parametrize("language", ["zh-CN", "en", "ru", "vi"])
 def test_unaffected_model_summary_is_not_translated_or_replaced(language):
     text = "Unrelated original summary."
     assert grounded_summary(text, {"unsupported_finding": 1}, [], {"SYN-ORIGIN"}, language=language) == text
 
 
-@pytest.mark.parametrize("language", ["zh-CN", "en", "ru"])
+@pytest.mark.parametrize("language", ["zh-CN", "en", "ru", "vi"])
 async def test_review_forwards_row_language_and_preserves_scope_disclaimer_prefix(api, monkeypatch, language):
     from app.ai.ocr import OcrBlock, ocr_engine
     from app.services import review
@@ -168,3 +175,20 @@ async def test_review_forwards_row_language_and_preserves_scope_disclaimer_prefi
     counts = report["security"]["model_output_filter"]
     assert counts.get("duplicate_finding", 0) + counts.get("unsupported_finding", 0) == 1
     await client.aclose()
+
+
+@pytest.mark.parametrize("count", [1, 2])
+def test_vietnamese_code_count_and_natural_list_without_plural_inflection(count):
+    from typing import get_args
+
+    from app.api.v1.schemas import Language
+
+    assert "vi" in get_args(Language)
+    rows = [finding(f"RULE-{i}", "low") for i in range(count)]
+    text = rebuild(rows, "vi", removed=count)
+    assert f"nêu {count} vấn đề" in text
+    assert f"Đã lọc {count} kết luận" in text
+    assert "rủi ro cao" not in text
+    assert ("quy tắc RULE-0." if count == 1 else "các quy tắc RULE-0 và RULE-1.") in text
+    assert rebuild([finding(f"RULE-{i}", "low") for i in range(3)], "vi").count("RULE-0, RULE-1 và RULE-2.") == 1
+    assert text != rebuild(rows, "zh-CN", removed=count)
