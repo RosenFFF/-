@@ -1,0 +1,130 @@
+{
+  "paid_model_calls": 0,
+  "legacy_counts": {
+    "hit": 32,
+    "extra": 89,
+    "miss": 0
+  },
+  "corrected_counts": {
+    "hit": 12,
+    "extra": 89,
+    "miss": 0
+  },
+  "excluded_scope_pair_counts": {
+    "SYN-REVIEW": 20
+  },
+  "scope_extra_counts": {
+    "SYN-REVIEW": 0
+  },
+  "historical_ledger_available": false,
+  "unattributed_extra_pairs": 89,
+  "observed_model_generated_extra_pairs": null,
+  "observed_deterministic_extra_pairs": null,
+  "bounds_not_observations": {
+    "deterministic_extra_upper_by_rule": {
+      "SYN-REVIEW": 0,
+      "SYN-HS": 0,
+      "SYN-AMOUNT": 0,
+      "SYN-ORIGIN": 0,
+      "SYN-REQUIRED": 5,
+      "SYN-RESTRICTED": 14,
+      "PUB-CN-ORIGIN": 0,
+      "PUB-WCO-HS": 0,
+      "PUB-US-INVOICE": 0,
+      "PUB-CN-DUALUSE": 0,
+      "PUB-CN-DECLARATION": 0
+    },
+    "deterministic_extra_lower": 0,
+    "deterministic_extra_upper": 19,
+    "model_only_extra_lower": 70,
+    "model_only_extra_upper": 89
+  },
+  "actual_false_positive_sample_ids": null,
+  "label_oracle": {
+    "gold_label_checks": [
+      {
+        "sample": 1,
+        "label_match": true
+      },
+      {
+        "sample": 2,
+        "label_match": true
+      },
+      {
+        "sample": 3,
+        "label_match": true
+      },
+      {
+        "sample": 4,
+        "label_match": true
+      },
+      {
+        "sample": 5,
+        "label_match": true
+      },
+      {
+        "sample": 6,
+        "label_match": true
+      },
+      {
+        "sample": 7,
+        "label_match": true
+      },
+      {
+        "sample": 8,
+        "label_match": true
+      },
+      {
+        "sample": 9,
+        "label_match": true
+      },
+      {
+        "sample": 10,
+        "label_match": true
+      },
+      {
+        "sample": 11,
+        "label_match": true
+      },
+      {
+        "sample": 12,
+        "label_match": true
+      },
+      {
+        "sample": 13,
+        "label_match": true
+      },
+      {
+        "sample": 14,
+        "label_match": true
+      },
+      {
+        "sample": 15,
+        "label_match": true
+      },
+      {
+        "sample": 16,
+        "label_match": true
+      },
+      {
+        "sample": 17,
+        "label_match": true
+      },
+      {
+        "sample": 18,
+        "label_match": true
+      },
+      {
+        "sample": 19,
+        "label_match": true
+      },
+      {
+        "sample": 20,
+        "label_match": true
+      }
+    ],
+    "matches": 20,
+    "total": 20,
+    "original_run_reconstruction": false
+  }
+}

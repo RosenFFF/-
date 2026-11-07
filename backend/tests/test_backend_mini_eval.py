@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from app.main import create_app
+from eval.finding_metrics import finding_metadata, score_findings
 from eval.synthetic import samples
 
 from .conftest import Api, _seed, make_settings
@@ -85,6 +86,7 @@ async def test_real_backend_mini_eval(tmp_path, postgres_rls_db, live_redis):
         samples=[],
         field_counts={},
         finding_counts=dict(hit=0, false_positive=0, miss=0),
+        corrected_finding_counts=dict(hit=0, extra=0, miss=0),
         provider_counts={},
         level_counts={},
         chat_subset_size=1 if local else 3,
@@ -158,10 +160,18 @@ async def test_real_backend_mini_eval(tmp_path, postgres_rls_db, live_redis):
                     ],
                 )
                 actual = {f["key"]: f["value"] for f in recognition["fields"]}
+                item["field_mismatch_keys"] = []
                 for field, expected in sample["fields"].items():
                     count = result["field_counts"].setdefault(field, dict(correct=0, total=0))
                     count["total"] += 1
                     count["correct"] += actual.get(field) == expected
+                    if actual.get(field) != expected:
+                        item["field_mismatch_keys"].append(field)
+                item["expected_rule_ids"] = sample["expected_rules"]
+                item["finding_metadata"] = finding_metadata(report["findings"])
+                item["finding_score"] = score_findings(sample["expected_rules"], item["finding_metadata"])
+                for key, count in item["finding_score"]["corrected"].items():
+                    result["corrected_finding_counts"][key] += count
                 expected = set(sample["expected_rules"])
                 actual_rules = {c["rule_id"] for f in report["findings"] for c in f.get("citations", [])}
                 for name, value in (
@@ -175,6 +185,8 @@ async def test_real_backend_mini_eval(tmp_path, postgres_rls_db, live_redis):
                 providers = sorted({t["provider"] for t in item["traces"] if t["status"] != "failed"})
                 for provider in providers:
                     result["provider_counts"][provider] = result["provider_counts"].get(provider, 0) + 1
+                result["samples"].append(item)
+                save()  # Preserve the review ledger even if subsequent SSE handling fails.
                 if sample["id"] <= result["chat_subset_size"]:
                     response = await client.post(
                         f"/api/v1/reviews/{rid}/messages",
@@ -205,7 +217,6 @@ async def test_real_backend_mini_eval(tmp_path, postgres_rls_db, live_redis):
                         delta_matches_done="".join(e["data"]["text"] for e in events if e["event"] == "delta")
                         == done.get("content"),
                     )
-                result["samples"].append(item)
                 save()
         finally:
             await client.aclose()
