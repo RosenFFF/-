@@ -4,9 +4,11 @@ import { useTranslation } from "react-i18next";
 import { api, useMock } from "../api";
 import { aborted, ApiError } from "../api/http";
 import { askStream } from "../api/real";
+import { chatProvenance } from "../api/degradeStatus";
 import type { Language, ChatMessage } from "../api/types";
 import { languages } from "../api/languages";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { DegradeStrip } from "../components/DegradeStrip";
 import { CitationSource } from "../components/Provenance";
 import { FlowTrail } from "../components/FlowTrail";
 
@@ -26,6 +28,7 @@ function AskContent() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
+  const [liveMessageId, setLiveMessageId] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
   const controller = useRef<AbortController | null>(null);
   const liveRef = useRef<HTMLDivElement | null>(null);
@@ -80,6 +83,7 @@ function AskContent() {
       created_at: stamp,
       citations: [],
     };
+    setLiveMessageId(replyId);
     setMessages((m) => [...m, user, reply]);
     const applyReply = (snapshot: ChatMessage) => {
       reply = snapshot;
@@ -106,7 +110,10 @@ function AskContent() {
             ...reply,
             citations: [...(reply.citations ?? []), ev.data],
           });
-        if (ev.event === "done") applyReply(ev.data);
+        if (ev.event === "done") {
+          setLiveMessageId(ev.data.id);
+          applyReply(ev.data);
+        }
       }
     } catch (err) {
       if (!aborted(err)) {
@@ -165,7 +172,7 @@ function AskContent() {
           {t("ask.reconnecting")}
         </div>
       ) : null}
-      <div className="panel chat-history" aria-live="polite">
+      <div className="panel chat-history">
         {!historyLoaded && reviewId ? (
           <p className="muted" role="status">
             {t("ask.historyLoading")}
@@ -176,34 +183,38 @@ function AskContent() {
             {t("ask.historyEmpty")}
           </p>
         ) : null}
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`chat-message ${m.role}${m.blocked ? " blocked" : ""}`}
-          >
-            <div>
-              {m.blocked
-                ? t("ask.jailbreakBlocked")
-                : m.content || (busy ? t("status.running") : "")}
-            </div>
-            {m.blocked && m.block_reason ? (
-              <p className="muted">
-                {t("ask.blockReason")}: {t(`ask.blockReason.${m.block_reason}`)}
-              </p>
-            ) : null}
-            {m.citations?.map((c, i) => (
-              <div key={`${c.rule_id}-${i}`} className="chat-citation">
-                <CitationSource value={c} />
-                <blockquote className="serif citation">
-                  <span className="citation-body">
-                    {c.source} · {c.article}: {c.excerpt}
-                  </span>
-                </blockquote>
+        {messages.map((m) => {
+          const provenance = chatProvenance(m);
+          return (
+            <div
+              key={m.id}
+              className={`chat-message ${m.role}${m.blocked ? " blocked" : ""}`}
+            >
+              <div aria-live={m.id === liveMessageId ? "polite" : undefined}>
+                {m.blocked
+                  ? t("ask.jailbreakBlocked")
+                  : m.content || (busy ? t("status.running") : "")}
               </div>
-            ))}
-            {m.aigc ? <p className="muted">{m.aigc.explicit_text}</p> : null}
-          </div>
-        ))}
+              {provenance ? <DegradeStrip view={provenance} live={false} /> : null}
+              {m.blocked && m.block_reason ? (
+                <p className="muted">
+                  {t("ask.blockReason")}: {t(`ask.blockReason.${m.block_reason}`)}
+                </p>
+              ) : null}
+              {m.citations?.map((c, i) => (
+                <div key={`${c.rule_id}-${i}`} className="chat-citation">
+                  <CitationSource value={c} />
+                  <blockquote className="serif citation">
+                    <span className="citation-body">
+                      {c.source} · {c.article}: {c.excerpt}
+                    </span>
+                  </blockquote>
+                </div>
+              ))}
+              {m.aigc ? <p className="muted">{m.aigc.explicit_text}</p> : null}
+            </div>
+          );
+        })}
       </div>
       <form onSubmit={send} className="action-row">
         <input

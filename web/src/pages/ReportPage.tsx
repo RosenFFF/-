@@ -175,7 +175,9 @@ function ReportResult({
           {report?.progress?.percent ?? 0}%
         </div>
       ) : null}
-      {report ? <ReportVerification report={report} /> : null}
+      {report ? (
+        <ReportVerification report={report} capability="review" />
+      ) : null}
       {report?.status === "completed" ? (
         <Link
           className="btn"

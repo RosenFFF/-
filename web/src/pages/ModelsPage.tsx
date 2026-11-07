@@ -4,7 +4,9 @@ import { api } from "../api";
 import { aborted } from "../api/http";
 import type { ModelChain } from "../api/types";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { systemProvenance } from "../api/degradeStatus";
 import { modelDisplay, noHealthyLlm } from "../api/modelStatus";
+import { DegradeStrip } from "../components/DegradeStrip";
 
 export function ModelsPage() {
   const { t } = useTranslation();
@@ -28,18 +30,9 @@ export function ModelsPage() {
       {!chain && !error ? <div role="status">{t("status.running")}</div> : null}
       {chain ? (
         <>
-          <div className="banner" data-testid="models-level">
-            {t("models.level")}: <strong className="mono">{chain.degrade_level}</strong>
-            {chain.llm_provider_chain?.length ? (
-              <>
-                {" · "}
-                {t("models.chain")}:{" "}
-                <span className="mono">{chain.llm_provider_chain.join(" → ")}</span>
-              </>
-            ) : null}
-          </div>
+          <DegradeStrip view={systemProvenance(chain)} live testId="models-level" />
           {noLlm ? (
-            <div className="banner error-notice" role="status" data-testid="models-no-llm">
+            <div className="banner error-notice" data-testid="models-no-llm">
               {t("models.noLlm")}
             </div>
           ) : null}

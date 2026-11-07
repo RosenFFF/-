@@ -70,7 +70,7 @@ a:hover {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: var(--radius);
   border: 1px solid transparent;
@@ -112,7 +112,7 @@ a:hover {
 .input,
 .select {
   width: 100%;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -495,18 +495,62 @@ a[href] {
   flex: 1;
 }
 
-/* Provenance stays in the reading flow, separate from model fallback status. */
-.report-verification {
+/* One capability strip. Words carry the level; the left edge is not the only signal.
+   Wrap at narrow widths. No motion. Not a tab stop. */
+.degrade-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.degrade-strip[data-level="L0"],
+.degrade-strip[data-level="L1"] {
+  border-left-color: var(--brand);
+}
+.degrade-strip[data-level="L2"] {
+  border-left-color: var(--ink-secondary);
+}
+.degrade-strip[data-level="L3"] {
+  border-left-color: var(--risk-low);
+}
+.degrade-strip-row {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px;
-}
-.verification-copy {
-  display: grid;
-  gap: 4px;
+  align-items: baseline;
+  gap: 4px 12px;
   min-width: 0;
+  max-width: 100%;
 }
+.degrade-strip p {
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--ink);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 420px) {
+  .degrade-strip {
+    padding: 10px 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .degrade-strip {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* .report-verification marks extraction/review strips for existing checks.
+   Layout stays on .degrade-strip so the two classes do not fight. */
 .report-rule-source {
   padding: 12px 16px;
   background: var(--paper);
@@ -863,7 +907,7 @@ a[href] {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 8px;
   border-radius: 4px;
   color: var(--ink-muted);
