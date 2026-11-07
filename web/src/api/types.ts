@@ -78,6 +78,16 @@ export type Aigc = {
   generator: string;
   generated_at: string;
 };
+/**
+ * Review wire object at security.model_output_filter (c8c9a00 / 73c2eb4).
+ * Values stay unknown until normalized: only unsupported_finding counts dropped
+ * ungrounded model conclusions. The other keys are different counters.
+ */
+export type ModelOutputFilter = {
+  unsupported_finding?: unknown;
+  duplicate_finding?: unknown;
+  duplicate_citations_removed?: unknown;
+};
 export type SecurityFlags = {
   rule_corpus?: string;
   rule_corpus_label?: string | null;
@@ -85,6 +95,7 @@ export type SecurityFlags = {
   source_kind_label?: string | null;
   retrieval_mode?: "bge" | "lightweight_hash";
   compliance_disclaimer?: string | null;
+  model_output_filter?: ModelOutputFilter | null;
 };
 export type Recognition = {
   document_id: string;

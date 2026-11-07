@@ -261,5 +261,6 @@
   "degrade.limit.inconsistent": "Mức và nguồn không khớp. Giữ cả hai đúng như đã trả về, không viết lại. Không coi đây là năng lực ngoại tuyến đã nghiệm thu.",
   "degrade.positioning": "Định vị sản phẩm (không phải kết quả đo trên trang này): mô hình đám mây là chính, bộ quy tắc là phương án dự phòng. L2 không được trình bày như năng lực ngoại tuyến đã nghiệm thu.",
   "degrade.blocked": "Tin nhắn này đã bị chặn và không có mức suy giảm.",
-  "degrade.chainLabel": "Thứ tự cấu hình"
+  "degrade.chainLabel": "Thứ tự cấu hình",
+  "report.filteredUngrounded": "Đã lọc {{count}} kết luận mô hình không có căn cứ"
 }

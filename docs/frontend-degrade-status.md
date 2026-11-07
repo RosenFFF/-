@@ -1,6 +1,28 @@
-# 降级状态条（ST-143 前端）
+# 前端交接（ST-143）
 
-基线是 `905349c`。协调者告知 main 已到 `40669a6`（后端评测合并与文案更正）。本改动没有变基到那次提交，也没有改后端。集成时以 `905349c..HEAD` 的前端 diff 为准。
+降级状态条的基线是 `905349c`，提交 `d887503`。本次过滤行叠在该提交上，没有变基，也没有改本地后端。
+
+只读核对过 `origin/main` `c8c9a00`（合并 `73c2eb4`）。`d887503` 不在该 main 上，`DegradeStrip` 也不在 main 的树里，因此没有把 UI 当成已合并而丢弃。`docs/api.yaml` 的 `SecurityFlags` 仍未声明 `model_output_filter`；运行时形状以 `review_out` 和 `backend/tests/test_m1_pipeline.py` 为准。
+
+## 无依据模型结论计数
+
+审查响应把 `filter_model_findings` 的计数字典放在 `security.model_output_filter`。内部变量名叫 `flags`，落库和出参字段是 `security`，响应里没有另一个叫 `flags` 的对象。
+
+`filter_model_findings`（`backend/app/services/model_findings.py`，`73c2eb4`）写出的键：
+
+| 键 | 含义 | 界面 |
+| --- | --- | --- |
+| `unsupported_finding` | 引用的合成前提不是 `true`（假或未知）而被丢掉的模型结论条数 | 唯一展示的 N |
+| `duplicate_finding` | 引用已全被确定性结论覆盖而被丢掉的重复项 | 不展示 |
+| `duplicate_citations_removed` | 保留项上删掉的重复引用数 | 不展示 |
+
+`security.invalid_citations_dropped`、`output_checks_passed`、`finding_counts` 都不是这个 N。过滤函数没加过的键不会出现；空字典表示没有计入任何一类，不等于显式 0。
+
+只渲染有限、非负、安全整数且大于 0 的 `unsupported_finding`。显式 `0` 与 `-0` 识别为 0 并隐藏：这句话是在说明丢掉了结论，0 会读成清场。缺字段、`null`、负数、小数、字符串、非有限数、布尔、数组和其他畸形值都不显示，也不改写成 0。文案只有「已过滤 N 条无依据的模型结论」及其英越对应句，不说剩余结论已通过法律或合规验证。这一行在审查结果列表上方，不放进降级状态条，也不使用降级字段。
+
+## 降级状态条
+
+协调者早先告知的 main `40669a6` 已被 `c8c9a00` 取代。降级条仍然基于 `905349c`，没有吸收这两次后端提交里的其他前端差异。
 
 ## 各能力只读自己的字段
 
@@ -43,3 +65,4 @@ L0 文案是云端模型，L1 是备用云端模型，L3 是规则引擎并且�
 4. 在 1280 和 390 宽度看抽取、报告、追问、模型链路：状态条换行，文字不被裁切，导航可点区域不小于 44px。
 5. 用一份抽取为 L3、审查为 L0（或实际返回的其他组合）、追问轨迹为另一个模型的真实响应，确认三处文案各自跟随自己的字段，且模型页的当前健康不改写那份报告。
 6. 若响应里的 `degrade_level` 确为 L2，来源行应出现该条轨迹或健康条目中的模型名，并同时看到「不是已验收的离线能力」。没有 L2 字段时不得出现 L2。
+7. 完成的审查若 `security.model_output_filter.unsupported_finding` 为正整数，结果列表上方只出现该数字的过滤句。显式 0、缺字段，以及只有 `duplicate_finding` 时不出现这句。这句不在降级条内，也不写剩余结论已通过验证。

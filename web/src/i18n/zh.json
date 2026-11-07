@@ -261,5 +261,6 @@
   "degrade.limit.inconsistent": "级别与来源不一致。两字段按原样保留，互不改写。不把这当成已验收的离线能力。",
   "degrade.positioning": "产品定位（不是本页测得结果）：云端模型为主，规则引擎为回退。L2 不作为已验收的离线能力展示。",
   "degrade.blocked": "本条消息已被拦截，没有降级级别。",
-  "degrade.chainLabel": "配置顺序"
+  "degrade.chainLabel": "配置顺序",
+  "report.filteredUngrounded": "已过滤 {{count}} 条无依据的模型结论"
 }

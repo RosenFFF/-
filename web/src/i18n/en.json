@@ -261,5 +261,6 @@
   "degrade.limit.inconsistent": "The level and the source disagree. Both stay as returned and neither is rewritten. This is not an accepted offline capability.",
   "degrade.positioning": "Product positioning (not a measurement on this page): cloud model primary, rules engine as fallback. L2 is not shown as an accepted offline capability.",
   "degrade.blocked": "This message was blocked and has no degrade level.",
-  "degrade.chainLabel": "Configured order"
+  "degrade.chainLabel": "Configured order",
+  "report.filteredUngrounded": "Filtered {{count}} ungrounded model conclusions"
 }
