@@ -1,0 +1,3 @@
+bandit backend/app: exit 0, no findings
+gitleaks full worktree: exit 0, 0 leaks
+actual private key comparison: 0 hits

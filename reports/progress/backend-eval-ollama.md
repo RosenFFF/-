@@ -4,7 +4,10 @@
 
 **DeepSeek 为主，本地 qwen2.5:7b 作为 L2 离线降级**。CPU local inference is
 not the interactive primary path. No stand-in inference is counted as real-model evidence.
-The baseline is `6cba58f` (includes merged chat fix `71311f4`); branch
+Initial worktree baseline was `6cba58f` (includes merged chat fix `71311f4`).
+Before delivery the unpublished branch was rebased onto locally available **`905349c`**
+(frontend/LICENSE-only changes; backend tree identical), with no fetch or remote push.
+Final bundle prerequisite/base is **`905349c`**; branch
 `feat/backend-eval-ollama`. No remote push and no protected process restart/stop.
 
 ## Probe hardening and transient L3
@@ -44,7 +47,9 @@ PY=/workspace/competition/live-deepseek-71311f4-src/backend/.venv/bin/python
 INJECT=/workspace/competition/ollama-eval-71311f4/run_private.py
 python3 "$INJECT" ollama /workspace/competition/ollama-eval-71311f4/backend-7b
 python3 "$INJECT" deepseek /workspace/competition/backend-mini-eval-71311f4
-python3 "$INJECT" regression /workspace/competition/ollama-eval-71311f4/regression
+EVAL_OLLAMA_MODEL=qwen2.5:3b python3 "$INJECT" ollama /workspace/competition/ollama-eval-71311f4/backend-3b
+EVAL_LOCAL_MINIMAL=1 python3 "$INJECT" ollama /workspace/competition/ollama-eval-71311f4/backend-7b-minimal-valid
+python3 "$INJECT" regression /workspace/competition/ollama-eval-71311f4/regression-rebased
 # Injector selects: $PY -m pytest -q -p no:cacheprovider tests/test_backend_mini_eval.py
 # or the complete suite, with RUN_*E2E removed for regression.
 ruff check backend
@@ -115,9 +120,59 @@ phase timings closely match the 120s per-call cap but failure traces do not expo
 exception classes, so timeout is strongly indicated, not separately instrumented.
 
 The installed model and successful 24-token direct request do NOT establish a usable
-backend path. A smaller official qwen2.5:3b is therefore being tried with the same
+backend path. A smaller official qwen2.5:3b was therefore tried with the same
 integrity/security boundaries and the same 120s timeout cap. The requested positioning
 remains the deployment goal; actual local qualification is reported honestly below.
+
+Second full flow (official qwen2.5:3b): login and L2 healthy probe succeeded.
+Upload/extraction **48134ms**, field-inference trace **46950ms failed**, 0 grounded LLM
+fields, recognition **L3**. Review inference **61076ms succeeded via Ollama**, report
+**L2**, llm_verified=true, upload→report **109356ms**. Chat **1 delta + 1 citation +
+1 done**, first-delta **28442ms**, done **28443ms**, successful provider Ollama,
+delta text matched done. Total pytest wall time **141.016s**. This is genuine local
+reasoning/chat evidence, but **NOT complete extraction→review L2 acceptance**:
+field extraction used the rules fallback. Trace does not distinguish schema/output
+rejection from other failure classes, so no unsupported root-cause claim is made.
+Evidence `backend-3b/metrics.json`; all five 3b blobs verified by size+SHA256.
+
+Third flow, qwen2.5:7b on a minimal three-line synthetic invoice: login and L2 probe
+succeeded. Extraction **62429ms** (model trace **61949ms**) genuinely completed at
+**L2**, with **3 grounded LLM fields**. Review inference failed at **120112ms**;
+upload→rules report **182705ms**, report **L3**, llm_verified=false. Chat genuinely
+completed via Ollama with **4 delta + 1 citation + 1 done**, first-delta/done both
+**36098ms**, concatenated deltas equal done. Total pytest **221.918s**. Thus 7b is
+proven to do backend extraction and validated/cited SSE, **but not the complete
+extraction→LLM review→chat acceptance under the 120s cap**. Individual successes
+from different runs/models are NOT spliced into a fictional full-flow pass.
+Fourth flow, qwen2.5:3b minimal invoice: upload/extraction **5074ms**, field-inference
+trace **4618ms failed**, recognition **L3**, 0 grounded LLM fields. Real review
+inference **18016ms**, report **L2**, llm_verified=true, upload→report **23223ms**.
+Real cited chat **1 delta + 1 citation + 1 done**, first-delta **20926ms**, done
+**20927ms**, delta concatenation matches done. Total pytest **47.295s**. Again this
+is partial real reasoning/chat plus rule-extraction fallback, NOT complete L2.
+No further paid DeepSeek calls or local qualification retries are made.
+
+### Formal decision: 「云模型为主、规则引擎降级」
+
+Requested deployment positioning: **「DeepSeek 为主，本地 qwen2.5:7b 作为 L2 离线降级」**.
+The second half is an **unqualified target, not a completed full-flow claim** on this
+machine/configuration. Full L2 acceptance failed in all four completed trials:
+7b nine-field extraction/reasoning exceeded the observed 120s budgets; minimal 7b
+extraction succeeded but reasoning failed at 120112ms. Both 3b trials produced real
+review/chat, but extraction failed before timeout, so neither satisfies complete
+model extraction→model review→chat. No default timeout/security bound was bypassed.
+
+Ship DeepSeek as the qualified primary. Treat the deterministic rule engine as the
+qualified degraded review behavior; make L3/manual-review status explicit. The
+existing Ollama chain may deliver partial L2 inference and validated cited chat,
+but **do not promise a fully model-driven offline review** with the current 120s
+cap/CPU/strict-output acceptance. Chat remains explicit error when inference is
+unavailable (no fabricated rules-only assistant answer). Further qualification needs
+controlled idle-machine/higher-throughput hardware and investigation of the safe
+field-output failure classes before reconsidering the local-path SLA.
+An accidental preparatory launch before the minimal-mode patch was applied was
+cancelled via SIGINT to **only its own pytest child**; fixture cleanup ran. No result
+from this aborted attempt is claimed; protected PIDs were never signalled.
 
 
 ## Limitations / metric definitions
@@ -126,6 +181,8 @@ The only dataset is 20 explicitly synthetic generated commercial-invoice images;
 8 clean + 3 each missing-origin, malformed-HS, amount-mismatch, restricted-marker.
 No real persons/businesses, legal accuracy claim, broad OCR generalization, or
 production/load/concurrency guarantee. Single CPU machine (8 cores, ~12GB available RAM).
+Live model trials overlapped some regression activity and may suffer CPU/resource
+contention; these are observed per-run timings, not controlled idle-machine benchmarks.
 DeepSeek exactly ONE round, no whole-set reruns; chat only first 3/20 samples.
 The label set/generator and opt-in test are committed; images regenerate on demand.
 Nine literal field checks per sample include explicit nulls for missing labels.
@@ -138,3 +195,31 @@ Nearest-rank P50/P95/max: P95 is 19th of 20; chat P95 is max of only 3, not stab
 First-delta/done timings are actual server ASGI send events (not network/client RTT
 or provider TTFT). Chat output is security-validated before release, so these can
 be nearly equal. Main timings include real OCR, DB/audit, extraction and reasoning.
+
+
+## Regression / security
+
+After rebasing onto `905349c`, complete backend regression with live PG injection:
+**400 passed, 5 skipped, 221.28s**. Paid/live DeepSeek opt-ins remained skipped.
+Initial pre-hardening pass was 397/5; pre-rebase hardened pass also completed.
+Probe tests include default 4s/read-timeout assertion, alias success, alias timeout
+and list failure with structured log-field checks and secret exclusion.
+`ruff check backend`: passed. `bandit -r backend/app -q`: passed (production Python
+scope; tests contain intentional assertions). Full-worktree gitleaks scan: 0 leaks.
+Actual private-key byte comparison (in-process, value never emitted): 0 hits.
+Final committed snapshot and evidence are rescanned before bundling.
+
+## Delivery
+
+One local bundle (no push):
+```sh
+git bundle create /workspace/competition/bundles/feat-backend-eval-ollama.bundle 905349c..feat/backend-eval-ollama
+git bundle verify /workspace/competition/bundles/feat-backend-eval-ollama.bundle
+sha256sum /workspace/competition/bundles/feat-backend-eval-ollama.bundle
+```
+This is an incremental bundle requiring commit `905349c`, not a standalone full clone.
+Aggregate metrics/model hashes and regression output are included under
+`reports/evidence/backend-eval-ollama/`, with SHA256SUMS. Machine-local evidence
+roots: `/workspace/competition/ollama-eval-71311f4/` and
+`/workspace/competition/backend-mini-eval-71311f4/`. Each has a README and SHA256SUMS.
+Model weights and private runtime configuration are NOT in the bundle.

@@ -32,3 +32,5 @@ for 20 observations it is rank 19, for 3 it is rank 3.
 `metrics.json` persists counts/timings/provenance only, never field values or prose.
 A successful harness run is not an assertion that all outputs are accurate or L0:
 consult recognition/review levels and successful provider traces for every sample.
+
+Local minimal trial: EVAL_LOCAL_MINIMAL=1 selects a 3-line synthetic invoice (3 visible fields, missing required HS/origin), preserving the real OCR/extraction/review/SSE path. This is not the 20-sample accuracy dataset.
