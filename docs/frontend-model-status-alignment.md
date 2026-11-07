@@ -18,7 +18,7 @@
   ]
 }
 ```
-与 831cbe8 `model-probe.json.system_models` 结构一致（L3、三个 LLM 均 `healthy=false`）。差异仅为 Ollama 型号配置：本 fixture 用后端默认 `qwen2.5:7b`，probe 用 `qwen2.5:0.5b`；两者均未拉取（本机 Ollama `/api/tags` → `models: []`）。
+与 831cbe8 `model-probe.json.system_models` 结构一致（L3、三个 LLM 均 `healthy=false`）。差异仅为 Ollama 型号配置：本 fixture 用后端默认 `qwen2.5:7b`，probe 用 `qwen2.5:0.5b`；两者均未拉取。早先运行时本机 Ollama `/api/tags` → `models: []`；0f6d43c 干净克隆运行的实测探针显示 Ollama **不可达**（见 `models-probe-*.json`）。两种情况下都没有可用 LLM，均为 L3。
 
 ## 与 `docs/api.yaml` ModelChain 比对
 - 字段、枚举、embedding/reranker 条件必填：**一致**，无契约偏差。
