@@ -35,3 +35,14 @@ HTTP **200** `text/event-stream`，流内**仅** `event: error`，`data` 为 Pro
 
 ## 给后端的备注
 无契约不一致需后端修改。仅建议：Ollama 默认型号（7b）与 probe（0.5b）统一口径后再写入路演材料。
+
+## Models-page evidence: two separate kinds
+
+| Kind | What it is | What it proves | Where |
+|---|---|---|---|
+| (a) Contract assertion (**hardcoded**) | Spec `ENVIRONMENT.ollama_expected_contract` = "/api/tags models=[]", plus UI assertions (L3 banner, no-LLM banner, lightweight ≠ BGE) | Only that the frontend **renders** the expected behaviour for this wire shape. Not a measurement. | `e2e/real-demo.spec.ts`; `run-*.json` → `evidence.contract_assertion` |
+| (b) Actual probe | Raw `GET /api/v1/system/models` body captured from the fixture backend during the run, plus a live `GET {FIXTURE_OLLAMA_URL}/api/tags` | What the backend actually reported in that run (degrade_level, per-model `healthy`), whether Ollama was reachable, and which models it listed | `screenshots/demo-ready/models-probe-{390,1440}.json`; `run-*.json` → `evidence.actual_*` |
+
+## Ollama model names
+
+`qwen2.5:7b` (a437305 fixture config) and `qwen2.5:0.5b` (backend 831cbe8 `model-probe.json`) are **configured model names only**. Neither means the model is installed or that inference succeeded. Only `healthy` status plus real call evidence count, and the probe artifacts show which models Ollama actually lists.
