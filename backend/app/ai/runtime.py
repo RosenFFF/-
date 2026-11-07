@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.ai.embedding import BGEEmbedding, HashEmbedding
-from app.ai.llm import ProviderChain
+from app.ai.llm import ProviderChain, health_level
 from app.ai.reranker import BGEReranker, LexicalReranker
 from app.core.config import Settings
 from app.services.rag import RuleIndex
@@ -25,12 +25,7 @@ class AIRuntime:
 
     async def health(self) -> tuple[str, list[dict]]:
         items = await self.llm.health()
-        healthy = [(i, p) for i, p in enumerate(items) if p["healthy"]]
-        if not healthy:
-            level = "L3"
-        else:
-            index, p = healthy[0]
-            level = "L2" if p["provider"] == "ollama" else ("L1" if index else "L0")
+        level = health_level(items)
         for category, engine in (("embedding", self.embedding), ("reranker", self.reranker)):
             items.append(
                 {

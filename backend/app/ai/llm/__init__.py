@@ -63,6 +63,12 @@ def level(provider: str, index: int) -> str:
     return "L2" if provider == "ollama" else ("L0" if index == 0 else "L1")
 
 
+def health_level(items: list[dict]) -> str:
+    """Health-only availability, never evidence that any capability ran inference."""
+    candidates = [p for p in items if p.get("category") == "llm" and p.get("enabled", True)]
+    return next((level(p["provider"], i) for i, p in enumerate(candidates) if p["healthy"]), "L3")
+
+
 class ProviderChain:
     def __init__(self, settings: Settings, *, transport: httpx.AsyncBaseTransport | None = None) -> None:
         self.settings = settings
@@ -74,7 +80,9 @@ class ProviderChain:
             "qwen": Provider("qwen", settings.qwen_base_url, settings.qwen_model, settings.qwen_api_key),
             "ollama": Provider("ollama", settings.ollama_base_url, settings.ollama_model, None),
         }
-        self.providers = [all_providers[p] for p in settings.llm_provider_chain]
+        self.providers = [
+            all_providers[p] for p in settings.llm_provider_chain if p != "ollama" or settings.local_model_enabled
+        ]
 
     async def chat_json(self, messages: list[dict], schema: type[BaseModel], *, task: str) -> LLMResult:
         traces = []
@@ -154,6 +162,7 @@ class ProviderChain:
                         ms,
                         provider=provider.name,
                         status="ok" if index == 0 and not traces else "fallback",
+                        degrade_level=level(provider.name, index),
                         prompt_version="m1-v1",
                         tokens_in=usage.get("prompt_tokens"),
                         tokens_out=usage.get("completion_tokens"),
@@ -264,6 +273,7 @@ class ProviderChain:
                         ms,
                         provider=provider.name,
                         status="ok" if index == 0 and not traces else "fallback",
+                        degrade_level=level(provider.name, index),
                         prompt_version="chat-v1",
                     )
                 )
@@ -324,6 +334,8 @@ class ProviderChain:
         values = sorted(ms for ts, ms in p.calls if time.time() - ts < 86400)
         return {
             "category": "llm",
+            "enabled": True,
+            "disabled_reason": None,
             "provider": p.name,
             "model": p.model,
             "deployment": "local" if p.name == "ollama" else "cloud",
@@ -335,4 +347,24 @@ class ProviderChain:
         }
 
     async def health(self) -> list[dict]:
-        return list(await asyncio.gather(*(self._probe(p) for p in self.providers)))
+        items = list(await asyncio.gather(*(self._probe(p) for p in self.providers)))
+        if not any(p.name == "ollama" for p in self.providers):
+            # Static UI metadata only: never pass a disabled provider to _probe.
+            items.append(
+                {
+                    "category": "llm",
+                    "provider": "ollama",
+                    "model": self.settings.ollama_model,
+                    "deployment": "local",
+                    "stage": "字段抽取 / 合规推理",
+                    "enabled": False,
+                    "disabled_reason": (
+                        "local_model_disabled" if not self.settings.local_model_enabled else "not_in_provider_chain"
+                    ),
+                    "healthy": False,
+                    "circuit_open": False,
+                    "p95_latency_ms": None,
+                    "calls_24h": 0,
+                }
+            )
+        return items

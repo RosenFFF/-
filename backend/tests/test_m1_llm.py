@@ -98,7 +98,8 @@ async def test_ollama_l2_and_model_health_probe(tmp_path):
         return httpx.Response(200, json=envelope({"fields": []}))
 
     client = ProviderChain(
-        make_settings(tmp_path, llm_provider_chain=["ollama"]), transport=httpx.MockTransport(handler)
+        make_settings(tmp_path, local_model_enabled=True, llm_provider_chain=["ollama"]),
+        transport=httpx.MockTransport(handler),
     )
     assert (await client.health())[0]["healthy"]
     assert (await client.chat_json([], Extraction, task="field_extraction")).degrade_level == "L2"

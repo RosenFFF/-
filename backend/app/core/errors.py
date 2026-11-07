@@ -9,6 +9,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError, OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.services.provenance import degrade_fields
+
 log = structlog.get_logger()
 
 
@@ -36,6 +38,8 @@ def problem(
         "code": code,
         "request_id": getattr(request.state, "request_id", ""),
     }
+    if code == "MODEL_UNAVAILABLE":
+        body.update(degrade_fields("L3"))
     if detail:
         body["detail"] = detail
     if errors:

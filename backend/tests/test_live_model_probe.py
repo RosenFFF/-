@@ -23,6 +23,7 @@ async def test_live_empty_ollama_reports_l3_and_explicit_sse_error(make_api):
             pytest.skip("Ollama has models; run RUN_OLLAMA_E2E=1 for real inference acceptance")
     api = await make_api(
         demo_mode=False,
+        local_model_enabled=True,
         llm_provider_chain=["deepseek", "qwen", "ollama"],
         deepseek_api_key=None,
         qwen_api_key=None,

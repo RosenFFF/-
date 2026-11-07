@@ -99,6 +99,7 @@ async def test_asgi_database_connection_fault_generic_errors_then_same_app_recov
 async def test_asgi_provider_connect_failure_l2_cached_then_recovers_without_restart(api, monkeypatch):
     from app.ai import llm
 
+    api.settings.local_model_enabled = True
     clock = {"now": 1000.0}
     monkeypatch.setattr(
         llm, "time", SimpleNamespace(monotonic=lambda: clock["now"], time=time.time, perf_counter=time.perf_counter)

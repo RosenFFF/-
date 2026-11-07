@@ -66,6 +66,7 @@ async def test_real_backend_mini_eval(tmp_path, postgres_rls_db, live_redis):
         tmp_path,
         database_url=postgres_rls_db.engine.url.render_as_string(hide_password=False),
         demo_mode=False,
+        local_model_enabled=local,
         llm_provider_chain=["deepseek", "qwen", "ollama"],
         deepseek_api_key=None if local else os.environ["DEEPSEEK_API_KEY"],
         qwen_api_key=None,

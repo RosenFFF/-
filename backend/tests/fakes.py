@@ -25,7 +25,9 @@ class FakeLLM:
             given = json.loads(messages[-1]["content"])["allowed_rules"]
             data["findings"][0]["rule_ids"] = ["NONEXISTENT" if self.invalid_citation else given[0]["rule_id"]]
         return LLMResult(
-            schema.model_validate(data), [trace("llm", "test-fixture-only", task, 1, provider="fake")], "L0"
+            schema.model_validate(data),
+            [trace("llm", "test-fixture-only", task, 1, provider="fake", degrade_level="L0")],
+            "L0",
         )
 
     async def chat_stream(self, messages, *, task="chat"):
@@ -38,7 +40,9 @@ class FakeLLM:
         text = "TEST FIXTURE ONLY: Review this summary with a human. " + f"[{rule_id}]"
         for offset in range(0, len(text), 7):
             yield TextChunk(text=text[offset : offset + 7])
-        yield TextChunk(finished=True, traces=[trace("llm", "test-fixture-only", task, 1, provider="fake")])
+        yield TextChunk(
+            finished=True, traces=[trace("llm", "test-fixture-only", task, 1, provider="fake", degrade_level="L0")]
+        )
 
     async def chat_text(self, messages, *, task="chat"):
         text, traces = "", []

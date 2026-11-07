@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
+from app.ai.llm import health_level
 from app.ai.ocr import ocr_engine
 from app.db.models import AuditLog
 from app.db.tenant import TenantScope
@@ -64,6 +65,9 @@ async def apply_audit_metrics(result: dict, db, scope: TenantScope, settings) ->
         ms = sorted(r.detail["latency_ms"] for r in events if isinstance(r.detail.get("latency_ms"), int))
         model["calls_24h"] = len(events)
         model["p95_latency_ms"] = ms[min(len(ms) - 1, int(len(ms) * 0.95))] if ms else None
+        if not model.get("enabled", True):
+            model["healthy"], model["circuit_open"] = False, False
+            continue  # Historical counts remain visible; disabled models cannot become candidates.
         if model["category"] == "llm" and events:
             recent_failures = 0
             for event in events:
@@ -73,9 +77,5 @@ async def apply_audit_metrics(result: dict, db, scope: TenantScope, settings) ->
                 recent_failures += 1
             if recent_failures >= settings.llm_circuit_failures:
                 model["circuit_open"], model["healthy"] = True, False
-    candidates = [m for m in result["models"] if m["category"] == "llm"]
-    selected = next(((i, m) for i, m in enumerate(candidates) if m["healthy"]), None)
-    result["degrade_level"] = (
-        "L3" if selected is None else ("L2" if selected[1]["provider"] == "ollama" else ("L1" if selected[0] else "L0"))
-    )
+    result["degrade_level"] = health_level(result["models"])
     return result

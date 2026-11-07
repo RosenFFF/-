@@ -24,6 +24,7 @@ async def test_real_ollama_upload_to_review(make_api):
         assert installed and installed.get("digest"), "Requested real model is not installed"
     api = await make_api(
         demo_mode=False,
+        local_model_enabled=True,
         llm_provider_chain=["ollama"],
         ollama_base_url=base_url,
         ollama_model=model,
