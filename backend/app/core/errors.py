@@ -6,6 +6,7 @@ import structlog
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import DBAPIError, OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 log = structlog.get_logger()
@@ -70,6 +71,17 @@ def install_handlers(app: FastAPI) -> None:
         code = _HTTP_CODES.get(exc.status_code, "INTERNAL_ERROR")
         return problem(request, exc.status_code, code, str(exc.detail))
 
+    async def _dependency_unavailable(request: Request, exc: Exception) -> JSONResponse:
+        # Narrow transient failures only; SQL/programming errors retain generic 500.
+        if isinstance(exc, DBAPIError) and not (isinstance(exc, OperationalError) or exc.connection_invalidated):
+            log.error("unhandled_error", path=request.url.path)
+            return problem(request, 500, "INTERNAL_ERROR", "服务内部错误")
+        log.warning("dependency_unavailable", exception_class=type(exc).__name__)
+        return problem(request, 503, "DEPENDENCY_UNAVAILABLE", "依赖服务暂不可用，请稍后再试")
+
+    app.add_exception_handler(DBAPIError, _dependency_unavailable)
+    app.add_exception_handler(ConnectionRefusedError, _dependency_unavailable)
+
     @app.exception_handler(Exception)
     async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
         log.error("unhandled_error", path=request.url.path)  # No private exception/response text.
@@ -97,7 +109,7 @@ RATE_RESPONSES = {
         },
     },
     503: {
-        "description": "RATE_LIMIT_UNAVAILABLE (fail closed), or MODEL_UNAVAILABLE on LLM paths",
+        "description": "RATE_LIMIT_UNAVAILABLE, DEPENDENCY_UNAVAILABLE or MODEL_UNAVAILABLE (fail closed)",
         "content": {"application/problem+json": {"schema": {"type": "object"}}},
     },
 }

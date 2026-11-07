@@ -1,0 +1,39 @@
+{
+  "http_status": 200,
+  "response": {
+    "status": "ready",
+    "degrade_level": "L0",
+    "checks": {
+      "database": {
+        "ok": true,
+        "latency_ms": 1,
+        "detail": null
+      },
+      "redis": {
+        "ok": true,
+        "latency_ms": 0,
+        "detail": null
+      },
+      "ocr": {
+        "ok": true,
+        "latency_ms": null,
+        "detail": "rapidocr-ppocrv4"
+      },
+      "llm": {
+        "ok": true,
+        "latency_ms": null,
+        "detail": "deepseek-chat, qwen2.5:7b"
+      },
+      "embedding": {
+        "ok": true,
+        "latency_ms": null,
+        "detail": "feature-hash-128 (lightweight, not BGE)"
+      },
+      "reranker": {
+        "ok": true,
+        "latency_ms": null,
+        "detail": "token-overlap-v1 (lightweight, not BGE)"
+      }
+    }
+  }
+}

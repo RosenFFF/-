@@ -1,0 +1,91 @@
+{
+  "http_status": 200,
+  "response": {
+    "degrade_level": "L0",
+    "models": [
+      {
+        "category": "ocr",
+        "provider": "local",
+        "model": "rapidocr-ppocrv4",
+        "deployment": "local",
+        "stage": "\u5355\u8bc1\u8bc6\u522b",
+        "healthy": true,
+        "circuit_open": false,
+        "p95_latency_ms": null,
+        "calls_24h": 0
+      },
+      {
+        "category": "llm",
+        "provider": "deepseek",
+        "model": "deepseek-chat",
+        "deployment": "cloud",
+        "stage": "\u5b57\u6bb5\u62bd\u53d6 / \u5408\u89c4\u63a8\u7406",
+        "healthy": true,
+        "circuit_open": false,
+        "p95_latency_ms": null,
+        "calls_24h": 0
+      },
+      {
+        "category": "llm",
+        "provider": "qwen",
+        "model": "qwen-plus",
+        "deployment": "cloud",
+        "stage": "\u5b57\u6bb5\u62bd\u53d6 / \u5408\u89c4\u63a8\u7406",
+        "healthy": false,
+        "circuit_open": false,
+        "p95_latency_ms": null,
+        "calls_24h": 0
+      },
+      {
+        "category": "llm",
+        "provider": "ollama",
+        "model": "qwen2.5:7b",
+        "deployment": "local",
+        "stage": "\u5b57\u6bb5\u62bd\u53d6 / \u5408\u89c4\u63a8\u7406",
+        "healthy": true,
+        "circuit_open": false,
+        "p95_latency_ms": null,
+        "calls_24h": 0
+      },
+      {
+        "category": "embedding",
+        "provider": "local",
+        "model": "feature-hash-128 (lightweight, not BGE)",
+        "deployment": "local",
+        "stage": "\u89c4\u5219\u68c0\u7d22",
+        "healthy": true,
+        "lightweight": true,
+        "retrieval_mode": "lightweight_hash",
+        "implementation_mode": "lightweight_hash",
+        "mode_label": "\u8f7b\u91cf\u56de\u9000\uff08\u975e BGE \u795e\u7ecf\u6a21\u578b\uff09",
+        "configured_model": "BAAI/bge-m3",
+        "heavy_load_failed": false,
+        "circuit_open": false,
+        "p95_latency_ms": null,
+        "calls_24h": 0
+      },
+      {
+        "category": "reranker",
+        "provider": "local",
+        "model": "token-overlap-v1 (lightweight, not BGE)",
+        "deployment": "local",
+        "stage": "\u6761\u6b3e\u7cbe\u6392",
+        "healthy": true,
+        "lightweight": true,
+        "retrieval_mode": "lightweight_hash",
+        "implementation_mode": "lightweight_lexical",
+        "mode_label": "\u8f7b\u91cf\u56de\u9000\uff08\u975e BGE \u795e\u7ecf\u6a21\u578b\uff09",
+        "configured_model": "BAAI/bge-reranker-v2-m3",
+        "heavy_load_failed": false,
+        "circuit_open": false,
+        "p95_latency_ms": null,
+        "calls_24h": 0
+      }
+    ],
+    "llm_provider_chain": [
+      "deepseek",
+      "qwen",
+      "ollama"
+    ]
+  }
+}
