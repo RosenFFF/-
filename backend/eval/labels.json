@@ -1,0 +1,631 @@
+[
+  {
+    "id": 1,
+    "kind": "clean",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-001",
+      "total_amount": "101.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "101.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-001",
+      "TOTAL: 101.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 101.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 2,
+    "kind": "clean",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-002",
+      "total_amount": "102.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "102.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-002",
+      "TOTAL: 102.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 102.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 3,
+    "kind": "clean",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-003",
+      "total_amount": "103.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "103.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-003",
+      "TOTAL: 103.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 103.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 4,
+    "kind": "clean",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-004",
+      "total_amount": "104.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "104.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-004",
+      "TOTAL: 104.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 104.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 5,
+    "kind": "clean",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-005",
+      "total_amount": "105.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "105.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-005",
+      "TOTAL: 105.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 105.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 6,
+    "kind": "clean",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-006",
+      "total_amount": "106.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "106.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-006",
+      "TOTAL: 106.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 106.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 7,
+    "kind": "clean",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-007",
+      "total_amount": "107.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "107.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-007",
+      "TOTAL: 107.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 107.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 8,
+    "kind": "clean",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-008",
+      "total_amount": "108.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "108.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-008",
+      "TOTAL: 108.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 108.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 9,
+    "kind": "missing",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-009",
+      "total_amount": "109.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": null,
+      "quantity": "1",
+      "unit_price": "109.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW",
+      "SYN-REQUIRED"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-009",
+      "TOTAL: 109.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "QUANTITY: 1",
+      "UNIT PRICE: 109.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 10,
+    "kind": "missing",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-010",
+      "total_amount": "110.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": null,
+      "quantity": "1",
+      "unit_price": "110.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW",
+      "SYN-REQUIRED"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-010",
+      "TOTAL: 110.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "QUANTITY: 1",
+      "UNIT PRICE: 110.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 11,
+    "kind": "missing",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-011",
+      "total_amount": "111.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": null,
+      "quantity": "1",
+      "unit_price": "111.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW",
+      "SYN-REQUIRED"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-011",
+      "TOTAL: 111.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "QUANTITY: 1",
+      "UNIT PRICE: 111.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 12,
+    "kind": "hs",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-012",
+      "total_amount": "112.00",
+      "currency": "USD",
+      "hs_code": "12345",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "112.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW",
+      "SYN-HS"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-012",
+      "TOTAL: 112.00",
+      "CURRENCY: USD",
+      "HS CODE: 12345",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 112.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 13,
+    "kind": "hs",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-013",
+      "total_amount": "113.00",
+      "currency": "USD",
+      "hs_code": "12345",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "113.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW",
+      "SYN-HS"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-013",
+      "TOTAL: 113.00",
+      "CURRENCY: USD",
+      "HS CODE: 12345",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 113.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 14,
+    "kind": "hs",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-014",
+      "total_amount": "114.00",
+      "currency": "USD",
+      "hs_code": "12345",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "114.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW",
+      "SYN-HS"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-014",
+      "TOTAL: 114.00",
+      "CURRENCY: USD",
+      "HS CODE: 12345",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 114.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 15,
+    "kind": "amount",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-015",
+      "total_amount": "115.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "2",
+      "unit_price": "115.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW",
+      "SYN-AMOUNT"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-015",
+      "TOTAL: 115.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 2",
+      "UNIT PRICE: 115.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 16,
+    "kind": "amount",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-016",
+      "total_amount": "116.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "2",
+      "unit_price": "116.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW",
+      "SYN-AMOUNT"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-016",
+      "TOTAL: 116.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 2",
+      "UNIT PRICE: 116.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 17,
+    "kind": "amount",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-017",
+      "total_amount": "117.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "2",
+      "unit_price": "117.00",
+      "goods_description": "COTTON SHIRTS",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW",
+      "SYN-AMOUNT"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-017",
+      "TOTAL: 117.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 2",
+      "UNIT PRICE: 117.00",
+      "GOODS: COTTON SHIRTS",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 18,
+    "kind": "restricted",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-018",
+      "total_amount": "118.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "118.00",
+      "goods_description": "DEMO-RESTRICTED",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW",
+      "SYN-RESTRICTED"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-018",
+      "TOTAL: 118.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 118.00",
+      "GOODS: DEMO-RESTRICTED",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 19,
+    "kind": "restricted",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-019",
+      "total_amount": "119.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "119.00",
+      "goods_description": "DEMO-RESTRICTED",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW",
+      "SYN-RESTRICTED"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-019",
+      "TOTAL: 119.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 119.00",
+      "GOODS: DEMO-RESTRICTED",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  },
+  {
+    "id": 20,
+    "kind": "restricted",
+    "synthetic": true,
+    "fields": {
+      "invoice_no": "SYN-020",
+      "total_amount": "120.00",
+      "currency": "USD",
+      "hs_code": "610910",
+      "origin_country": "CN",
+      "quantity": "1",
+      "unit_price": "120.00",
+      "goods_description": "DEMO-RESTRICTED",
+      "consignee": "SYNTHETIC BUYER"
+    },
+    "expected_rules": [
+      "SYN-REVIEW",
+      "SYN-RESTRICTED"
+    ],
+    "lines": [
+      "COMMERCIAL INVOICE",
+      "INVOICE NO: SYN-020",
+      "TOTAL: 120.00",
+      "CURRENCY: USD",
+      "HS CODE: 610910",
+      "ORIGIN COUNTRY: CN",
+      "QUANTITY: 1",
+      "UNIT PRICE: 120.00",
+      "GOODS: DEMO-RESTRICTED",
+      "CONSIGNEE: SYNTHETIC BUYER"
+    ]
+  }
+]

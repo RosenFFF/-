@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import time
 from collections import deque
 from collections.abc import AsyncIterator
@@ -19,6 +20,8 @@ from pydantic import BaseModel, ValidationError
 from app.ai.types import LLMResult, ModelUnavailable, TextChunk, trace
 from app.core.config import Settings
 from app.security.output import unsafe_output
+
+logger = logging.getLogger(__name__)
 
 
 class LLMClient(Protocol):
@@ -270,6 +273,7 @@ class ProviderChain:
 
     async def _probe(self, p: Provider) -> dict:
         if p.available and not p.circuit_open(self.settings) and time.monotonic() - p.checked_at > 15:
+            stage = "list_models"
             try:
                 headers = {"Authorization": f"Bearer {p.key}"} if p.key else {}
                 async with httpx.AsyncClient(
@@ -288,6 +292,7 @@ class ProviderChain:
                     # Providers may accept compatibility aliases omitted from /models.
                     # Never infer alias support from a name: verify a bounded real call.
                     if not p.healthy and p.name != "ollama":
+                        stage = "alias_check"
                         check = await c.post(
                             p.api_url + "/chat/completions",
                             headers=headers,
@@ -309,7 +314,11 @@ class ProviderChain:
                             and bool(choice["message"]["content"])
                             for choice in choices
                         )
-            except (httpx.HTTPError, ValueError, TypeError, AttributeError):
+            except (httpx.HTTPError, ValueError, TypeError, AttributeError) as exc:
+                logger.warning(
+                    "model_probe_failed",
+                    extra={"provider": p.name, "stage": stage, "exception_class": type(exc).__name__},
+                )
                 p.healthy = False
             p.checked_at = time.monotonic()
         values = sorted(ms for ts, ms in p.calls if time.time() - ts < 86400)

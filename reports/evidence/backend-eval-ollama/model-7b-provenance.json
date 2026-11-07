@@ -1,0 +1,42 @@
+{
+  "manifest_url": "https://registry.ollama.ai/v2/library/qwen2.5/manifests/7b",
+  "manifest_sha256": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+  "blobs": [
+    {
+      "digest": "sha256:2f15b3218f0552c60647ce60ada83632d2c09755b16259b13e3e4458e9ae419d",
+      "size": 487,
+      "verified_sha256": true,
+      "verified_size": true,
+      "source_url": "https://registry.ollama.ai/v2/library/qwen2.5/blobs/sha256:2f15b3218f0552c60647ce60ada83632d2c09755b16259b13e3e4458e9ae419d"
+    },
+    {
+      "digest": "sha256:2bada8a7450677000f678be90653b85d364de7db25eb5ea54136ada5f3933730",
+      "size": 4683073952,
+      "verified_sha256": true,
+      "verified_size": true,
+      "source_url": "https://registry.ollama.ai/v2/library/qwen2.5/blobs/sha256:2bada8a7450677000f678be90653b85d364de7db25eb5ea54136ada5f3933730"
+    },
+    {
+      "digest": "sha256:66b9ea09bd5b7099cbb4fc820f31b575c0366fa439b08245566692c6784e281e",
+      "size": 68,
+      "verified_sha256": true,
+      "verified_size": true,
+      "source_url": "https://registry.ollama.ai/v2/library/qwen2.5/blobs/sha256:66b9ea09bd5b7099cbb4fc820f31b575c0366fa439b08245566692c6784e281e"
+    },
+    {
+      "digest": "sha256:eb4402837c7829a690fa845de4d7f3fd842c2adee476d5341da8a46ea9255175",
+      "size": 1482,
+      "verified_sha256": true,
+      "verified_size": true,
+      "source_url": "https://registry.ollama.ai/v2/library/qwen2.5/blobs/sha256:eb4402837c7829a690fa845de4d7f3fd842c2adee476d5341da8a46ea9255175"
+    },
+    {
+      "digest": "sha256:832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e",
+      "size": 11343,
+      "verified_sha256": true,
+      "verified_size": true,
+      "source_url": "https://registry.ollama.ai/v2/library/qwen2.5/blobs/sha256:832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e"
+    }
+  ],
+  "redirect": "HTTP 307 to Cloudflare R2; signed query strings omitted; Ollama redirect guard unchanged"
+}

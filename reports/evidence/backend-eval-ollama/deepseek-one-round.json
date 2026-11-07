@@ -1,0 +1,609 @@
+{
+  "synthetic": true,
+  "samples": [
+    {
+      "sample": 1,
+      "upload_extraction_ms": 4631,
+      "upload_review_ms": 11487,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ],
+      "chat": {
+        "events": {
+          "delta": 1,
+          "done": 1
+        },
+        "first_delta_ms": 1219,
+        "done_ms": 1219,
+        "providers": [
+          "deepseek"
+        ],
+        "delta_matches_done": true
+      }
+    },
+    {
+      "sample": 2,
+      "upload_extraction_ms": 4447,
+      "upload_review_ms": 10468,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ],
+      "chat": {
+        "events": {
+          "delta": 1,
+          "done": 1
+        },
+        "first_delta_ms": 1309,
+        "done_ms": 1309,
+        "providers": [
+          "deepseek"
+        ],
+        "delta_matches_done": true
+      }
+    },
+    {
+      "sample": 3,
+      "upload_extraction_ms": 4841,
+      "upload_review_ms": 12046,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ],
+      "chat": {
+        "events": {
+          "delta": 1,
+          "done": 1
+        },
+        "first_delta_ms": 1049,
+        "done_ms": 1049,
+        "providers": [
+          "deepseek"
+        ],
+        "delta_matches_done": true
+      }
+    },
+    {
+      "sample": 4,
+      "upload_extraction_ms": 4599,
+      "upload_review_ms": 11086,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 5,
+      "upload_extraction_ms": 4032,
+      "upload_review_ms": 10215,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 6,
+      "upload_extraction_ms": 4350,
+      "upload_review_ms": 10238,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 7,
+      "upload_extraction_ms": 4490,
+      "upload_review_ms": 11984,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 8,
+      "upload_extraction_ms": 4687,
+      "upload_review_ms": 10402,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 9,
+      "upload_extraction_ms": 4064,
+      "upload_review_ms": 9860,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 8,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 10,
+      "upload_extraction_ms": 3667,
+      "upload_review_ms": 8006,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 8,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 11,
+      "upload_extraction_ms": 3582,
+      "upload_review_ms": 10496,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 8,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 12,
+      "upload_extraction_ms": 4480,
+      "upload_review_ms": 10104,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 13,
+      "upload_extraction_ms": 4136,
+      "upload_review_ms": 10487,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 14,
+      "upload_extraction_ms": 5006,
+      "upload_review_ms": 10495,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 15,
+      "upload_extraction_ms": 4704,
+      "upload_review_ms": 12363,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 16,
+      "upload_extraction_ms": 3939,
+      "upload_review_ms": 11128,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 17,
+      "upload_extraction_ms": 3861,
+      "upload_review_ms": 8586,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 18,
+      "upload_extraction_ms": 3884,
+      "upload_review_ms": 9728,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 19,
+      "upload_extraction_ms": 4133,
+      "upload_review_ms": 9826,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "sample": 20,
+      "upload_extraction_ms": 4015,
+      "upload_review_ms": 9715,
+      "recognition_level": "L0",
+      "review_level": "L0",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 9,
+      "traces": [
+        {
+          "provider": "deepseek",
+          "task": "field_extraction",
+          "status": "ok",
+          "duration_ms": null
+        },
+        {
+          "provider": "deepseek",
+          "task": "compliance_reasoning",
+          "status": "ok",
+          "duration_ms": null
+        }
+      ]
+    }
+  ],
+  "field_counts": {
+    "invoice_no": {
+      "correct": 15,
+      "total": 20
+    },
+    "total_amount": {
+      "correct": 20,
+      "total": 20
+    },
+    "currency": {
+      "correct": 20,
+      "total": 20
+    },
+    "hs_code": {
+      "correct": 20,
+      "total": 20
+    },
+    "origin_country": {
+      "correct": 20,
+      "total": 20
+    },
+    "quantity": {
+      "correct": 20,
+      "total": 20
+    },
+    "unit_price": {
+      "correct": 20,
+      "total": 20
+    },
+    "goods_description": {
+      "correct": 6,
+      "total": 20
+    },
+    "consignee": {
+      "correct": 16,
+      "total": 20
+    }
+  },
+  "finding_counts": {
+    "hit": 32,
+    "false_positive": 89,
+    "miss": 0
+  },
+  "provider_counts": {
+    "deepseek": 20
+  },
+  "level_counts": {
+    "L0": 20
+  },
+  "chat_subset_size": 3,
+  "review_latency_ms": {
+    "p50": 10402,
+    "p95": 12046,
+    "max": 12363
+  },
+  "chat_first_delta_ms": {
+    "p50": 1219,
+    "p95": 1309,
+    "max": 1309
+  },
+  "chat_done_ms": {
+    "p50": 1219,
+    "p95": 1309,
+    "max": 1309
+  },
+  "probe": {
+    "degrade_level": "L0",
+    "llm": [
+      {
+        "provider": "deepseek",
+        "model": "deepseek-chat",
+        "healthy": true,
+        "circuit_open": false
+      },
+      {
+        "provider": "qwen",
+        "model": "qwen-plus",
+        "healthy": false,
+        "circuit_open": false
+      },
+      {
+        "provider": "ollama",
+        "model": "qwen2.5:7b",
+        "healthy": true,
+        "circuit_open": false
+      }
+    ]
+  }
+}

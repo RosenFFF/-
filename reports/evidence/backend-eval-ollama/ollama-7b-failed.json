@@ -1,0 +1,124 @@
+{
+  "synthetic": true,
+  "samples": [
+    {
+      "sample": 1,
+      "upload_extraction_ms": 121609,
+      "upload_review_ms": 241941,
+      "recognition_level": "L3",
+      "review_level": "L3",
+      "llm_verified": false,
+      "completed": true,
+      "grounded_llm_fields": 0,
+      "traces": [
+        {
+          "provider": "ollama",
+          "task": "field_extraction",
+          "status": "failed",
+          "duration_ms": null
+        },
+        {
+          "provider": "ollama",
+          "task": "compliance_reasoning",
+          "status": "failed",
+          "duration_ms": null
+        }
+      ],
+      "chat": {
+        "events": {
+          "error": 1
+        },
+        "first_delta_ms": null,
+        "done_ms": null,
+        "providers": [],
+        "delta_matches_done": false
+      }
+    }
+  ],
+  "field_counts": {
+    "invoice_no": {
+      "correct": 1,
+      "total": 1
+    },
+    "total_amount": {
+      "correct": 1,
+      "total": 1
+    },
+    "currency": {
+      "correct": 1,
+      "total": 1
+    },
+    "hs_code": {
+      "correct": 1,
+      "total": 1
+    },
+    "origin_country": {
+      "correct": 1,
+      "total": 1
+    },
+    "quantity": {
+      "correct": 1,
+      "total": 1
+    },
+    "unit_price": {
+      "correct": 1,
+      "total": 1
+    },
+    "goods_description": {
+      "correct": 0,
+      "total": 1
+    },
+    "consignee": {
+      "correct": 1,
+      "total": 1
+    }
+  },
+  "finding_counts": {
+    "hit": 1,
+    "false_positive": 0,
+    "miss": 0
+  },
+  "provider_counts": {},
+  "level_counts": {
+    "L3": 1
+  },
+  "chat_subset_size": 1,
+  "review_latency_ms": {
+    "p50": 241941,
+    "p95": 241941,
+    "max": 241941
+  },
+  "chat_first_delta_ms": {
+    "p50": null,
+    "p95": null,
+    "max": null
+  },
+  "chat_done_ms": {
+    "p50": null,
+    "p95": null,
+    "max": null
+  },
+  "probe": {
+    "degrade_level": "L2",
+    "llm": [
+      {
+        "provider": "deepseek",
+        "model": "deepseek-chat",
+        "healthy": false,
+        "circuit_open": false
+      },
+      {
+        "provider": "qwen",
+        "model": "qwen-plus",
+        "healthy": false,
+        "circuit_open": false
+      },
+      {
+        "provider": "ollama",
+        "model": "qwen2.5:7b",
+        "healthy": true,
+        "circuit_open": false
+      }
+    ]
+  }
+}
