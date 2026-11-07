@@ -66,7 +66,7 @@ class Settings(BaseSettings):
     llm_max_tokens: int = Field(default=2048, ge=128, le=8192)
     llm_circuit_failures: int = Field(default=3, ge=1)
     llm_circuit_reset_s: int = Field(default=60, ge=1)
-    model_probe_timeout_s: float = Field(default=1, gt=0, le=5)
+    model_probe_timeout_s: float = Field(default=4, gt=0, le=5)
     heavy_models_enabled: bool = False
     embedding_model: str = "BAAI/bge-m3"
     reranker_model: str = "BAAI/bge-reranker-v2-m3"

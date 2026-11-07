@@ -1,0 +1,130 @@
+{
+  "synthetic": true,
+  "samples": [
+    {
+      "sample": 1,
+      "upload_extraction_ms": 48134,
+      "upload_review_ms": 109356,
+      "recognition_level": "L3",
+      "review_level": "L2",
+      "llm_verified": true,
+      "completed": true,
+      "grounded_llm_fields": 0,
+      "traces": [
+        {
+          "provider": "ollama",
+          "task": "field_extraction",
+          "status": "failed",
+          "latency_ms": 46950
+        },
+        {
+          "provider": "ollama",
+          "task": "compliance_reasoning",
+          "status": "fallback",
+          "latency_ms": 61076
+        }
+      ],
+      "chat": {
+        "events": {
+          "delta": 1,
+          "citation": 1,
+          "done": 1
+        },
+        "first_delta_ms": 28442,
+        "done_ms": 28443,
+        "providers": [
+          "ollama"
+        ],
+        "delta_matches_done": true
+      }
+    }
+  ],
+  "field_counts": {
+    "invoice_no": {
+      "correct": 1,
+      "total": 1
+    },
+    "total_amount": {
+      "correct": 1,
+      "total": 1
+    },
+    "currency": {
+      "correct": 1,
+      "total": 1
+    },
+    "hs_code": {
+      "correct": 1,
+      "total": 1
+    },
+    "origin_country": {
+      "correct": 1,
+      "total": 1
+    },
+    "quantity": {
+      "correct": 1,
+      "total": 1
+    },
+    "unit_price": {
+      "correct": 1,
+      "total": 1
+    },
+    "goods_description": {
+      "correct": 0,
+      "total": 1
+    },
+    "consignee": {
+      "correct": 1,
+      "total": 1
+    }
+  },
+  "finding_counts": {
+    "hit": 1,
+    "false_positive": 3,
+    "miss": 0
+  },
+  "provider_counts": {
+    "ollama": 1
+  },
+  "level_counts": {
+    "L2": 1
+  },
+  "chat_subset_size": 1,
+  "review_latency_ms": {
+    "p50": 109356,
+    "p95": 109356,
+    "max": 109356
+  },
+  "chat_first_delta_ms": {
+    "p50": 28442,
+    "p95": 28442,
+    "max": 28442
+  },
+  "chat_done_ms": {
+    "p50": 28443,
+    "p95": 28443,
+    "max": 28443
+  },
+  "probe": {
+    "degrade_level": "L2",
+    "llm": [
+      {
+        "provider": "deepseek",
+        "model": "deepseek-chat",
+        "healthy": false,
+        "circuit_open": false
+      },
+      {
+        "provider": "qwen",
+        "model": "qwen-plus",
+        "healthy": false,
+        "circuit_open": false
+      },
+      {
+        "provider": "ollama",
+        "model": "qwen2.5:3b",
+        "healthy": true,
+        "circuit_open": false
+      }
+    ]
+  }
+}

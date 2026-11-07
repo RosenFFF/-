@@ -10,11 +10,12 @@ LINES = ["COMMERCIAL INVOICE", "INVOICE NO: SR-2026-001", "TOTAL: USD 12,500.00"
 
 
 def invoice_image(fmt: str = "PNG", lines: list[str] | None = None) -> bytes:
-    img = Image.new("RGB", (1200, 700), "white")
+    rows = lines or LINES
+    img = Image.new("RGB", (1600 if len(rows) > 3 else 1200, max(700, 160 + len(rows) * 100)), "white")
     d = ImageDraw.Draw(img)
-    font = ImageFont.load_default(size=56)
-    for i, line in enumerate(lines or LINES):
-        d.text((60, 80 + i * 180), line, fill="black", font=font)
+    font = ImageFont.load_default(size=48 if len(rows) > 3 else 56)
+    for i, line in enumerate(rows):
+        d.text((60, 80 + i * (100 if len(rows) > 3 else 180)), line, fill="black", font=font)
     buf = io.BytesIO()
     img.save(buf, format=fmt)
     return buf.getvalue()
