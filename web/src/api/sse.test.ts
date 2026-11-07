@@ -214,3 +214,35 @@ describe("MODEL_UNAVAILABLE copy", () => {
     ).toContain(fragment);
   });
 });
+
+describe("HTTP 200 SSE carrying only an error event (backend 831cbe8 contract)", () => {
+  it("never yields success when status is 200 but the only event is error 503", async () => {
+    const sid = "44444444-4444-4444-8444-444444444444";
+    vi.stubGlobal("document", { cookie: "csrf_token=x" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          `: stream ${sid}\n\n` +
+            `id: ${sid}:1\nevent: error\ndata: {"type":"about:blank","title":"无可用 LLM","status":503,"code":"MODEL_UNAVAILABLE","request_id":"r"}\n\n`,
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "text/event-stream",
+              "X-Chat-Stream-ID": sid,
+            },
+          },
+        ),
+      ),
+    );
+    const seen: { event: string; data: unknown }[] = [];
+    for await (const event of askStream("rev", "q", "zh-CN")) seen.push(event);
+    // Terminal error is yielded (AskPage throws ApiError on it); HTTP 200 alone is not success.
+    expect(seen.map((e) => e.event)).toEqual(["error"]);
+    expect(seen[0].data).toMatchObject({ code: "MODEL_UNAVAILABLE", status: 503 });
+    const s = seen.map((e) => e.event);
+    expect(s).not.toContain("done");
+    expect(s).not.toContain("delta");
+    expect(s).not.toContain("citation");
+  });
+});

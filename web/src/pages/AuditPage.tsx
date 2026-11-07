@@ -465,9 +465,13 @@ export function AuditPage() {
           </div>
         ) : null}
         {logs ? (
-          <div className="table-wrap">
+          <div
+            className="table-wrap"
+            role="region"
+            aria-label={t("audit.logsRegion")}
+          >
             {logs.length ? (
-              <table className="table">
+              <table className="table table-records">
                 <thead>
                   <tr>
                     <th>{t("common.time")}</th>
@@ -489,8 +493,8 @@ export function AuditPage() {
                     const pii = detail?.pii_fields;
                     return (
                       <tr key={log.id}>
-                        <td>{formatTs(log.ts)}</td>
-                        <td>
+                        <td data-label={t("common.time")}>{formatTs(log.ts)}</td>
+                        <td data-label={t("audit.actor")}>
                           {log.actor_username ?? "—"}
                           {log.actor_role ? (
                             <span className="audit-role">
@@ -499,14 +503,14 @@ export function AuditPage() {
                             </span>
                           ) : null}
                         </td>
-                        <td>{log.action}</td>
-                        <td className="mono">
+                        <td data-label={t("audit.action")}>{log.action}</td>
+                        <td className="mono" data-label={t("audit.resource")}>
                           {log.resource_type || log.resource_id
                             ? `${log.resource_type ?? "—"}/${log.resource_id ?? "—"}`
                             : "—"}
                         </td>
-                        <td>{log.result}</td>
-                        <td>
+                        <td data-label={t("common.status")}>{log.result}</td>
+                        <td data-label={t("audit.provenanceMarker")}>
                           <div className="audit-markers">
                             {detail?.source_kind_label ? (
                               <Marker kind="source">
@@ -543,14 +547,14 @@ export function AuditPage() {
                             ) : null}
                           </div>
                         </td>
-                        <td>
+                        <td data-label={t("audit.injection")}>
                           {inj ? t(`injection.${inj}`) : "—"}
                         </td>
-                        <td className="mono">
+                        <td className="mono" data-label={t("audit.piiFields")}>
                           {pii?.length ? pii.join(", ") : "—"}
                         </td>
-                        <td className="mono">{log.request_id}</td>
-                        <td className="mono">{log.hash}</td>
+                        <td className="mono" data-label={t("common.requestId")}>{log.request_id}</td>
+                        <td className="mono" data-label={t("audit.hash")}>{log.hash}</td>
                       </tr>
                     );
                   })}

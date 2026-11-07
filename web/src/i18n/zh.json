@@ -225,5 +225,14 @@
   "ask.modelUnavailableHint": "无可用真实模型时不会伪造流式回答。",
   "upload.fileChosen": "已选择文件",
   "common.skipToContent": "跳到主要内容",
-  "env.standInNote": "当前联调库为替身时，截图 sidecar 会标明 SQLite/fakeredis，不作活库验收。"
+  "env.standInNote": "当前联调库为替身时，截图 sidecar 会标明 SQLite/fakeredis，不作活库验收。",
+  "models.chain": "LLM 降级顺序",
+  "models.noLlm": "当前无可用 LLM（全部 healthy=false）：审查回退规则引擎，追问返回 503 MODEL_UNAVAILABLE，不会伪造回答。",
+  "models.mode": "模式",
+  "models.circuitOpen": "熔断中",
+  "models.calls24h": "24h 调用",
+  "models.p95": "P95 延迟",
+  "models.lightweight": "轻量回退",
+  "models.level": "降级级别（来自接口）",
+  "audit.logsRegion": "审计日志表"
 }
