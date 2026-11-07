@@ -51,6 +51,7 @@ class Settings(BaseSettings):
 
     # 模型链路：密钥无默认，测试不访问外网
     llm_provider_chain: list[str] = ["deepseek", "qwen", "ollama"]
+    local_model_enabled: bool = False  # LOCAL_MODEL_ENABLED: explicit Ollama LLM opt-in only.
     ocr_engine: str = "rapidocr-ppocrv4"
     deepseek_api_key: str | None = Field(default=None, repr=False)
     deepseek_base_url: str = "https://api.deepseek.com"

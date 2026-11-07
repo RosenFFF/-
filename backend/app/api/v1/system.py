@@ -39,7 +39,7 @@ async def readyz(request: Request) -> JSONResponse:
 
     model_status = await model_health(st.ai)
     for category in ("ocr", "llm", "embedding", "reranker"):
-        selected = [m for m in model_status["models"] if m["category"] == category]
+        selected = [m for m in model_status["models"] if m["category"] == category and m.get("enabled", True)]
         ok = any(m["healthy"] for m in selected)
         checks[category] = {
             "ok": ok,
@@ -58,5 +58,9 @@ async def models(request: Request, _: CurrentUser = Depends(current_user)) -> di
     st = request.app.state
     result = await model_health(st.ai)
     result = await apply_audit_metrics(result, st.db, _.scope, st.settings)
-    result["llm_provider_chain"] = st.settings.llm_provider_chain
+    result["llm_provider_chain"] = st.settings.llm_provider_chain  # Declared order (backwards compatible).
+    result["local_model_enabled"] = st.settings.local_model_enabled
+    result["effective_llm_provider_chain"] = [
+        m["provider"] for m in result["models"] if m["category"] == "llm" and m.get("enabled", True)
+    ]
     return result

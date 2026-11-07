@@ -379,7 +379,10 @@ async def test_real_provider_protocol_ollama_stream_and_chat_text_mock_transport
             200, text=upstream_frames("First ", "answer"), headers={"Content-Type": "text/event-stream"}
         )
 
-    llm = ProviderChain(make_settings(tmp_path, llm_provider_chain=["ollama"]), transport=httpx.MockTransport(handler))
+    llm = ProviderChain(
+        make_settings(tmp_path, local_model_enabled=True, llm_provider_chain=["ollama"]),
+        transport=httpx.MockTransport(handler),
+    )
     chunks = [chunk async for chunk in llm.chat_stream([], task="chat")]
     assert "".join(c.text for c in chunks) == "First answer" and chunks[-1].finished
     assert chunks[-1].traces[0]["provider"] == "ollama"
@@ -396,7 +399,7 @@ async def test_real_provider_protocol_ollama_stream_and_chat_text_mock_transport
 )
 async def test_provider_truncated_length_empty_stream_is_failure(tmp_path, body):
     llm = ProviderChain(
-        make_settings(tmp_path, llm_provider_chain=["ollama"], llm_max_retries=0),
+        make_settings(tmp_path, local_model_enabled=True, llm_provider_chain=["ollama"], llm_max_retries=0),
         transport=httpx.MockTransport(lambda _: httpx.Response(200, text=body)),
     )
     with pytest.raises(ModelUnavailable):
@@ -484,7 +487,7 @@ async def test_provider_failover_before_text_only_never_mix_partial_answers(tmp_
         return httpx.Response(200, text=upstream_frames("second fixture"))
 
     llm = ProviderChain(
-        make_settings(tmp_path, llm_provider_chain=["ollama"], llm_max_retries=0),
+        make_settings(tmp_path, local_model_enabled=True, llm_provider_chain=["ollama"], llm_max_retries=0),
         transport=httpx.MockTransport(handler),
     )
     llm.providers = [

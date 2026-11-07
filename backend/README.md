@@ -64,13 +64,22 @@ uv run pytest -q          # SQLite + fakeredis + 真实 RapidOCR，不需要 Doc
 
 ### 模型配置与真实降级
 
-`.env.example` 提供全部变量说明，密钥只填未入库 `.env`。链路默认 DeepSeek (`deepseek-chat`) → DashScope Qwen (`qwen-plus`) → Ollama (`qwen2.5:7b`)；使用 `httpx` OpenAI 兼容 JSON 接口，固定输出 schema、温度 0、token 上限、短超时、最多一次默认重试，连续失败熔断 60 秒。不记录提示词、完整响应或密钥。
+`.env.example` 提供全部变量说明，密钥只填未入库 `.env`。声明链路为 DeepSeek (`deepseek-chat`) → DashScope Qwen (`qwen-plus`) → Ollama (`qwen2.5:7b`)，但默认 `LOCAL_MODEL_ENABLED=false`，实际链路仅含云端；使用 `httpx` OpenAI 兼容 JSON 接口，固定输出 schema、温度 0、token 上限、短超时、最多一次默认重试，连续失败熔断 60 秒。不记录提示词、完整响应或密钥。
 
 - L0：主云端成功；L1：备用云端；L2：真实本地 Ollama；L3：全部不可用，启发式抽取部分字段 + 确定性审查，明确标规则模式。**L3 不是 LLM 成功，不适合宣称完成两类模型的现场演示。**
+- 只有显式设置 `LOCAL_MODEL_ENABLED=true` 且 `LLM_PROVIDER_CHAIN` 含 `ollama` 才允许 L2；默认完全排除 Ollama（不探测、不调用、不回退），云端均不可用直接 L3。该开关不影响本地 OCR、embedding、reranker；API 和 worker 须使用相同配置，配置变更后各自重启。
 - Ollama 可选 profile 启动后须预先准备 `qwen2.5:7b` 权重。没有权重会真实失败并降级，不在请求时自动下载。
 - `/system/models` 探测云端 `/models` 或 Ollama `/api/tags` 中的实际模型；15 秒缓存，超时默认 1 秒。该探测证明可访问和模型清单，不等于完成一次生成；实际推理成功/失败由任务轨迹和审计体现。API 从审计读取 worker 的最近 24 小时调用计数、P95 和近期连续失败，不伪造进程内指标。
 - 默认 embedding 是确定性 `feature-hash-128`，reranker 是 `token-overlap-v1`，真实执行但**不是神经网络 BGE 模型**，接口与轨迹明确标注 lightweight/not BGE。
 - 重型模型是可选 extra：`uv sync --extra bge`，提前离线缓存 `BAAI/bge-m3` 与 `BAAI/bge-reranker-v2-m3` 后设 `HEAVY_MODELS_ENABLED=true`。懒导入且 `local_files_only=True`、禁远程代码，不会让普通 `uv sync` 拉数 GB 权重。加载失败如实暴露 `heavy_load_failed=true` 并使用明确命名的轻量实现。Docker 默认镜像不安装此 extra；需自行构建带缓存的演示镜像。
+
+#### 健康与每项能力的降级契约
+
+- `GET /api/v1/system/models` 保留 `llm_provider_chain`（声明顺序）；新增 `local_model_enabled: bool` 与 `effective_llm_provider_chain: string[]`（实际参与的提供方顺序，不等于健康/已配置密钥）。默认分别为 `false` 和 `["deepseek","qwen"]`。
+- 每个 LLM 行新增 `enabled: bool` 和 `disabled_reason: string|null`。Ollama 行始终显示：默认 `enabled=false, disabled_reason="local_model_disabled", healthy=false, circuit_open=false`；启用且在链内时 `enabled=true, disabled_reason=null`，健康状态由真实探测决定；启用但声明链未包含它时为 `false, "not_in_provider_chain"`。禁用行只是静态元数据，不调用 `_probe`。`calls_24h/p95_latency_ms` 仍可显示租户历史审计，不表示禁用后发生调用。OCR/embedding/reranker 行不受此开关影响。
+- 顶层 `degrade_level` 和 `/readyz` 仅表示当前健康/可用性；不证明任何能力已执行，也不认证完整离线流程。所有级别选择都忽略禁用行。无 LLM 时核心依赖健康的 readyz 仍 HTTP 200、`status="degraded", degrade_level="L3"`。
+- **UI 读取该能力自己的结果，而不是系统健康或另一能力的结果。** 识别字段和审查报告的 `degrade_level` 来自本次推理结果；规则回退为 `L3, degrade_status="规则引擎降级，需人工复核", llm_verified=false`。成功执行 Ollama 才为 `L2, degrade_status="本地模型", degrade_warning="完整离线流程尚未验收", llm_verified=true`；该 true 仅表示本次 LLM 执行成功，不是合规/完整离线验收。非 L2 的 `degrade_warning=null`。
+- Chat JSON、SSE `done` 和历史助手消息新增同样四个降级字段，取自持久化的本次成功 LLM 轨迹 `degrade_level`，不从健康/审查状态推断。用户消息、安全拦截消息、缺少旧轨迹元数据的历史消息为 `degrade_level/degrade_status/degrade_warning=null, llm_verified=false`（未知/未执行，不冒充 L3 规则回答）。SSE `error` 与 JSON 503 `MODEL_UNAVAILABLE` 显式返回 L3 同组字段，保留现有「无可用 LLM，未完成真实/可用 LLM 验证」说明，**不会伪造规则引擎聊天回答**。重放/历史读取不重新调用模型。
 
 ### 规则库与当前边界
 
@@ -132,6 +141,7 @@ curl http://127.0.0.1:11434/api/tags
 仅在未入库 `.env` 填写以下非秘密配置（Pydantic 列表使用 JSON，不是裸 `ollama` 字符串）：
 
 ```dotenv
+LOCAL_MODEL_ENABLED=true
 LLM_PROVIDER_CHAIN=["ollama"]
 OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=qwen2.5:1.5b

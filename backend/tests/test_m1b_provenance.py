@@ -61,7 +61,7 @@ async def test_fallback_and_legacy_rows_do_not_omit_labels(api, quick_ocr):
     client = await api.login("reviewer")
     doc_id, review_id, report = await _report(api, client)
     assert report["degrade_level"] == "L3"
-    assert report["degrade_status"] == "规则引擎回退，未完成真实 LLM 验证"
+    assert report["degrade_status"] == "规则引擎降级，需人工复核"
     assert report["llm_verified"] is False
     assert_labels(report)
     async with api.app.state.db.maintenance_sessionmaker() as session:
@@ -137,7 +137,7 @@ def test_degrade_status_is_explicit_not_just_l3():
 
     fields = degrade_fields("L3")
     assert fields["degrade_level"] == "L3"
-    assert fields["degrade_status"] == DEGRADE_STATUS["L3"] == "规则引擎回退，未完成真实 LLM 验证"
+    assert fields["degrade_status"] == DEGRADE_STATUS["L3"] == "规则引擎降级，需人工复核"
     assert fields["llm_verified"] is False
     assert degrade_fields("L0")["llm_verified"] is True
 

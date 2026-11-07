@@ -99,9 +99,9 @@ async def test_no_llm_keys_explicit_rule_extraction_and_review_l3(api, quick_ocr
     assert rec["fields"] and all(f["source"] == "rule" for f in rec["fields"])
     assert rec["degrade_level"] == report["degrade_level"] == "L3"
     assert report["status"] == "completed"
-    assert report["degrade_status"] == rec["degrade_status"] == "规则引擎回退，未完成真实 LLM 验证"
+    assert report["degrade_status"] == rec["degrade_status"] == "规则引擎降级，需人工复核"
     assert report["llm_verified"] is False and rec["llm_verified"] is False
-    assert "规则引擎回退，未完成真实 LLM 验证" in report["summary"]
+    assert "规则引擎降级，需人工复核" in report["summary"]
     assert all(f["determined_by"] == "rule" for f in report["findings"])
     assert not any(t["category"] == "llm" and t["status"] == "ok" for t in report["models"])
 

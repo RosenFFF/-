@@ -26,6 +26,7 @@ from app.security.injection import inspect, inspect_data, out_of_scope
 from app.security.output import sanitize_public, unsafe_output
 from app.security.redact import mask
 from app.services.fields import aigc
+from app.services.provenance import degrade_fields
 
 _CITATION = re.compile(r"\[([A-Za-z0-9][A-Za-z0-9_.:-]{0,63})\]")
 UNAVAILABLE = "无可用 LLM，未完成真实/可用 LLM 验证；追问不会使用规则引擎伪造回答"
@@ -35,7 +36,24 @@ def message_out(row: ChatMessage) -> dict:
     stamp = row.created_at
     if stamp.tzinfo is None:
         stamp = stamp.replace(tzinfo=UTC)
+    # Persisted successful-call metadata, NOT current system health or the review's level.
+    successful = next(
+        (t for t in reversed(row.models or []) if t.get("category") == "llm" and t.get("status") in {"ok", "fallback"}),
+        {},
+    )
+    level = successful.get("degrade_level") if row.role == "assistant" and not row.blocked else None
+    outcome = (
+        degrade_fields(level)
+        if level in {"L0", "L1", "L2"}
+        else {
+            "degrade_level": None,
+            "degrade_status": None,
+            "degrade_warning": None,
+            "llm_verified": False,
+        }
+    )
     return {
+        **outcome,
         "id": row.id,
         "role": row.role,
         "content": sanitize_public(row.content, pii=True),
@@ -74,6 +92,7 @@ def error_data(request_id: str) -> dict:
         "title": UNAVAILABLE,
         "status": 503,
         "code": "MODEL_UNAVAILABLE",
+        **degrade_fields("L3"),
         "request_id": request_id,
     }
 

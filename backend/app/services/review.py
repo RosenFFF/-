@@ -241,7 +241,7 @@ async def process_review(
                 )
             else:
                 row.summary = (
-                    "规则引擎回退，未完成真实 LLM 验证。LLM 不可用或输入已被拦截，仅提供确定性检查；建议人工复核。"
+                    "规则引擎降级，需人工复核。LLM 不可用或输入已被拦截，仅提供确定性检查；未完成真实 LLM 验证。"
                 )
             row.summary = CORPUS_LABELS[flags["rule_corpus"]] + "。" + COMPLIANCE_DISCLAIMER + "\n" + row.summary
             row.security = flags
