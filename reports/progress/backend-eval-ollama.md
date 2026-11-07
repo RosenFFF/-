@@ -2,7 +2,7 @@
 
 ## Positioning
 
-**DeepSeek 为主，本地 qwen2.5:7b 作为 L2 离线降级**。CPU local inference is
+**云模型（DeepSeek）为主、规则引擎降级**（见下文 Formal decision；原定「本地 qwen2.5:7b 作为 L2」实测未达标，统筹于 2026-11-07 确认改定）。CPU local inference is
 not the interactive primary path. No stand-in inference is counted as real-model evidence.
 Initial worktree baseline was `6cba58f` (includes merged chat fix `71311f4`).
 Before delivery the unpublished branch was rebased onto locally available **`905349c`**
