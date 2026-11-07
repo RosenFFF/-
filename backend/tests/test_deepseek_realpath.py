@@ -112,7 +112,7 @@ async def test_deepseek_real_pg_redis_review_and_sse(tmp_path, postgres_rls_db, 
                 )
             assert all(t["provider"] != "fake" for t in report["models"])
             t0 = time.perf_counter()
-            body = {"content": "What invoice fields should I verify next?", "language": "en"}
+            body = {"content": "In one short sentence, what destination country is this report for?", "language": "en"}
             path = f"/api/v1/reviews/{review_id}/messages"
             response = await client.post(path, json=body, headers={"Accept": "text/event-stream"})
             events = parse_sse(response)
