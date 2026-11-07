@@ -22,7 +22,7 @@
 - M0（本周）：架构 + 接口契约 + 骨架可跑。✅ 2026-11-06 main `d60e145`（docs + 前端 mock + 后端 FastAPI/OCR 骨架 + 自扫描流水线）。
 - M1（代码完成）：主链路 OCR→LLM→RAG + 前端真实 API/SSE。✅ 2026-11-06 main `bc4bb4b`（backend merge `22ba707` ← `40809ef`；frontend merge ← `670403b`）。已知缺口：真实云/Ollama LLM E2E 仍缺密钥/外网，未宣称真模型演示完成。
 - M2（代码完成，环境未验收）：安全体系 + 自扫描零高危 + 审计看板。✅ 2026-11-06 main `44e5fcd`（backend merge `6cbeef5` ← `87ff58c`；frontend merge ← `b2ae74f`；OpenAPI 0.4.0）。已完成：限流/注入与输出过滤加固、租户审计 API、前端审计看板真实对接、Alembic 迁移、prod no-mock/demo 门禁、自扫描 CRITICAL/HIGH=0。仍阻塞/未宣称验收：真实 PostgreSQL RLS 活库、真实 Redis、真实云/Ollama LLM E2E（缺密钥或外网；PG apt 安装失败导致 RLS 仅候选）。勿对老板宣称 M2 环境验收完成。
-- M3（代码+本机 demo-env 证据完成，路演/真模型未宣称）：文档三件套草稿在 `feat/coord-m3-docs`；后端 live PG18.6/Redis8.10.2 证据 + shared `workers` fixture；前端 polish/a11y。✅ 2026-11-07 Asia/Shanghai main merge backend ← `3a81c64` + frontend ← `8bd3aca`。诚实缺口：真 LLM/Ollama E2E 仍未跑（llm_verified=false）；路演实测表与 submission 定稿仍在 coord 分支，暂不入 main。
+- M3（代码+本机 demo-env 证据完成，路演/真模型未宣称）：文档三件套草稿在 `feat/coord-m3-docs`；后端 live PG18.6/Redis8.10.2 证据 + shared `workers` fixture；前端 polish/a11y。✅ 2026-11-07 Asia/Shanghai main merge backend ← `3a81c64` + frontend ← `8bd3aca`。诚实进展：2026-11-07 DeepSeek 云端真实链路已合入（main ← `feat/coord-llm-deepseek-e2e` @ `07fccf5`，L0/`llm_verified=true`，证据 `llm-deepseek-evidence-8c42d49/`）；仍缺口：宽泛追问 SSE 未稳、浏览器+生产彩排未做、本地 Ollama `models=[]`、submission 三件套仍在 `feat/coord-m3-docs` 待 rebase。勿宣称路演/全模型验收完成。
 
 ## 工程约定
 - 代码在本仓库 /workspace/competition/st143（main 由奶龙合并）。各自在 feat/* 分支开发，完成后交 git bundle 到 /workspace/competition/bundles/ 并在群里报告。
