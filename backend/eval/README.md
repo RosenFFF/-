@@ -34,3 +34,19 @@ A successful harness run is not an assertion that all outputs are accurate or L0
 consult recognition/review levels and successful provider traces for every sample.
 
 Local minimal trial: EVAL_LOCAL_MINIMAL=1 selects a 3-line synthetic invoice (3 visible fields, missing required HS/origin), preserving the real OCR/extraction/review/SSE path. This is not the 20-sample accuracy dataset.
+
+## Scope-aware correction / offline attribution
+
+The original 32 hit / 89 extra / 0 miss scorer included SYN-REVIEW on both sides.
+It therefore contributed 20 hits and **zero** extras. The corrected eligible
+metric excludes that scope ID from both sides: **12 hit / 89 extra / 0 miss**.
+Do not call every extra a genuine false positive. See
+`reports/progress/backend-eval-extra-hits.md` for the irrecoverable historical
+ledger gap and explicitly bounded, non-observed source attribution.
+
+Future authorized runs now retain per-sample finding metadata (rule IDs, provenance,
+severity, field keys), expected rule IDs and mismatching field keys — never field
+values or prose. Legacy aggregate counts remain alongside corrected counts.
+`eval.finding_metrics.attribute_ledger` reproduces exact per-rule source buckets
+from such a ledger; duplicated sample IDs and unknown provenance fail closed.
+No new model evaluation was performed for this correction.

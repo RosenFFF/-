@@ -223,3 +223,12 @@ Aggregate metrics/model hashes and regression output are included under
 roots: `/workspace/competition/ollama-eval-71311f4/` and
 `/workspace/competition/backend-mini-eval-71311f4/`. Each has a README and SHA256SUMS.
 Model weights and private runtime configuration are NOT in the bundle.
+
+## Offline follow-up correction (no additional model calls)
+
+Scope-aware finding counts are **12 hit / 89 extra / 0 miss**, compared with legacy
+32/89/0. SYN-REVIEW was already expected and contributes 20 hits, **0 extras**.
+The original per-finding ledger/extracted values were not retained; its disposable
+schema was cleaned up. Exact allocation of the 89 extras and FP sample IDs cannot
+be recovered from the saved aggregate. See `backend-eval-extra-hits.md` for proof,
+explicit unknowns/bounds, label checks and the implemented measurement fixes.

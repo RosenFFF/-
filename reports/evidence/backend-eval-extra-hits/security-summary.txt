@@ -1,0 +1,5 @@
+ruff check backend: exit 0
+bandit backend/app backend/eval: exit 0, no findings
+gitleaks worktree and commit range: 0 leaks
+actual private-key comparison: 0 hits
+model calls: 0

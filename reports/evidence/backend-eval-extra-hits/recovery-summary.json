@@ -1,0 +1,12 @@
+{
+  "saved_historical_sample_count": 20,
+  "saved_historical_finding_ledgers": 0,
+  "saved_historical_extracted_field_values": 0,
+  "original_fixture_successful_schema_cleanup": true,
+  "surviving_disposable_schema_count_at_check": 1,
+  "surviving_schema_document_row_estimate": 1,
+  "surviving_schema_review_row_estimate": 1,
+  "application_rows_read": 0,
+  "model_calls": 0,
+  "historical_extra_pairs_still_unattributed": 89
+}
