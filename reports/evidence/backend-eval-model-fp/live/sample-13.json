@@ -1,0 +1,104 @@
+{
+  "sample": 13,
+  "expected_rule_ids": [
+    "SYN-REVIEW",
+    "SYN-HS"
+  ],
+  "field_mismatch_keys": [
+    "invoice_no",
+    "goods_description"
+  ],
+  "finding_metadata": [
+    {
+      "determined_by": "rule",
+      "severity": "medium",
+      "category": "classification",
+      "field_keys": [
+        "hs_code"
+      ],
+      "rule_ids": [
+        "SYN-HS"
+      ]
+    },
+    {
+      "determined_by": "rule",
+      "severity": "info",
+      "category": "other",
+      "field_keys": [],
+      "rule_ids": [
+        "SYN-REVIEW"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "medium",
+      "category": "missing_field",
+      "field_keys": [
+        "invoice_no",
+        "origin_country"
+      ],
+      "rule_ids": [
+        "SYN-ORIGIN",
+        "SYN-REQUIRED"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "low",
+      "category": "classification",
+      "field_keys": [
+        "goods_description",
+        "hs_code"
+      ],
+      "rule_ids": [
+        "SYN-REQUIRED"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "info",
+      "category": "inconsistency",
+      "field_keys": [
+        "currency",
+        "quantity",
+        "total_amount",
+        "unit_price"
+      ],
+      "rule_ids": [
+        "SYN-AMOUNT"
+      ]
+    }
+  ],
+  "review_completed": true,
+  "model_output_captured": true,
+  "recognition_level": "L0",
+  "upload_extraction_ms": 2142,
+  "condition_flags": {
+    "SYN-AMOUNT": false,
+    "SYN-HS": true,
+    "SYN-ORIGIN": false,
+    "SYN-REQUIRED": false,
+    "SYN-RESTRICTED": false
+  },
+  "deterministic_rule_ids": [
+    "SYN-HS",
+    "SYN-REVIEW"
+  ],
+  "review_level": "L0",
+  "llm_verified": true,
+  "upload_review_ms": 7357,
+  "traces": [
+    {
+      "provider": "deepseek",
+      "task": "field_extraction",
+      "status": "ok",
+      "latency_ms": 1568
+    },
+    {
+      "provider": "deepseek",
+      "task": "compliance_reasoning",
+      "status": "ok",
+      "latency_ms": 5136
+    }
+  ]
+}

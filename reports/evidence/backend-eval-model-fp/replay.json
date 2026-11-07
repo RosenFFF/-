@@ -1,0 +1,472 @@
+{
+  "samples_captured": 20,
+  "samples_complete_with_model_output": 20,
+  "partial_samples": [],
+  "before": {
+    "corrected_counts": {
+      "hit": 12,
+      "extra": 81,
+      "miss": 0
+    },
+    "bucket_counts": {
+      "scope": {
+        "SYN-REVIEW": 20
+      },
+      "scope_extra": {},
+      "model_generated": {
+        "SYN-REQUIRED": 17,
+        "PUB-CN-DECLARATION": 14,
+        "SYN-AMOUNT": 16,
+        "SYN-ORIGIN": 20,
+        "PUB-US-INVOICE": 12,
+        "SYN-HS": 2
+      },
+      "deterministic_extra": {}
+    },
+    "deterministic_extra_sample_ids": {}
+  },
+  "after": {
+    "corrected_counts": {
+      "hit": 12,
+      "extra": 25,
+      "miss": 0
+    },
+    "bucket_counts": {
+      "scope": {
+        "SYN-REVIEW": 20
+      },
+      "scope_extra": {},
+      "model_generated": {
+        "PUB-US-INVOICE": 12,
+        "PUB-CN-DECLARATION": 13
+      },
+      "deterministic_extra": {}
+    },
+    "deterministic_extra_sample_ids": {}
+  },
+  "extra_pairs_before_by_rule": {
+    "SYN-REQUIRED": 17,
+    "PUB-CN-DECLARATION": 14,
+    "SYN-AMOUNT": 16,
+    "SYN-ORIGIN": 20,
+    "PUB-US-INVOICE": 12,
+    "SYN-HS": 2
+  },
+  "extra_pairs_after_by_rule": {
+    "PUB-US-INVOICE": 12,
+    "PUB-CN-DECLARATION": 13
+  },
+  "genuine_model_fp_sample_ids_before": {
+    "SYN-REQUIRED": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "SYN-AMOUNT": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      11,
+      12,
+      13,
+      14,
+      18,
+      19,
+      20
+    ],
+    "SYN-ORIGIN": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "SYN-HS": [
+      9,
+      11
+    ]
+  },
+  "genuine_model_fp_sample_ids_after": {},
+  "deterministic_fp_sample_ids": {},
+  "extra_sample_ids_before_by_rule": {
+    "SYN-REQUIRED": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "PUB-CN-DECLARATION": [
+      1,
+      2,
+      4,
+      5,
+      7,
+      8,
+      12,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "SYN-AMOUNT": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      11,
+      12,
+      13,
+      14,
+      18,
+      19,
+      20
+    ],
+    "SYN-ORIGIN": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "PUB-US-INVOICE": [
+      1,
+      2,
+      4,
+      5,
+      7,
+      8,
+      12,
+      15,
+      16,
+      17,
+      18,
+      19
+    ],
+    "SYN-HS": [
+      9,
+      11
+    ]
+  },
+  "extra_sample_ids_after_by_rule": {
+    "PUB-US-INVOICE": [
+      1,
+      2,
+      4,
+      5,
+      7,
+      8,
+      12,
+      15,
+      16,
+      17,
+      18,
+      19
+    ],
+    "PUB-CN-DECLARATION": [
+      1,
+      2,
+      4,
+      5,
+      7,
+      8,
+      12,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ]
+  },
+  "removed_extra_sample_ids_by_rule": {
+    "SYN-REQUIRED": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "PUB-CN-DECLARATION": [
+      14
+    ],
+    "SYN-AMOUNT": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      11,
+      12,
+      13,
+      14,
+      18,
+      19,
+      20
+    ],
+    "SYN-ORIGIN": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "PUB-US-INVOICE": [],
+    "SYN-HS": [
+      9,
+      11
+    ]
+  },
+  "filter_object_counts": {
+    "unsupported_finding": 56,
+    "duplicate_citations_removed": 0,
+    "duplicate_finding": 6
+  },
+  "offline_model_calls": 0,
+  "scope_rule_ids_excluded": [
+    "SYN-REVIEW"
+  ],
+  "per_sample_conditions": {
+    "1": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "2": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "3": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "4": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "5": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "6": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "7": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "8": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "9": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": true,
+      "SYN-RESTRICTED": false
+    },
+    "10": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": true,
+      "SYN-RESTRICTED": false
+    },
+    "11": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": true,
+      "SYN-RESTRICTED": false
+    },
+    "12": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": true,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "13": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": true,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "14": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": true,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "15": {
+      "SYN-AMOUNT": true,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "16": {
+      "SYN-AMOUNT": true,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "17": {
+      "SYN-AMOUNT": true,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": false
+    },
+    "18": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": true
+    },
+    "19": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": true
+    },
+    "20": {
+      "SYN-AMOUNT": false,
+      "SYN-HS": false,
+      "SYN-ORIGIN": false,
+      "SYN-REQUIRED": false,
+      "SYN-RESTRICTED": true
+    }
+  }
+}

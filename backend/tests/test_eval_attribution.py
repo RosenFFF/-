@@ -35,7 +35,7 @@ def test_metadata_excludes_document_and_model_prose():
         document_id="not-a-synthetic-sample-id",
     )
     result = finding_metadata([finding])
-    assert set(result[0]) == {"determined_by", "severity", "field_keys", "rule_ids"}
+    assert set(result[0]) == {"determined_by", "severity", "category", "field_keys", "rule_ids"}
     assert "private" not in json.dumps(result)
     assert score_findings(["SYN-HS"], result)["corrected"] == dict(hit=1, extra=0, miss=0)
 

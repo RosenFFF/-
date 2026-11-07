@@ -1,0 +1,114 @@
+{
+  "sample": 4,
+  "expected_rule_ids": [
+    "SYN-REVIEW"
+  ],
+  "field_mismatch_keys": [
+    "goods_description"
+  ],
+  "finding_metadata": [
+    {
+      "determined_by": "rule",
+      "severity": "info",
+      "category": "other",
+      "field_keys": [],
+      "rule_ids": [
+        "SYN-REVIEW"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "medium",
+      "category": "missing_field",
+      "field_keys": [
+        "origin_country"
+      ],
+      "rule_ids": [
+        "SYN-REQUIRED"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "medium",
+      "category": "missing_field",
+      "field_keys": [
+        "certificate_no",
+        "consignee",
+        "origin_country"
+      ],
+      "rule_ids": [
+        "SYN-ORIGIN"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "low",
+      "category": "missing_field",
+      "field_keys": [
+        "address",
+        "consignee",
+        "email",
+        "phone"
+      ],
+      "rule_ids": [
+        "SYN-ORIGIN"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "info",
+      "category": "inconsistency",
+      "field_keys": [
+        "quantity",
+        "total_amount",
+        "unit_price"
+      ],
+      "rule_ids": [
+        "SYN-AMOUNT"
+      ]
+    },
+    {
+      "determined_by": "llm",
+      "severity": "info",
+      "category": "other",
+      "field_keys": [
+        "origin_country"
+      ],
+      "rule_ids": [
+        "PUB-CN-DECLARATION",
+        "PUB-US-INVOICE"
+      ]
+    }
+  ],
+  "review_completed": true,
+  "model_output_captured": true,
+  "recognition_level": "L0",
+  "upload_extraction_ms": 1855,
+  "condition_flags": {
+    "SYN-AMOUNT": false,
+    "SYN-HS": false,
+    "SYN-ORIGIN": false,
+    "SYN-REQUIRED": false,
+    "SYN-RESTRICTED": false
+  },
+  "deterministic_rule_ids": [
+    "SYN-REVIEW"
+  ],
+  "review_level": "L0",
+  "llm_verified": true,
+  "upload_review_ms": 8499,
+  "traces": [
+    {
+      "provider": "deepseek",
+      "task": "field_extraction",
+      "status": "ok",
+      "latency_ms": 1316
+    },
+    {
+      "provider": "deepseek",
+      "task": "compliance_reasoning",
+      "status": "ok",
+      "latency_ms": 6563
+    }
+  ]
+}

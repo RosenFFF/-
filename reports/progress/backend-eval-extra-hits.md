@@ -145,3 +145,10 @@ The bundle requires base commit `40669a6`. Exact historical bucket counts/sample
 IDs remain an explicit **unfulfilled evidence-dependent part** of the request;
 measurement fixes and mathematically identifiable counts are complete. No result
 has been invented to present an unavailable attribution as successful.
+
+## Authorized follow-up with a NEW ledgered run
+
+The coordinator subsequently approved exactly one new 20-review DeepSeek run,
+without chat. See `backend-eval-model-fp.md`: new scope-excluded counts are
+12/81/0 before and 12/25/0 after OFFLINE output-filter replay. The new 81 extras
+are fully attributable; these records do NOT reconstruct the original 89 extras.
