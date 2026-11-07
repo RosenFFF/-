@@ -1,0 +1,372 @@
+{
+  "planned_sample_ids": [
+    1,
+    9,
+    12,
+    15,
+    18
+  ],
+  "paired_sample_ids": [
+    1,
+    9,
+    12,
+    15,
+    18
+  ],
+  "previous_subset_available": 5,
+  "current_samples_captured": 5,
+  "current_complete": 5,
+  "previous_same_subset": {
+    "samples_captured": 5,
+    "samples_complete_with_model_output": 5,
+    "partial_samples": [],
+    "before": {
+      "corrected_counts": {
+        "hit": 4,
+        "extra": 22,
+        "miss": 0
+      },
+      "bucket_counts": {
+        "scope": {
+          "SYN-REVIEW": 5
+        },
+        "scope_extra": {},
+        "model_generated": {
+          "PUB-US-INVOICE": 4,
+          "SYN-ORIGIN": 5,
+          "SYN-AMOUNT": 4,
+          "PUB-CN-DECLARATION": 4,
+          "SYN-REQUIRED": 4,
+          "SYN-HS": 1
+        },
+        "deterministic_extra": {}
+      },
+      "deterministic_extra_sample_ids": {}
+    },
+    "after": {
+      "corrected_counts": {
+        "hit": 4,
+        "extra": 8,
+        "miss": 0
+      },
+      "bucket_counts": {
+        "scope": {
+          "SYN-REVIEW": 5
+        },
+        "scope_extra": {},
+        "model_generated": {
+          "PUB-US-INVOICE": 4,
+          "PUB-CN-DECLARATION": 4
+        },
+        "deterministic_extra": {}
+      },
+      "deterministic_extra_sample_ids": {}
+    },
+    "extra_pairs_before_by_rule": {
+      "PUB-US-INVOICE": 4,
+      "SYN-ORIGIN": 5,
+      "SYN-AMOUNT": 4,
+      "PUB-CN-DECLARATION": 4,
+      "SYN-REQUIRED": 4,
+      "SYN-HS": 1
+    },
+    "extra_pairs_after_by_rule": {
+      "PUB-US-INVOICE": 4,
+      "PUB-CN-DECLARATION": 4
+    },
+    "genuine_model_fp_sample_ids_before": {
+      "SYN-ORIGIN": [
+        1,
+        9,
+        12,
+        15,
+        18
+      ],
+      "SYN-AMOUNT": [
+        1,
+        9,
+        12,
+        18
+      ],
+      "SYN-REQUIRED": [
+        1,
+        12,
+        15,
+        18
+      ],
+      "SYN-HS": [
+        9
+      ]
+    },
+    "genuine_model_fp_sample_ids_after": {},
+    "deterministic_fp_sample_ids": {},
+    "extra_sample_ids_before_by_rule": {
+      "PUB-US-INVOICE": [
+        1,
+        12,
+        15,
+        18
+      ],
+      "SYN-ORIGIN": [
+        1,
+        9,
+        12,
+        15,
+        18
+      ],
+      "SYN-AMOUNT": [
+        1,
+        9,
+        12,
+        18
+      ],
+      "PUB-CN-DECLARATION": [
+        1,
+        12,
+        15,
+        18
+      ],
+      "SYN-REQUIRED": [
+        1,
+        12,
+        15,
+        18
+      ],
+      "SYN-HS": [
+        9
+      ]
+    },
+    "extra_sample_ids_after_by_rule": {
+      "PUB-US-INVOICE": [
+        1,
+        12,
+        15,
+        18
+      ],
+      "PUB-CN-DECLARATION": [
+        1,
+        12,
+        15,
+        18
+      ]
+    },
+    "removed_extra_sample_ids_by_rule": {
+      "PUB-US-INVOICE": [],
+      "SYN-ORIGIN": [
+        1,
+        9,
+        12,
+        15,
+        18
+      ],
+      "SYN-AMOUNT": [
+        1,
+        9,
+        12,
+        18
+      ],
+      "PUB-CN-DECLARATION": [],
+      "SYN-REQUIRED": [
+        1,
+        12,
+        15,
+        18
+      ],
+      "SYN-HS": [
+        9
+      ]
+    },
+    "filter_object_counts": {
+      "unsupported_finding": 15,
+      "duplicate_citations_removed": 0,
+      "duplicate_finding": 2
+    },
+    "offline_model_calls": 0,
+    "scope_rule_ids_excluded": [
+      "SYN-REVIEW"
+    ],
+    "per_sample_conditions": {
+      "1": {
+        "SYN-AMOUNT": false,
+        "SYN-HS": false,
+        "SYN-ORIGIN": false,
+        "SYN-REQUIRED": false,
+        "SYN-RESTRICTED": false
+      },
+      "9": {
+        "SYN-AMOUNT": false,
+        "SYN-HS": false,
+        "SYN-ORIGIN": false,
+        "SYN-REQUIRED": true,
+        "SYN-RESTRICTED": false
+      },
+      "12": {
+        "SYN-AMOUNT": false,
+        "SYN-HS": true,
+        "SYN-ORIGIN": false,
+        "SYN-REQUIRED": false,
+        "SYN-RESTRICTED": false
+      },
+      "15": {
+        "SYN-AMOUNT": true,
+        "SYN-HS": false,
+        "SYN-ORIGIN": false,
+        "SYN-REQUIRED": false,
+        "SYN-RESTRICTED": false
+      },
+      "18": {
+        "SYN-AMOUNT": false,
+        "SYN-HS": false,
+        "SYN-ORIGIN": false,
+        "SYN-REQUIRED": false,
+        "SYN-RESTRICTED": true
+      }
+    }
+  },
+  "current_same_subset": {
+    "samples_captured": 5,
+    "samples_complete_with_model_output": 5,
+    "partial_samples": [],
+    "before": {
+      "corrected_counts": {
+        "hit": 4,
+        "extra": 5,
+        "miss": 0
+      },
+      "bucket_counts": {
+        "scope": {
+          "SYN-REVIEW": 5
+        },
+        "scope_extra": {},
+        "model_generated": {
+          "PUB-US-INVOICE": 2,
+          "PUB-CN-DECLARATION": 2,
+          "SYN-ORIGIN": 1
+        },
+        "deterministic_extra": {}
+      },
+      "deterministic_extra_sample_ids": {}
+    },
+    "after": {
+      "corrected_counts": {
+        "hit": 4,
+        "extra": 4,
+        "miss": 0
+      },
+      "bucket_counts": {
+        "scope": {
+          "SYN-REVIEW": 5
+        },
+        "scope_extra": {},
+        "model_generated": {
+          "PUB-US-INVOICE": 2,
+          "PUB-CN-DECLARATION": 2
+        },
+        "deterministic_extra": {}
+      },
+      "deterministic_extra_sample_ids": {}
+    },
+    "extra_pairs_before_by_rule": {
+      "PUB-US-INVOICE": 2,
+      "PUB-CN-DECLARATION": 2,
+      "SYN-ORIGIN": 1
+    },
+    "extra_pairs_after_by_rule": {
+      "PUB-US-INVOICE": 2,
+      "PUB-CN-DECLARATION": 2
+    },
+    "genuine_model_fp_sample_ids_before": {
+      "SYN-ORIGIN": [
+        12
+      ]
+    },
+    "genuine_model_fp_sample_ids_after": {},
+    "deterministic_fp_sample_ids": {},
+    "extra_sample_ids_before_by_rule": {
+      "PUB-US-INVOICE": [
+        1,
+        18
+      ],
+      "PUB-CN-DECLARATION": [
+        1,
+        18
+      ],
+      "SYN-ORIGIN": [
+        12
+      ]
+    },
+    "extra_sample_ids_after_by_rule": {
+      "PUB-US-INVOICE": [
+        1,
+        18
+      ],
+      "PUB-CN-DECLARATION": [
+        1,
+        18
+      ]
+    },
+    "removed_extra_sample_ids_by_rule": {
+      "PUB-US-INVOICE": [],
+      "PUB-CN-DECLARATION": [],
+      "SYN-ORIGIN": [
+        12
+      ]
+    },
+    "filter_object_counts": {
+      "duplicate_citations_removed": 0,
+      "duplicate_finding": 2,
+      "unsupported_finding": 1
+    },
+    "offline_model_calls": 0,
+    "scope_rule_ids_excluded": [
+      "SYN-REVIEW"
+    ],
+    "per_sample_conditions": {
+      "1": {
+        "SYN-AMOUNT": false,
+        "SYN-HS": false,
+        "SYN-ORIGIN": false,
+        "SYN-REQUIRED": false,
+        "SYN-RESTRICTED": false
+      },
+      "9": {
+        "SYN-AMOUNT": false,
+        "SYN-HS": false,
+        "SYN-ORIGIN": false,
+        "SYN-REQUIRED": true,
+        "SYN-RESTRICTED": false
+      },
+      "12": {
+        "SYN-AMOUNT": false,
+        "SYN-HS": true,
+        "SYN-ORIGIN": false,
+        "SYN-REQUIRED": false,
+        "SYN-RESTRICTED": false
+      },
+      "15": {
+        "SYN-AMOUNT": true,
+        "SYN-HS": false,
+        "SYN-ORIGIN": false,
+        "SYN-REQUIRED": false,
+        "SYN-RESTRICTED": false
+      },
+      "18": {
+        "SYN-AMOUNT": false,
+        "SYN-HS": false,
+        "SYN-ORIGIN": false,
+        "SYN-REQUIRED": false,
+        "SYN-RESTRICTED": true
+      }
+    }
+  },
+  "actual_post_filter_counts": {
+    "hit": 4,
+    "extra": 4,
+    "miss": 0
+  },
+  "current_summary_kept": 4,
+  "current_summary_rebuilt": 1,
+  "current_summary_unknown": 0,
+  "historical_summary_text_available": false,
+  "offline_model_calls": 0
+}

@@ -1,0 +1,127 @@
+{
+  "sample": 12,
+  "expected_rule_ids": [
+    "SYN-REVIEW",
+    "SYN-HS"
+  ],
+  "field_mismatch_keys": [
+    "invoice_no",
+    "goods_description"
+  ],
+  "finding_metadata": [
+    {
+      "determined_by": "rule",
+      "severity": "medium",
+      "category": "classification",
+      "field_keys": [
+        "hs_code"
+      ],
+      "rule_ids": [
+        "SYN-HS"
+      ]
+    },
+    {
+      "determined_by": "rule",
+      "severity": "info",
+      "category": "other",
+      "field_keys": [],
+      "rule_ids": [
+        "SYN-REVIEW"
+      ]
+    },
+    {
+      "determined_by": "llm_unverified",
+      "severity": "medium",
+      "category": "format",
+      "field_keys": [
+        "hs_code"
+      ],
+      "rule_ids": []
+    },
+    {
+      "determined_by": "llm",
+      "severity": "low",
+      "category": "missing_field",
+      "field_keys": [
+        "certificate_no",
+        "consignee",
+        "origin_country"
+      ],
+      "rule_ids": [
+        "SYN-ORIGIN"
+      ]
+    }
+  ],
+  "review_completed": true,
+  "model_output_captured": true,
+  "recognition_level": "L0",
+  "upload_extraction_ms": 2196,
+  "condition_flags": {
+    "SYN-AMOUNT": false,
+    "SYN-HS": true,
+    "SYN-ORIGIN": false,
+    "SYN-REQUIRED": false,
+    "SYN-RESTRICTED": false
+  },
+  "deterministic_rule_ids": [
+    "SYN-HS",
+    "SYN-REVIEW"
+  ],
+  "summary_rebuilt": true,
+  "summary_text_persisted": false,
+  "dropped_rule_ids": [
+    "SYN-ORIGIN"
+  ],
+  "post_filter_metadata": [
+    {
+      "determined_by": "rule",
+      "severity": "medium",
+      "category": "classification",
+      "field_keys": [
+        "hs_code"
+      ],
+      "rule_ids": [
+        "SYN-HS"
+      ]
+    },
+    {
+      "determined_by": "rule",
+      "severity": "info",
+      "category": "other",
+      "field_keys": [],
+      "rule_ids": [
+        "SYN-REVIEW"
+      ]
+    },
+    {
+      "determined_by": "llm_unverified",
+      "severity": "medium",
+      "category": "format",
+      "field_keys": [
+        "hs_code"
+      ],
+      "rule_ids": []
+    }
+  ],
+  "model_output_filter": {
+    "unsupported_finding": 1,
+    "duplicate_citations_removed": 0
+  },
+  "review_level": "L0",
+  "llm_verified": true,
+  "upload_review_ms": 6080,
+  "traces": [
+    {
+      "provider": "deepseek",
+      "task": "field_extraction",
+      "status": "ok",
+      "latency_ms": 1443
+    },
+    {
+      "provider": "deepseek",
+      "task": "compliance_reasoning",
+      "status": "ok",
+      "latency_ms": 3804
+    }
+  ]
+}

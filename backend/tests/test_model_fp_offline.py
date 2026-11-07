@@ -145,8 +145,8 @@ def test_real_shape_filter_matches_metadata_replay():
 def test_unfounded_model_summary_is_replaced_not_republished():
     from app.services.model_findings import grounded_summary
 
-    original = "synthetic unverified narrative"
-    assert grounded_summary(original, {"unsupported_finding": 1}) != original
+    original = "Amount concern in synthetic narrative"
+    assert grounded_summary(original, {"unsupported_finding": 1}, [], {"SYN-AMOUNT"}) != original
     assert grounded_summary(original, {"duplicate_finding": 1}) == original
 
 

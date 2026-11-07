@@ -1,0 +1,40 @@
+...............s.....ss................s................................ [ 16%]
+........................................................................ [ 33%]
+s....................................................................... [ 49%]
+........................................................................ [ 66%]
+........................................................................ [ 82%]
+..............................s...............s..................F...... [ 99%]
+....                                                                     [100%]
+=================================== FAILURES ===================================
+__________ test_comparison_handles_no_completed_samples_without_retry __________
+
+    def test_comparison_handles_no_completed_samples_without_retry():
+        from eval.compare_prompt_five import compare
+
+>       result = compare([], [{"sample": 1, "review_completed": False}])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_review_summary_prompt.py:93:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+previous = [], current = [{'sample': 1, 'review_completed': False}]
+
+    def compare(previous, current):
+        old = [row for row in previous if row["sample"] in SAMPLE_IDS]
+        new = [row for row in current if row["sample"] in SAMPLE_IDS]
+        completed = [r for r in new if r.get("review_completed") and r.get("model_output_captured")]
+        paired_ids = sorted(r["sample"] for r in completed)
+        paired_old = [r for r in old if r["sample"] in paired_ids]
+        previous_replay, current_replay = replay(paired_old), replay(completed)
+        actual_post = Counter(hit=0, extra=0, miss=0)
+        for row in completed:
+            score = score_findings(row["expected_rule_ids"], row["post_filter_metadata"])["corrected"]
+            actual_post.update(score)
+        if dict(actual_post) != current_replay["after"]["corrected_counts"]:
+>           raise ValueError("live post-filter metadata differs from offline replay")
+E           ValueError: live post-filter metadata differs from offline replay
+
+eval/compare_prompt_five.py:27: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_review_summary_prompt.py::test_comparison_handles_no_completed_samples_without_retry
+1 failed, 428 passed, 7 skipped in 107.25s (0:01:47)

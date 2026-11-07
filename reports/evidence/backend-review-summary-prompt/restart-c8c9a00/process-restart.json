@@ -1,0 +1,19 @@
+{
+  "checked_at": "2026-11-07T02:09:26.423541-08:00",
+  "old_processes": [
+    {
+      "old_pid": 539339,
+      "verified_cwd": "/workspace/competition/live-deepseek-71311f4-src/backend",
+      "verified_uvicorn_port": 8002,
+      "signal": "SIGTERM",
+      "exit_verified": true
+    },
+    {
+      "old_pid": 496807,
+      "verified_cwd": "/workspace/competition/live-deepseek-aaee76a-src/backend",
+      "verified_uvicorn_port": 8001,
+      "signal": "SIGTERM",
+      "exit_verified": true
+    }
+  ]
+}
